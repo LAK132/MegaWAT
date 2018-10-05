@@ -1,0 +1,9 @@
+[submodule "cc65"]
+	path = cc65
+	url = https://github.com/cc65/cc65.git
+[submodule "cbmconvert"]
+	path = cbmconvert
+	url = https://github.com/sasq64/cbmconvert.git
+[submodule "c65gs-font-rasteriser"]
+	path = c65gs-font-rasteriser
+	url = https://github.com/gardners/c65gs-font-rasteriser.git
