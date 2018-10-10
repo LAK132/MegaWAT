@@ -27,6 +27,8 @@
 // DA 11 00010001
 // UA 91 10010001
 
+// #define __CC65__
+
 #include "main.h"
 
 #ifdef __CC65__
@@ -42,7 +44,7 @@ int main(int argc,char **argv)
     uint32_t sdsize = 0;
 
 #ifdef __CC65__
-    mega65_fast();
+    // mega65_fast();
     setup_screen();
 #endif
 
@@ -116,8 +118,8 @@ int main(int argc,char **argv)
                     if (c != 0 && c != ' ' && len < -1) ++len;
                 }
                 lcopy(screen_line_address, screen_line_address+len, SCREEN_ADDRESS+(23*80)-screen_line_address);
-                lcopy(screen_line_address+SCREEN_COLOUR_OFFSET,
-                    screen_line_address+SCREEN_COLOUR_OFFSET+len, SCREEN_ADDRESS+(23*80)-screen_line_address);
+                lcopy(screen_line_address+SCREEN_SMALL_COLOUR_OFFSET,
+                    screen_line_address+SCREEN_SMALL_COLOUR_OFFSET+len, SCREEN_ADDRESS+(23*80)-screen_line_address);
                 MOVE_CURSOR(len);
             }
             else if (key == KEY_RETURN)
@@ -127,13 +129,13 @@ int main(int argc,char **argv)
                 for (; i > screen_line_address + diff; i -= 80)
                 {
                     lcopy(i - 80, i, 80);
-                    lcopy(i + SCREEN_COLOUR_OFFSET - 80, i + SCREEN_COLOUR_OFFSET, 80);
+                    lcopy(i + SCREEN_SMALL_COLOUR_OFFSET - 80, i + SCREEN_SMALL_COLOUR_OFFSET, 80);
                 }
                 lcopy(screen_line_address, screen_line_address + diff, diff);
-                lcopy(screen_line_address + SCREEN_COLOUR_OFFSET,
-                    screen_line_address + diff + SCREEN_COLOUR_OFFSET, diff);
+                lcopy(screen_line_address + SCREEN_SMALL_COLOUR_OFFSET,
+                    screen_line_address + diff + SCREEN_SMALL_COLOUR_OFFSET, diff);
                 lfill(screen_line_address, ' ', diff);
-                lfill(screen_line_address+SCREEN_COLOUR_OFFSET, 1, diff);
+                lfill(screen_line_address+SCREEN_SMALL_COLOUR_OFFSET, 1, diff);
                 MOVE_CURSOR(diff);
             }
             else WRITE_CHAR(key);
