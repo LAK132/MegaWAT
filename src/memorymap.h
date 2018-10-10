@@ -28,4 +28,3 @@
 
 
 
-#define COLOUR_RAM_ADDRESS 0xff80000U
