@@ -1,6 +1,7 @@
 #include "screen.h"
 #include "memory.h"
 #include "ascii.h"
+#include "main.h"
 
 extern unsigned char *charset;
 

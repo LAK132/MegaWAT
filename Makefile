@@ -26,7 +26,7 @@ FILES=		$(PROGRAM) \
 
 SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/screen.c \
-			$(SRCDIR)/memory.c \
+			$(SRCDIR)/videomodes.c \
 			$(SRCDIR)/charset.s \
 			$(SRCDIR)/font.s
 
@@ -34,6 +34,7 @@ ASSFILES=	$(BINDIR)/charset.s \
 			$(BINDIR)/font.s \
 			$(BINDIR)/main.s \
 			$(BINDIR)/memory.s \
+			$(BINDIR)/videomodes.s \
 			$(BINDIR)/screen.s
 
 HEADERS=	Makefile \

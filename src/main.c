@@ -28,6 +28,7 @@
 // UA 91 10010001
 
 #include "main.h"
+#include "videomodes.h"
 
 #ifdef __CC65__
 void main(void)
@@ -43,6 +44,11 @@ int main(int argc,char **argv)
 
 #ifdef __CC65__
     // mega65_fast();
+
+    videoSetSlideMode();
+
+    while(1) continue;
+    
     setup_screen();
 #endif
 

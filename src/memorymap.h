@@ -24,3 +24,8 @@
 
 #define ASSET_RAM           0x0040000U
 #define ASSET_RAM_SIZE      0x0020000U
+
+
+
+
+#define COLOUR_RAM_ADDRESS 0xff80000U
