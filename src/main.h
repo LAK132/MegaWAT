@@ -9,7 +9,7 @@
 
 #define BORDER_COLOUR(X) POKE(0xD020U,X)
 #define SCREEN_COLOUR(X) POKE(0xD021U,X)
-#define SCREEN_SMALL_COLOUR_OFFSET 0x17800U // SMALL_SMALL_COLOUR_RAM_ADDRESS - SCREEN_ADDRESS
+#define SCREEN_COLOUR_OFFSET 0x17800U // COLOUR_RAM_ADDRESS - SCREEN_ADDRESS
 
 #define MOD_LSHIFT      0x01
 #define MOD_RSHIFT      0x02
@@ -36,9 +36,9 @@
 #define SCROLL_DOWN() {\
     long _count = 23 * 80; \
     lcopy(SCREEN_ADDRESS + 80, SCREEN_ADDRESS, _count); \
-    lcopy(SMALL_COLOUR_RAM_ADDRESS + 80, SMALL_COLOUR_RAM_ADDRESS, _count); \
+    lcopy(COLOUR_RAM_ADDRESS + 80, COLOUR_RAM_ADDRESS, _count); \
     lfill(SCREEN_ADDRESS + _count, ' ', 80); \
-    lfill(SMALL_COLOUR_RAM_ADDRESS + _count, 1, 80); \
+    lfill(COLOUR_RAM_ADDRESS + _count, 1, 80); \
     screen_line_address -= 80; \
 }
 
@@ -46,32 +46,32 @@
     long _index = 23 * 80; \
     for (; _index > 0; _index -= 80) { \
         lcopy(SCREEN_ADDRESS + _index - 80, SCREEN_ADDRESS + _index, 80); \
-        lcopy(SMALL_COLOUR_RAM_ADDRESS + _index - 80, SMALL_COLOUR_RAM_ADDRESS + _index, 80); \
+        lcopy(COLOUR_RAM_ADDRESS + _index - 80, COLOUR_RAM_ADDRESS + _index, 80); \
     } \
     lfill(SCREEN_ADDRESS, ' ', 80); \
-    lfill(SMALL_COLOUR_RAM_ADDRESS, 1, 80); \
+    lfill(COLOUR_RAM_ADDRESS, 1, 80); \
     screen_line_address += 80; \
 }
 
 #define SET_CURSOR_ATTRIB(x) \
-    lpoke(screen_line_address+SCREEN_SMALL_COLOUR_OFFSET, (lpeek(screen_line_address+SCREEN_SMALL_COLOUR_OFFSET) & 0xF) | x)
+    lpoke(screen_line_address+SCREEN_COLOUR_OFFSET, (lpeek(screen_line_address+SCREEN_COLOUR_OFFSET) & 0xF) | x)
 #define SET_CURSOR(x) { \
-    char _cursor = lpeek(screen_line_address+SCREEN_SMALL_COLOUR_OFFSET); \
-    lpoke(screen_line_address+SCREEN_SMALL_COLOUR_OFFSET, _cursor & 0xF); \
+    char _cursor = lpeek(screen_line_address+SCREEN_COLOUR_OFFSET); \
+    lpoke(screen_line_address+SCREEN_COLOUR_OFFSET, _cursor & 0xF); \
     screen_line_address = x + SCREEN_ADDRESS; \
     if (screen_line_address < SCREEN_ADDRESS) SCROLL_UP() \
     else if (screen_line_address - SCREEN_ADDRESS > 24*80) SCROLL_DOWN() \
-    lpoke(screen_line_address+SCREEN_SMALL_COLOUR_OFFSET, \
-        (lpeek(screen_line_address+SCREEN_SMALL_COLOUR_OFFSET) & 0xF) | _cursor & 0xF0); \
+    lpoke(screen_line_address+SCREEN_COLOUR_OFFSET, \
+        (lpeek(screen_line_address+SCREEN_COLOUR_OFFSET) & 0xF) | _cursor & 0xF0); \
 }
 #define MOVE_CURSOR(x) { \
-    char _cursor = lpeek(screen_line_address+SCREEN_SMALL_COLOUR_OFFSET); \
-    lpoke(screen_line_address+SCREEN_SMALL_COLOUR_OFFSET, _cursor & 0xF); \
+    char _cursor = lpeek(screen_line_address+SCREEN_COLOUR_OFFSET); \
+    lpoke(screen_line_address+SCREEN_COLOUR_OFFSET, _cursor & 0xF); \
     screen_line_address += x; \
     if (screen_line_address < SCREEN_ADDRESS) SCROLL_UP() \
     else if (screen_line_address - SCREEN_ADDRESS > 24*80) SCROLL_DOWN() \
-    lpoke(screen_line_address+SCREEN_SMALL_COLOUR_OFFSET, \
-        (lpeek(screen_line_address+SCREEN_SMALL_COLOUR_OFFSET) & 0xF) | _cursor & 0xF0); \
+    lpoke(screen_line_address+SCREEN_COLOUR_OFFSET, \
+        (lpeek(screen_line_address+SCREEN_COLOUR_OFFSET) & 0xF) | _cursor & 0xF0); \
 }
 #define WRITE_STRING(s) { \
     char _strlen = 0; \
