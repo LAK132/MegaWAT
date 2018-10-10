@@ -4,7 +4,7 @@
 
 #include "memory.h"
 #include "screen.h"
-#include "pointermap.h"
+#include "memorymap.h"
 #include "ascii.h"
 
 #define BORDER_COLOUR(X) POKE(0xD020U,X)

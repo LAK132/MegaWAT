@@ -22,5 +22,5 @@
 #define SLIDE_DATA2         0x003C000U
 #define SLIDE_DATA2_SIZE    0x0002000U
 
-#define GRAPHICS_RAM        0x0040000U
-#define GRAPHICS_RAM_SIZE   0x0020000U
+#define ASSET_RAM           0x0040000U
+#define ASSET_RAM_SIZE      0x0020000U
