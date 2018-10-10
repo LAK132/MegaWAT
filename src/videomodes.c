@@ -31,7 +31,12 @@ void videoSetSlideMode(void)
   POKE(0xd058U,100);
   POKE(0xd059U,0);
 
-
+  // Adjust top and bottom borders
+  POKE(0xd048,0x52);
+  POKE(0xd04A,0x32);
+  POKE(0xd04B,0x02);
+  // Place character generator adjacent to freshly moved top border
+  POKE(0xd04E,0x52);
 }
 
 void videoSetActiveSlideBuffer(unsigned bufferId)
