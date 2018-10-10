@@ -8,12 +8,12 @@ OUTDIR=		out
 DISK=		$(OUTDIR)/DISK.D81
 PROGRAM=	$(OUTDIR)/megawat.prg
 
-CC65DIR=	cc65
-CBMCONVDIR=	cbmconvert
+# CC65DIR=	cc65
+# CBMCONVDIR=	cbmconvert
 XEMUDIR=	../xemu
 COREDIR=	../mega65-core
-# CC65DIR=	$(COREDIR)/cc65
-# CBMCONVDIR=	$(COREDIR)/cbmconvert
+CC65DIR=	$(COREDIR)/cc65
+CBMCONVDIR=	$(COREDIR)/cbmconvert
 
 C65OPTS=	-t c64 -O -Or -Oi -Os --cpu 65c02 -I$(CC65DIR)/include
 L65OPTS=	-C c64-m65.cfg --asm-include-dir $(CC65DIR)/asminc --lib-path $(CC65DIR)/lib
@@ -24,23 +24,22 @@ FILES=		$(PROGRAM) \
 
 SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/screen.c \
-			$(SRCDIR)/memory.c \
-			$(SRCDIR)/hal_mega65.c
+			$(SRCDIR)/memory.c
 
 ASSFILES=	$(BINDIR)/charset.s \
+			$(BINDIR)/font.s \
 			$(BINDIR)/main.s \
 			$(BINDIR)/memory.s \
-			$(BINDIR)/screen.s \
-			$(BINDIR)/hal_mega65.s
+			$(BINDIR)/screen.s
 
 HEADERS=	Makefile \
 			$(SRCDIR)/main.h \
 			$(SRCDIR)/screen.h \
 			$(SRCDIR)/memory.h \
-			$(SRCDIR)/hal.h \
 			$(SRCDIR)/ascii.h
 
-DATAFILES=	ascii8x8.bin
+DATAFILES=	ascii8x8.bin \
+			font.f65
 
 CC65=		$(CC65DIR)/bin/cc65
 CL65=		$(CC65DIR)/bin/cl65
