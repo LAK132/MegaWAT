@@ -8,12 +8,12 @@ OUTDIR=		out
 DISK=		$(OUTDIR)/DISK.D81
 PROGRAM=	$(OUTDIR)/megawat.prg
 
-# CC65DIR=	cc65
-# CBMCONVDIR=	cbmconvert
+CC65DIR=	cc65
+CBMCONVDIR=	cbmconvert
 XEMUDIR=	../xemu
 COREDIR=	../mega65-core
-CC65DIR=	$(COREDIR)/cc65
-CBMCONVDIR=	$(COREDIR)/cbmconvert
+#CC65DIR=	$(COREDIR)/cc65
+#CBMCONVDIR=	$(COREDIR)/cbmconvert
 
 C65OPTS=	-t c64 -O -Or -Oi -Os --cpu 65c02 -I$(CC65DIR)/include
 L65OPTS=	-C c64-m65.cfg --asm-include-dir $(CC65DIR)/asminc --lib-path $(CC65DIR)/lib
@@ -106,3 +106,9 @@ cc65/bin/cc65:
 
 $(MONLOAD):
 	cd $(COREDIR) && make src/tools/monitor_load
+
+font.f65:	example.ttf c65gs-font-rasteriser/ttftof65
+	c65gs-font-rasteriser/ttftof65 -A -T example.ttf -P 16 -o font.f65
+
+c65gs-font-rasteriser/ttftof65:
+	( cd c65gs-font-rasteriser ; make )
