@@ -43,10 +43,10 @@ int main(int argc,char **argv)
     uint32_t sdsize = 0;
 
 #ifdef __CC65__
-    // mega65_fast();
+    m65_io_enable();
 
     videoSetSlideMode();
-
+ 
     while(1) continue;
     
     setup_screen();
