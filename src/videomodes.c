@@ -14,16 +14,24 @@ void videoSetSlideMode(void)
   // 16-bit text mode, 640H sprites, alpha blender and 50MHz CPU
   POKE(0xd054U,0xD5);
 
-  // 100 characters per line
-  POKE(0xd058U,100);
-  POKE(0xd059U,0);
-
   // No side borders
   POKE(0xd05cU,0);
   POKE(0xd05dU,0);
 
+  // Set H640 and V400 and enable extended attributes and 8-bit colour values
+  POKE(0xd031,0xa8);
+  
   // Update hot registers
   POKE(0xd011U,0x1b);
+
+  // The following must happen AFTER touching $D011
+  // Touching $D011 etc will require them to be set again.
+  
+  // 100 characters per line
+  POKE(0xd058U,100);
+  POKE(0xd059U,0);
+
+
 }
 
 void videoSetActiveSlideBuffer(unsigned bufferId)

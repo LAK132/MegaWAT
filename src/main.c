@@ -46,7 +46,8 @@ int main(int argc,char **argv)
     m65_io_enable();
 
     videoSetSlideMode();
- 
+    videoSetActiveSlideBuffer(0);
+    
     while(1) continue;
     
     setup_screen();
