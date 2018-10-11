@@ -28,6 +28,29 @@ uint8_t trim_pixels;
 uint16_t the_code_point=0,card;
 
 uint8_t clear_pattern[4]={0x20,0x00,0x20,0x00};
+uint8_t end_of_line_pattern[2]={0xff,0xff};
+
+void renderLineUTF16(uint32_t font_address,uint16_t *string,struct render_buffer *scratch,
+		     uint8_t colour_and_attributes, uint8_t alpha_and_extras)
+{
+  clearRenderBuffer(scratch);    
+  for(x=0;string[x];x++)
+    renderGlyph(font_address,string[x],scratch,
+		colour_and_attributes, // Various colours
+		alpha_and_extras // alpha blend
+		);
+}
+
+void renderLineASCII(uint32_t font_address,uint8_t *string,struct render_buffer *scratch,
+		     uint8_t colour_and_attributes, uint8_t alpha_and_extras)
+{
+  clearRenderBuffer(scratch);    
+  for(x=0;string[x];x++)
+    renderGlyph(font_address,string[x],scratch,
+		colour_and_attributes, // Various colours
+		alpha_and_extras // alpha blend
+		);
+}
 
 void clearRenderBuffer(struct render_buffer *buffer)
 {
@@ -35,8 +58,37 @@ void clearRenderBuffer(struct render_buffer *buffer)
 
   // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
   lcopy((long)&clear_pattern,buffer->screen_ram,4);
-  // We need to erase 100x60x2 bytes, minus the 4 we just did
-  lcopy(buffer->screen_ram,buffer->screen_ram+4,11996);
+  // Fill out to whole line
+  lcopy(buffer->screen_ram,buffer->screen_ram+4,196);
+  // Then put end of line marker to stop displaying tiles from next line
+  lcopy((long)&end_of_line_pattern,buffer->screen_ram+198,2);
+  // Then copy it down over the next 59 rows.
+  lcopy(buffer->screen_ram,buffer->screen_ram+200,11800);
+}
+
+void outputLineToRenderBuffer(struct render_buffer *in, struct render_buffer *out)
+{
+  if (!in) return;
+  if (!out) return;
+  if ((in->max_above+in->max_below)<1) return;
+
+  // Get total number of rows we need to actually output
+  rows_below=in->max_above+in->max_below;
+  if ((rows_below+out->rows_used)>59) rows_below=59-out->rows_used;
+
+  // And work out which is the first one
+  rows_above=in->baseline_row-in->max_above;
+
+  // Do the copies via DMA
+  lcopy(in->screen_ram+rows_above*200,out->screen_ram+200*out->rows_used,rows_below*200);
+  lcopy(in->colour_ram+rows_above*200,out->colour_ram+200*out->rows_used,rows_below*200);
+
+  POKE(0x0400U,rows_above);
+  POKE(0x0401U,rows_below);
+  POKE(0x0402U,out->rows_used);
+  
+  // Mark the rows used in the output buffer
+  out->rows_used+=rows_below;
 }
 
 void findFontStructures(uint32_t font_address)

@@ -47,7 +47,7 @@ int main(int argc,char **argv)
     uint32_t sdsize = 0;
     uint16_t hello_world[] = {'H','e','l','l','o',',',' ','W','o','r','l','d','!'|(0x3<<0xD),0};    
     
-    struct render_buffer buffer;
+    struct render_buffer buffer,scratch;
     
     m65_io_enable();
 
@@ -62,20 +62,27 @@ int main(int argc,char **argv)
     // Create a render buffer that points to the default active screen
     buffer.screen_ram=SLIDE0_SCREEN_RAM;
     buffer.colour_ram=SLIDE0_COLOUR_RAM;
-    buffer.columns_used=0;
+    buffer.rows_used=0;
     buffer.max_above=0;
     buffer.max_below=0;
     buffer.baseline_row=24;
     buffer.trimmed_pixels=0;
 
+    scratch.screen_ram=SCRATCH_SCREEN_RAM;
+    scratch.colour_ram=SCRATCH_COLOUR_RAM;
+    scratch.columns_used=0;
+    scratch.max_above=0;
+    scratch.max_below=0;
+    scratch.baseline_row=24;
+    scratch.trimmed_pixels=0;
+    
     clearRenderBuffer(&buffer);    
     
     // Then try rendering some glyphs
-    for(x=0;hello_world[x];x++)
-      renderGlyph(ASSET_RAM,hello_world[x],&buffer,
-		  x&3, // Various colours
-		  0x20 // alpha blend
-		  );
+    renderLineUTF16(ASSET_RAM,hello_world,&scratch,0x11,0x20);
+    outputLineToRenderBuffer(&scratch,&buffer);
+    renderLineASCII(ASSET_RAM,"This is another example of rendering text",&scratch,0x00,0x20);
+    outputLineToRenderBuffer(&scratch,&buffer);
     
     while(1)	POKE(0xD020U,(PEEK(0xD020U)&0xf)+1);	
 	
