@@ -8,14 +8,14 @@ OUTDIR=		out
 DISK=		$(OUTDIR)/DISK.D81
 PROGRAM=	$(OUTDIR)/megawat.prg
 
-# CC65DIR=	cc65
-# CBMCONVDIR=	cbmconvert
-# FONTRSTDIR=	c65gs-font-rasteriser
+CC65DIR=	cc65
+CBMCONVDIR=	cbmconvert
+FONTRSTDIR=	c65gs-font-rasteriser
 XEMUDIR=	../xemu
 COREDIR=	../mega65-core
-CC65DIR=	$(COREDIR)/cc65
-CBMCONVDIR=	$(COREDIR)/cbmconvert
-FONTRSTDIR=	c65gs-font-rasteriser
+# CC65DIR=	$(COREDIR)/cc65
+# CBMCONVDIR=	$(COREDIR)/cbmconvert
+# FONTRSTDIR=	../c65gs-font-rasteriser
 
 C65OPTS=	-t c64 -O -Or -Oi -Os --cpu 65c02 -I$(CC65DIR)/include
 L65OPTS=	-C c64-m65.cfg --asm-include-dir $(CC65DIR)/asminc --lib-path $(CC65DIR)/lib
