@@ -62,6 +62,7 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
       rows_above=lpeek(map_pos);
       rows_below=lpeek(map_pos+1);
       bytes_per_row=lpeek(map_pos+2);
+      trim_pixels=lpeek(map_pos+3);
 
       // If glyph is 0 pixels wide, nothing to do.
       if (!bytes_per_row) continue;
@@ -73,10 +74,6 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
       if (rows_above>=b->baseline_row) break;
       if (rows_below>=(30-b->baseline_row)) break;
 
-      // Remember how many pixels are trimmed from the last glyph,
-      // so that we can update the count of trimmed pixels
-      trim_pixels=lpeek(map_pos+3);
-      
       // Skip header
       map_pos+=4;
 
@@ -125,6 +122,14 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
       }
 
       b->columns_used+=(bytes_per_row>>1);
+      
+      // then apply trim to entire column
+      trim_pixels=trim_pixels<<5;
+      screen=b->screen_ram+b->columns_used+b->columns_used-1; 
+      for(y=0;y<30;y++) {
+	lpoke(screen,lpeek(screen)|trim_pixels);
+	screen+=200;
+      }	
       	      
       break;
     }
