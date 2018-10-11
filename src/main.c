@@ -79,9 +79,23 @@ int main(int argc,char **argv)
     clearRenderBuffer(&buffer);    
     
     // Then try rendering some glyphs
-    renderLineUTF16(ASSET_RAM,hello_world,&scratch,0x11,0x20);
+    clearRenderBuffer(&scratch);    
+    renderTextUTF16(ASSET_RAM,hello_world,&scratch,0x11,0x20);
     outputLineToRenderBuffer(&scratch,&buffer);
-    renderLineASCII(ASSET_RAM,"This is another example of rendering text",&scratch,0x00,0x20);
+
+    clearRenderBuffer(&scratch);    
+    scratch.columns_used=0;
+    renderTextASCII(ASSET_RAM,"This is another example of rendering text, but using 8-bit chars.",&scratch,0x00,0x20);
+    outputLineToRenderBuffer(&scratch,&buffer);
+
+    clearRenderBuffer(&scratch);    
+    scratch.columns_used=0;
+    renderTextASCII(ASSET_RAM,"And we can use various",&scratch,0x01,0x20);
+    renderTextASCII(ASSET_RAM," attributes ",&scratch,0x12,0x20);
+    renderTextASCII(ASSET_RAM,"on",&scratch,0x23,0x20);
+    renderTextASCII(ASSET_RAM," the",&scratch,0x44,0x20);
+    renderTextASCII(ASSET_RAM," same ",&scratch,0x85,0x20);
+    renderTextASCII(ASSET_RAM,"line",&scratch,0xf7,0x20);
     outputLineToRenderBuffer(&scratch,&buffer);
     
     while(1)	POKE(0xD020U,(PEEK(0xD020U)&0xf)+1);	

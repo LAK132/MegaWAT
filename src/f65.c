@@ -30,10 +30,9 @@ uint16_t the_code_point=0,card;
 uint8_t clear_pattern[4]={0x20,0x00,0x20,0x00};
 uint8_t end_of_line_pattern[2]={0xff,0xff};
 
-void renderLineUTF16(uint32_t font_address,uint16_t *string,struct render_buffer *scratch,
+void renderTextUTF16(uint32_t font_address,uint16_t *string,struct render_buffer *scratch,
 		     uint8_t colour_and_attributes, uint8_t alpha_and_extras)
 {
-  clearRenderBuffer(scratch);    
   for(x=0;string[x];x++)
     renderGlyph(font_address,string[x],scratch,
 		colour_and_attributes, // Various colours
@@ -41,10 +40,9 @@ void renderLineUTF16(uint32_t font_address,uint16_t *string,struct render_buffer
 		);
 }
 
-void renderLineASCII(uint32_t font_address,uint8_t *string,struct render_buffer *scratch,
+void renderTextASCII(uint32_t font_address,uint8_t *string,struct render_buffer *scratch,
 		     uint8_t colour_and_attributes, uint8_t alpha_and_extras)
 {
-  clearRenderBuffer(scratch);    
   for(x=0;string[x];x++)
     renderGlyph(font_address,string[x],scratch,
 		colour_and_attributes, // Various colours

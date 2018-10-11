@@ -19,7 +19,7 @@ void findFontStructures(uint32_t font_address);
 void patchFont(uint32_t font_address);
 void clearRenderBuffer(struct render_buffer *buffer);
 void outputLineToRenderBuffer(struct render_buffer *in, struct render_buffer *out);
-void renderLineUTF16(uint32_t font_address,uint16_t *string,struct render_buffer *scratch,
+void renderTextUTF16(uint32_t font_address,uint16_t *string,struct render_buffer *scratch,
 		     uint8_t colour_and_attributes, uint8_t alpha_and_extras);
-void renderLineASCII(uint32_t font_address,uint8_t *string,struct render_buffer *scratch,
+void renderTextASCII(uint32_t font_address,uint8_t *string,struct render_buffer *scratch,
 		     uint8_t colour_and_attributes, uint8_t alpha_and_extras);
