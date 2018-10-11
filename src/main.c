@@ -54,7 +54,6 @@ int main(int argc,char **argv)
     videoSetSlideMode();
     videoSetActiveSlideBuffer(0);
 
-    
     // Copy bundled font into the asset area of memory
     lcopy(font_file+2, ASSET_RAM, font_file_size-2);
     // Then patch the pointers in the font to be correct
@@ -69,10 +68,12 @@ int main(int argc,char **argv)
     buffer.baseline_row=24;
     buffer.trimmed_pixels=0;
 
+    clearRenderBuffer(&buffer);    
+    
     // Then try rendering some glyphs
     for(x=0;hello_world[x];x++)
       renderGlyph(ASSET_RAM,hello_world[x],&buffer,
-		  0x12, // Blinking red
+		  x&3, // Various colours
 		  0x20 // alpha blend
 		  );
     

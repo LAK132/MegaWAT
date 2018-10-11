@@ -27,6 +27,18 @@ uint32_t glyph_height, glyph_width, glyph_size;
 uint8_t trim_pixels;
 uint16_t the_code_point=0,card;
 
+uint8_t clear_pattern[4]={0x20,0x00,0x20,0x00};
+
+void clearRenderBuffer(struct render_buffer *buffer)
+{
+  if (!buffer) return;
+
+  // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
+  lcopy((long)&clear_pattern,buffer->screen_ram,4);
+  // We need to erase 100x60x2 bytes, minus the 4 we just did
+  lcopy(buffer->screen_ram,buffer->screen_ram+4,11996);
+}
+
 void findFontStructures(uint32_t font_address)
 {
   lcopy(font_address+0x80,(long)&glyph_count,2);
@@ -122,6 +134,8 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
       }
 
       b->columns_used+=(bytes_per_row>>1);
+      if (rows_above>b->max_above) b->max_above=rows_above;
+      if (rows_below>b->max_above) b->max_above=rows_below;
       
       // then apply trim to entire column
       trim_pixels=trim_pixels<<5;

@@ -16,3 +16,4 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
 		 uint8_t colour_and_attributes,uint8_t alpha_and_extras);
 void findFontStructures(uint32_t font_address);
 void patchFont(uint32_t font_address);
+void clearRenderBuffer(struct render_buffer *buffer);
