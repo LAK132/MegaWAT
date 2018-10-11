@@ -31,11 +31,11 @@ void findFontStructures(uint32_t font_address)
 {
   lcopy(font_address+0x80,(long)&glyph_count,2);
 
-  tile_map_start=0; lcopy(font_address+0x82,(long)&tile_map_start,3);
+  lcopy(font_address+0x82,(long)&tile_map_start,2);
   point_list_length = tile_map_start - 0x100;
   point_list = font_address + 0x100;
   tile_array_start=0; lcopy(font_address+0x84,(long)&tile_array_start,3);
-  tile_map_size = tile_map_start - tile_array_start;
+  tile_map_size = font_address + tile_map_start - tile_array_start;
   map = font_address + tile_map_start;
 
 }
@@ -52,30 +52,41 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
   // a binary search.
   for(i = 0; i < point_list_length; i += 5)
     {
-      POKE(0xD020U,(PEEK(0xD020U)&0xf)+1);
-
       lcopy(point_list+i,(long)&the_code_point,2);
       if (the_code_point!=code_point) continue;
 
+      POKE(0x0410U,(point_list+i)&0xff);
+      POKE(0x0411U,((point_list+i)>>8)&0xff);
+      POKE(0x0412U,((point_list+i)>>16)&0xff);
+      
       // We have the glyph, so dig out the information on it.
       map_pos=0; lcopy(point_list+i+2,(long)&map_pos,3);
 
-      rows_above=lpeek(map+map_pos);
-      rows_below=lpeek(map+map_pos+1);
-      bytes_per_row=lpeek(map+map_pos+2);
+      rows_above=lpeek(map_pos);
+      rows_below=lpeek(map_pos+1);
+      bytes_per_row=lpeek(map_pos+2);
 
+      POKE(0x0413U,0);
+      POKE(0x0414U,rows_above);
+      POKE(0x0415U,rows_below);
+
+      
       // If glyph is 0 pixels wide, nothing to do.
       if (!bytes_per_row) continue;
       // If glyph would overrun the buffer, don't draw it.
       if ((bytes_per_row+b->columns_used)>99) continue;
       bytes_per_row=bytes_per_row << 1;
 
-      // Skip header
-      map_pos+=3;
+      // Don't allow glyphs that go too far above base line
+      if (rows_above>=b->baseline_row) break;
+      if (rows_below>=(30-b->baseline_row)) break;
 
       // Remember how many pixels are trimmed from the last glyph,
       // so that we can update the count of trimmed pixels
-      trim_pixels=lpeek(map+map_pos+bytes_per_row-1)>>5;
+      trim_pixels=lpeek(map_pos+3);
+      
+      // Skip header
+      map_pos+=4;
 
       // Work out first address of screen and colour RAM
 
@@ -91,10 +102,21 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
       colour+=b->columns_used;
       colour+=b->columns_used;
 
+      POKE(0x0400U,bytes_per_row);
+      
+      POKE(0x0401U,map_pos&0xff);
+      POKE(0x0402U,(map_pos>>8)&0xff);
+      POKE(0x0403U,(map_pos>>16)&0xff);
+      POKE(0x0404U,trim_pixels);
+      
       // Now we need to copy each row of data to the screen RAM and colour RAM buffers
-      for(y=0;y<(rows_above+rows_below);y++) {
+      for(y=0;y!=(rows_above+rows_below);y++) {
+
 	// Copy screen data
-	lcopy((long)map+map_pos,(int)screen,bytes_per_row);
+	lcopy((long)map_pos,(long)screen,bytes_per_row);
+
+      while(1)	POKE(0xD020U,(PEEK(0xD020U)&0xf)+1);	
+	
 	// Fill colour RAM.
 	// Bit 5 of low byte is alpha blending flag.  This is true for font glyphs, and false
 	// for graphics tiles.
@@ -115,8 +137,9 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
 	map_pos+=bytes_per_row;
 	screen+=200;
 	colour+=200;
+
       }
-      
+      	      
       break;
     }
   if (i == point_list_length) {
