@@ -32,12 +32,12 @@
 extern int16_t font_file;
 extern int16_t font_file_size;
 
-extern uint8_t x,y;
+extern uint8_t x, y;
 
 #ifdef __CC65__
 void main(void)
 #else
-int main(int argc,char **argv)
+int main(int argc, char **argv)
 #endif
 {
     // char i = 0;
@@ -45,64 +45,63 @@ int main(int argc,char **argv)
     char key = 0;
     char mod = 0;
     uint32_t sdsize = 0;
-    uint16_t hello_world[] = {'H','e','l','l','o',',',' ','W','o','r','l','d','!'|(0x3<<0xD),0};    
-    
-    struct render_buffer buffer,scratch;
-    
+    uint16_t hello_world[] = {'H', 'e', 'l', 'l', 'o', ',', ' ', 'W', 'o', 'r', 'l', 'd', '!' | (0x3 << 0xD), 0};
+
+    render_buffer_t buffer, scratch;
+
     m65_io_enable();
 
     videoSetSlideMode();
     videoSetActiveSlideBuffer(0);
 
     // Copy bundled font into the asset area of memory
-    lcopy(font_file+2, ASSET_RAM, font_file_size-2);
+    lcopy(font_file + 2, ASSET_RAM, font_file_size - 2);
     // Then patch the pointers in the font to be correct
     patchFont(ASSET_RAM);
 
     // Create a render buffer that points to the default active screen
-    buffer.screen_ram=SLIDE0_SCREEN_RAM;
-    buffer.colour_ram=SLIDE0_COLOUR_RAM;
-    buffer.rows_used=0;
-    buffer.max_above=0;
-    buffer.max_below=0;
-    buffer.baseline_row=24;
-    buffer.trimmed_pixels=0;
+    buffer.screen_ram = SLIDE0_SCREEN_RAM;
+    buffer.colour_ram = SLIDE0_COLOUR_RAM;
+    buffer.rows_used = 0;
+    buffer.max_above = 0;
+    buffer.max_below = 0;
+    buffer.baseline_row = 24;
+    buffer.trimmed_pixels = 0;
 
-    scratch.screen_ram=SCRATCH_SCREEN_RAM;
-    scratch.colour_ram=SCRATCH_COLOUR_RAM;
-    scratch.columns_used=0;
-    scratch.max_above=0;
-    scratch.max_below=0;
-    scratch.baseline_row=24;
-    scratch.trimmed_pixels=0;
-    
-    clearRenderBuffer(&buffer);    
-    
+    scratch.screen_ram = SCRATCH_SCREEN_RAM;
+    scratch.colour_ram = SCRATCH_COLOUR_RAM;
+    scratch.columns_used = 0;
+    scratch.max_above = 0;
+    scratch.max_below = 0;
+    scratch.baseline_row = 24;
+    scratch.trimmed_pixels = 0;
+
+    clearRenderBuffer(&buffer);
+
     // Then try rendering some glyphs
-    clearRenderBuffer(&scratch);    
-    renderTextUTF16(ASSET_RAM,hello_world,&scratch,0x11,0x20);
-    outputLineToRenderBuffer(&scratch,&buffer);
+    clearRenderBuffer(&scratch);
+    renderTextUTF16(ASSET_RAM, hello_world, &scratch, 0x11, 0x20);
+    outputLineToRenderBuffer(&scratch, &buffer);
 
-    clearRenderBuffer(&scratch);    
-    scratch.columns_used=0;
-    renderTextASCII(ASSET_RAM,"This is another example of rendering text, but using 8-bit chars.",&scratch,0x00,0x20);
-    outputLineToRenderBuffer(&scratch,&buffer);
+    clearRenderBuffer(&scratch);
+    scratch.columns_used = 0;
+    renderTextASCII(ASSET_RAM, "This is another example of rendering text, but using 8-bit chars.", &scratch, 0x00, 0x20);
+    outputLineToRenderBuffer(&scratch, &buffer);
 
-    clearRenderBuffer(&scratch);    
-    scratch.columns_used=0;
-    renderTextASCII(ASSET_RAM,"And we can use various",&scratch,0x01,0x20);
-    renderTextASCII(ASSET_RAM," attributes ",&scratch,0x12,0x20);
-    renderTextASCII(ASSET_RAM,"on",&scratch,0x23,0x20);
-    renderTextASCII(ASSET_RAM," the",&scratch,0x44,0x20);
-    renderTextASCII(ASSET_RAM," same ",&scratch,0x85,0x20);
-    renderTextASCII(ASSET_RAM,"line",&scratch,0xf7,0x20);
-    outputLineToRenderBuffer(&scratch,&buffer);
-    
-    while(1)	POKE(0xD020U,(PEEK(0xD020U)&0xf)+1);	
-	
-	
-    
-    #if 0
+    clearRenderBuffer(&scratch);
+    scratch.columns_used = 0;
+    renderTextASCII(ASSET_RAM, "And we can use various", &scratch, 0x01, 0x20);
+    renderTextASCII(ASSET_RAM, " attributes ", &scratch, 0x12, 0x20);
+    renderTextASCII(ASSET_RAM, "on", &scratch, 0x23, 0x20);
+    renderTextASCII(ASSET_RAM, " the", &scratch, 0x44, 0x20);
+    renderTextASCII(ASSET_RAM, " same ", &scratch, 0x85, 0x20);
+    renderTextASCII(ASSET_RAM, "line", &scratch, 0xf7, 0x20);
+    outputLineToRenderBuffer(&scratch, &buffer);
+
+    while (1)
+        POKE(0xD020U, (PEEK(0xD020U) & 0xf) + 1);
+
+#if 0
     cursor_attrib = CATTRIB_ALT_PALETTE | ((CATTRIB_ALPHA_BLEND) << 8);
 
     writeChar('!');
@@ -223,16 +222,16 @@ int main(int argc,char **argv)
             // SET_CURSOR_ATTRIB(ATTRIB_REVERSE, cursor_position, colour_address);
         }
     }
-    #endif
+#endif
 
-    // This program doesn't clean up for return to C64 BASIC,
-    // so it finishes in an infinite loop.
+        // This program doesn't clean up for return to C64 BASIC,
+        // so it finishes in an infinite loop.
 #ifdef __CC65__
-    while(1) continue;
+    while (1)
+        continue;
 #else
     return 0;
 #endif
-
 }
 
 void scrollDown(void)
@@ -248,9 +247,9 @@ void scrollDown(void)
 
 void scrollUp(void)
 {
-    int32_t i = (screen_height-1) * screenWidth();
+    int32_t i = (screen_height - 1) * screenWidth();
     liftCursor();
-    for(; i > 0; i -= screenWidth())
+    for (; i > 0; i -= screenWidth())
     {
         lcopy(screen_address + i - screenWidth(), screen_address + i, screenWidth());
         lcopy(colour_address + i - screenWidth(), colour_address + i, screenWidth());
@@ -328,7 +327,7 @@ void writeChars(uint16_t c, int32_t len)
 
 void applyAttrib(int32_t len)
 {
-    while (len --> 0)
+    while (len-- > 0)
     {
         if (char_size > 1)
         {
@@ -343,6 +342,7 @@ void applyAttrib(int32_t len)
 uint32_t wstrlen(uint16_t *str)
 {
     uint32_t len = 0;
-    while(str[len] != 0) ++len;
-    return len+len; // return number of *bytes*
+    while (str[len] != 0)
+        ++len;
+    return len + len; // return number of *bytes*
 }
