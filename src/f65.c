@@ -11,6 +11,7 @@
 */
 uint8_t x, y;
 uint32_t i, j, k;
+uint32_t prev_font = 0; // read only
 uint16_t glyph_count = 0;
 uint16_t tile_map_start = 0;
 uint32_t point_list = 0;
@@ -96,6 +97,8 @@ void outputLineToRenderBuffer(render_buffer_t *in, render_buffer_t *out)
 
 void findFontStructures(uint32_t font_address)
 {
+    prev_font = font_address;
+
     lcopy(font_address + 0x80, (long)&glyph_count, 2);
 
     lcopy(font_address + 0x82, (long)&tile_map_start, 2);
@@ -109,7 +112,8 @@ void findFontStructures(uint32_t font_address)
 
 void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
 {
-    findFontStructures(font_address);
+    if (prev_font != font_address)
+        findFontStructures(font_address);
 
     if (!b)
         return;
@@ -224,7 +228,8 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
 
 void patchFont(uint32_t font_address)
 {
-    findFontStructures(font_address);
+    if (prev_font != font_address)
+        findFontStructures(font_address);
 
     // Patch tile_array_start
     tile_array_start += font_address;
