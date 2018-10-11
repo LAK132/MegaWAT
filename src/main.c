@@ -32,6 +32,8 @@
 extern int16_t font_file;
 extern int16_t font_file_size;
 
+extern uint8_t x,y;
+
 #ifdef __CC65__
 void main(void)
 #else
@@ -43,8 +45,8 @@ int main(int argc,char **argv)
     char key = 0;
     char mod = 0;
     uint32_t sdsize = 0;
-    uint16_t hello_world[] = {'H','E','L','L','O',',',' ','W','O','R','L','D','!'|(0x3<<0xD),0};
-
+    uint16_t hello_world[] = {'H','e','l','l','o',',',' ','W','o','r','l','d','!'|(0x3<<0xD),0};    
+    
     struct render_buffer buffer;
     
     m65_io_enable();
@@ -67,21 +69,14 @@ int main(int argc,char **argv)
     buffer.baseline_row=24;
     buffer.trimmed_pixels=0;
 
-    // Then try rendering a glyph
-    renderGlyph(ASSET_RAM,0x0041U,&buffer,
-		0x12, // Blinking red
-		0x20 // alpha blend
-		);
-    renderGlyph(ASSET_RAM,0x0062U,&buffer,
-		0x04, // green
-		0x20 // alpha blend
-		);
-    renderGlyph(ASSET_RAM,0x0063U,&buffer,
-		0x07, // Yellow
-		0x20 // alpha blend
-		);
-
-      while(1)	POKE(0xD020U,(PEEK(0xD020U)&0xf)+1);	
+    // Then try rendering some glyphs
+    for(x=0;hello_world[x];x++)
+      renderGlyph(ASSET_RAM,hello_world[x],&buffer,
+		  0x12, // Blinking red
+		  0x20 // alpha blend
+		  );
+    
+    while(1)	POKE(0xD020U,(PEEK(0xD020U)&0xf)+1);	
 	
 	
     
