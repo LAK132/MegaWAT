@@ -1,16 +1,6 @@
 #include "f65.h"
 #include "memory.h"
 
-struct render_buffer {
-  uint32_t screen_ram;
-  uint32_t colour_ram;
-  uint8_t columns_used;
-  uint8_t max_above;
-  uint8_t max_below;
-  uint8_t baseline_row;
-  uint16_t trimmed_pixels;  // total number of trimmed pixels
-};
-
 /*
   NOTE: Fonts are stored outside of the 64KB address space.
   Therefore you cannot use pointer types to point to them, because
@@ -40,12 +30,14 @@ uint16_t the_code_point=0,card;
 void findFontStructures(uint32_t font_address)
 {
   lcopy(font_address+0x80,(long)&glyph_count,2);
+
   tile_map_start=0; lcopy(font_address+0x82,(long)&tile_map_start,3);
   point_list_length = tile_map_start - 0x100;
   point_list = font_address + 0x100;
   tile_array_start=0; lcopy(font_address+0x84,(long)&tile_array_start,3);
   tile_map_size = tile_map_start - tile_array_start;
   map = font_address + tile_map_start;
+
 }
 
 void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer *b,uint8_t colour_and_attributes,uint8_t alpha_and_extras)
@@ -60,6 +52,8 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
   // a binary search.
   for(i = 0; i < point_list_length; i += 5)
     {
+      POKE(0xD020U,(PEEK(0xD020U)&0xf)+1);
+
       lcopy(point_list+i,(long)&the_code_point,2);
       if (the_code_point!=code_point) continue;
 
@@ -135,6 +129,10 @@ void patchFont(uint32_t font_address)
 {
   findFontStructures(font_address);
 
+  // Patch tile_array_start
+  tile_array_start+=font_address;
+  lcopy((long)&tile_array_start,font_address+0x84,3);
+  
   tile_array_start /= 0x40;
 
   for(i = 0; i < point_list_length; i += 5)
@@ -143,7 +141,7 @@ void patchFont(uint32_t font_address)
       tile = map+map_pos;
       lcopy((long)&tile,point_list+i+2,3);
       cards = tile + 4;
-
+      
       rows_above=lpeek(tile);
       rows_below=lpeek(tile+1);
       bytes_per_row=lpeek(tile+2);
@@ -155,5 +153,6 @@ void patchFont(uint32_t font_address)
 	  lcopy((long)&card,cards,2);
 	  cards += 2;
         }
+      
     }
 }

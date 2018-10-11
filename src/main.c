@@ -45,24 +45,32 @@ int main(int argc,char **argv)
     uint32_t sdsize = 0;
     uint16_t hello_world[] = {'H','E','L','L','O',',',' ','W','O','R','L','D','!'|(0x3<<0xD),0};
 
-#ifdef __CC65__
+    struct render_buffer buffer;
+    
     m65_io_enable();
 
     videoSetSlideMode();
     videoSetActiveSlideBuffer(0);
-    // POKE(0x400,screen_address>>0U);
-    // POKE(0x401,screen_address>>8U);
-    // POKE(0x402,screen_address>>16U);
 
-
-    // while(1) continue;
-
-    // setup_screen();
-#endif
-
+    // Copy bundled font into the asset area of memory
     lcopy(font_file+2, ASSET_RAM, font_file_size-2);
-
+    // Then patch the pointers in the font to be correct
     patchFont(ASSET_RAM);
+
+    // Create a render buffer that points to the default active screen
+    buffer.screen_ram=SLIDE0_SCREEN_RAM;
+    buffer.colour_ram=SLIDE0_COLOUR_RAM;
+    buffer.columns_used=0;
+    buffer.max_above=0;
+    buffer.max_below=0;
+    buffer.baseline_row=24;
+    buffer.trimmed_pixels=0;
+
+    // Then try rendering a glyph
+    renderGlyph(ASSET_RAM,0x0041U,&buffer,
+		0x20, // alpha blend
+		0x01 // White, no attributes
+		);
 
     #if 0
     cursor_attrib = CATTRIB_ALT_PALETTE | ((CATTRIB_ALPHA_BLEND) << 8);
