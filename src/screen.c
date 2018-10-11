@@ -5,7 +5,7 @@
 
 extern unsigned char *charset;
 
-long screen_line_address = SCREEN_ADDRESS;
+// long screen_line_address = SCREEN_ADDRESS;
 char screen_column = 0;
 
 unsigned char *footer_messages[FOOTER_MAX + 1] = {
@@ -81,29 +81,29 @@ unsigned char screen_decimal_digits[16][5] = {
     {3, 2, 7, 6, 8}
 };
 
-void write_line(char *s, char col)
-{
-    char len = 0;
-    while (s[len])
-        len++;
-    lcopy((long)&s[0], screen_line_address + col, len);
-    screen_line_address += 80;
-    if ((screen_line_address - SCREEN_ADDRESS) >= (24 * 80))
-    {
-        screen_line_address -= 80;
-        lcopy(SCREEN_ADDRESS + 80, SCREEN_ADDRESS, 23 * 80);
-        lcopy(COLOUR_RAM_ADDRESS + 80, COLOUR_RAM_ADDRESS, 23 * 80);
-        lfill(SCREEN_ADDRESS + 23 * 80, ' ', 80);
-        lfill(COLOUR_RAM_ADDRESS + 23 * 80, 1, 80);
-    }
-}
+// void write_line(char *s, char col)
+// {
+//     char len = 0;
+//     while (s[len])
+//         len++;
+//     lcopy((long)&s[0], screen_line_address + col, len);
+//     screen_line_address += 80;
+//     if ((screen_line_address - SCREEN_ADDRESS) >= (24 * 80))
+//     {
+//         screen_line_address -= 80;
+//         lcopy(SCREEN_ADDRESS + 80, SCREEN_ADDRESS, 23 * 80);
+//         lcopy(COLOUR_RAM_ADDRESS + 80, COLOUR_RAM_ADDRESS, 23 * 80);
+//         lfill(SCREEN_ADDRESS + 23 * 80, ' ', 80);
+//         lfill(COLOUR_RAM_ADDRESS + 23 * 80, 1, 80);
+//     }
+// }
 
-void recolour_last_line(char colour)
-{
-    long colour_address = COLOUR_RAM_ADDRESS + (screen_line_address - SCREEN_ADDRESS) - 80;
-    lfill(colour_address, colour, 80);
-    return;
-}
+// void recolour_last_line(char colour)
+// {
+//     long colour_address = COLOUR_RAM_ADDRESS + (screen_line_address - SCREEN_ADDRESS) - 80;
+//     lfill(colour_address, colour, 80);
+//     return;
+// }
 
 unsigned char ii, j, carry, temp;
 unsigned int value;
@@ -180,46 +180,46 @@ void display_footer(unsigned char index)
     set_screen_attributes(FOOTER_ADDRESS, 80, ATTRIB_REVERSE);
 }
 
-void setup_screen(void)
-{
-    unsigned char v;
+// void setup_screen(void)
+// {
+//     unsigned char v;
 
-    m65_io_enable();
+//     m65_io_enable();
 
-    // 80-column mode, fast CPU, extended attributes enable
-    *((unsigned char *)0xD031) = 0xe0;
+//     // 80-column mode, fast CPU, extended attributes enable
+//     *((unsigned char *)0xD031) = 0xe0;
 
-    // Put screen memory somewhere (2KB required)
-    // We are using $8000-$87FF for screen
-    // Using custom charset @ $A000
-    *(unsigned char *)0xD018U =
-            (((CHARSET_ADDRESS - 0x8000U) >> 11) << 1) + (((SCREEN_ADDRESS - 0x8000U) >> 10) << 4);
+//     // Put screen memory somewhere (2KB required)
+//     // We are using $8000-$87FF for screen
+//     // Using custom charset @ $A000
+//     *(unsigned char *)0xD018U =
+//             (((CHARSET_ADDRESS - 0x8000U) >> 11) << 1) + (((SCREEN_ADDRESS - 0x8000U) >> 10) << 4);
 
-    // VIC RAM Bank to $8000-$BFFF
-    v = *(unsigned char *)0xDD00U;
-    v &= 0xfc;
-    v |= 0x01;
-    *(unsigned char *)0xDD00U = v;
+//     // VIC RAM Bank to $8000-$BFFF
+//     v = *(unsigned char *)0xDD00U;
+//     v &= 0xfc;
+//     v |= 0x01;
+//     *(unsigned char *)0xDD00U = v;
 
-    // Screen colours
-    POKE(0xD020U, 0);
-    POKE(0xD021U, 6);
+//     // Screen colours
+//     POKE(0xD020U, 0);
+//     POKE(0xD021U, 6);
 
-    // Clear screen RAM
-    lfill(SCREEN_ADDRESS, 0x20, 2000);
+//     // Clear screen RAM
+//     lfill(SCREEN_ADDRESS, 0x20, 2000);
 
-    // Clear colour RAM: white text
-    lfill(0x1f800, 0x01, 2000);
+//     // Clear colour RAM: white text
+//     lfill(0x1f800, 0x01, 2000);
 
-    // Copy ASCII charset into place
-    lcopy((int)&charset[0], CHARSET_ADDRESS, 0x800);
+//     // Copy ASCII charset into place
+//     lcopy((int)&charset[0], CHARSET_ADDRESS, 0x800);
 
-    // Set screen line address and write point
-    screen_line_address = SCREEN_ADDRESS;
-    screen_column = 0;
+//     // Set screen line address and write point
+//     screen_line_address = SCREEN_ADDRESS;
+//     screen_column = 0;
 
-    display_footer(FOOTER_COPYRIGHT);
-}
+//     display_footer(FOOTER_COPYRIGHT);
+// }
 
 void screen_colour_line(unsigned char line, unsigned char colour)
 {
@@ -256,79 +256,79 @@ void set_screen_attributes(long p, unsigned char count, unsigned char attr)
     }
 }
 
-char read_line(char *buffer, unsigned char maxlen)
-{
-    char len = 0;
-    char c;
-    char reverse = 0x90;
+// char read_line(char *buffer, unsigned char maxlen)
+// {
+//     char len = 0;
+//     char c;
+//     char reverse = 0x90;
 
-    // Read input using hardware keyboard scanner
+//     // Read input using hardware keyboard scanner
 
-    while (len < maxlen)
-    {
-        c = *(unsigned char *)0xD610;
+//     while (len < maxlen)
+//     {
+//         c = *(unsigned char *)0xD610;
 
-#if 0
-        reverse ^=0x20;
-#endif
+// #if 0
+//         reverse ^=0x20;
+// #endif
 
-        // Show cursor
-        lpoke(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS,
-                    reverse |
-                            (lpeek(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS) & 0xf));
+//         // Show cursor
+//         lpoke(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS,
+//                     reverse |
+//                             (lpeek(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS) & 0xf));
 
-        if (c)
-        {
+//         if (c)
+//         {
 
-            if (c == 0x14)
-            {
-                // DELETE
-                if (len)
-                {
-                    // Remove blink attribute from this char
-                    lpoke(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS,
-                                lpeek(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS) & 0xf);
+//             if (c == 0x14)
+//             {
+//                 // DELETE
+//                 if (len)
+//                 {
+//                     // Remove blink attribute from this char
+//                     lpoke(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS,
+//                                 lpeek(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS) & 0xf);
 
-                    // Go back one and erase
-                    len--;
-                    lpoke(screen_line_address + len, ' ');
+//                     // Go back one and erase
+//                     len--;
+//                     lpoke(screen_line_address + len, ' ');
 
-                    // Re-enable blink for cursor
-                    lpoke(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS,
-                                lpeek(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS) | reverse);
-                    buffer[len] = 0;
-                }
-            }
-            else if (c == 0x0d)
-            {
-                buffer[len] = 0;
-                return len;
-            }
-            else
-            {
-                lpoke(screen_line_address + len, c);
-                // Remove blink attribute from this char
-                lpoke(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS,
-                            lpeek(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS) & 0xf);
-                buffer[len++] = c;
-            }
+//                     // Re-enable blink for cursor
+//                     lpoke(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS,
+//                                 lpeek(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS) | reverse);
+//                     buffer[len] = 0;
+//                 }
+//             }
+//             else if (c == 0x0d)
+//             {
+//                 buffer[len] = 0;
+//                 return len;
+//             }
+//             else
+//             {
+//                 lpoke(screen_line_address + len, c);
+//                 // Remove blink attribute from this char
+//                 lpoke(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS,
+//                             lpeek(len + screen_line_address + COLOUR_RAM_ADDRESS - SCREEN_ADDRESS) & 0xf);
+//                 buffer[len++] = c;
+//             }
 
-            //      *(unsigned char *)0x8000 = c;
+//             //      *(unsigned char *)0x8000 = c;
 
-            // Clear keys from hardware keyboard scanner
-            // XXX we clear all keys here, and work around a bug that causes crazy
-            // fast key repeating. This can be turned back into acknowledging the
-            // single key again later
-            while (*(unsigned char *)0xD610)
-            {
-                unsigned int i;
-                *(unsigned char *)0xd610 = 1;
+//             // Clear keys from hardware keyboard scanner
+//             // XXX we clear all keys here, and work around a bug that causes crazy
+//             // fast key repeating. This can be turned back into acknowledging the
+//             // single key again later
+//             while (*(unsigned char *)0xD610)
+//             {
+//                 unsigned int i;
+//                 *(unsigned char *)0xd610 = 1;
 
-                for (i = 0; i < 25000; i++)
-                    continue;
-            }
-        }
-    }
+//                 for (i = 0; i < 25000; i++)
+//                     continue;
+//             }
+//         }
+//     }
 
-    return len;
-}
+//     return len;
+// }

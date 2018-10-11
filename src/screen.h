@@ -34,7 +34,7 @@
 #define COLOUR_GREY3 15
 #define COLOUR_LIGHTGREY 15
 
-void setup_screen(void);
+// void setup_screen(void);
 
 void display_footer(unsigned char index);
 void footer_save(void);
@@ -48,14 +48,14 @@ void screen_hex(unsigned int addr,long value);
 void screen_hex_byte(unsigned int addr,long value);
 void screen_decimal(unsigned int addr,unsigned int value);
 void set_screen_attributes(long p,unsigned char count,unsigned char attr);
-void write_line(char *s,char col);
-void recolour_last_line(char colour);
-char read_line(char *buffer, unsigned char maxlen);
+// void write_line(char *s,char col);
+// void recolour_last_line(char colour);
+// char read_line(char *buffer, unsigned char maxlen);
 
 void format_decimal(const int addr,const int value, const char columns);
 void format_hex(const int addr,const long value, const char columns);
 
-extern long screen_line_address;
+// extern long screen_line_address;
 
 extern unsigned char ascii_map[256];
 #define ascii_to_screen(X) ascii_map[X]

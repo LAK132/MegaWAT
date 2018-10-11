@@ -8,14 +8,14 @@ OUTDIR=		out
 DISK=		$(OUTDIR)/DISK.D81
 PROGRAM=	$(OUTDIR)/megawat.prg
 
-CC65DIR=	cc65
-CBMCONVDIR=	cbmconvert
-FONTRSTDIR=	c65gs-font-rasteriser
+# CC65DIR=	cc65
+# CBMCONVDIR=	cbmconvert
+# FONTRSTDIR=	c65gs-font-rasteriser
 XEMUDIR=	../xemu
 COREDIR=	../mega65-core
-# CC65DIR=	$(COREDIR)/cc65
-# CBMCONVDIR=	$(COREDIR)/cbmconvert
-# FONTRSTDIR=	../c65gs-font-rasteriser
+CC65DIR=	$(COREDIR)/cc65
+CBMCONVDIR=	$(COREDIR)/cbmconvert
+FONTRSTDIR=	../c65gs-font-rasteriser
 
 C65OPTS=	-t c64 -O -Or -Oi -Os --cpu 65c02 -I$(CC65DIR)/include
 L65OPTS=	-C c64-m65.cfg --asm-include-dir $(CC65DIR)/asminc --lib-path $(CC65DIR)/lib
@@ -27,20 +27,28 @@ FILES=		$(PROGRAM) \
 SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/screen.c \
 			$(SRCDIR)/videomodes.c \
+			$(SRCDIR)/memory.c \
+			$(SRCDIR)/f65.c \
+			$(SRCDIR)/globals.c \
 			$(SRCDIR)/charset.s \
 			$(SRCDIR)/font.s
 
-ASSFILES=	$(BINDIR)/charset.s \
-			$(BINDIR)/font.s \
-			$(BINDIR)/main.s \
-			$(BINDIR)/memory.s \
+ASSFILES=	$(BINDIR)/main.s \
+			$(BINDIR)/screen.s \
 			$(BINDIR)/videomodes.s \
-			$(BINDIR)/screen.s
+			$(BINDIR)/memory.s \
+			$(BINDIR)/f65.s \
+			$(BINDIR)/globals.s \
+			$(BINDIR)/charset.s \
+			$(BINDIR)/font.s \
 
 HEADERS=	Makefile \
 			$(SRCDIR)/main.h \
 			$(SRCDIR)/screen.h \
+			$(SRCDIR)/videomodes.h \
+			$(SRCDIR)/globals.h \
 			$(SRCDIR)/memory.h \
+			$(SRCDIR)/f65.h \
 			$(SRCDIR)/ascii.h
 
 DATAFILES=	ascii8x8.bin \

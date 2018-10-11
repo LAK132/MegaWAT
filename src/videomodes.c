@@ -3,6 +3,7 @@
 
 */
 
+#include "videomodes.h"
 #include "main.h"
 
 void videoSetSlideMode(void)
@@ -20,29 +21,42 @@ void videoSetSlideMode(void)
 
   // Set H640 and V400 and enable extended attributes and 8-bit colour values
   POKE(0xd031,0xa8);
-  
+
   // Update hot registers
   POKE(0xd011U,0x1b);
 
   // The following must happen AFTER touching $D011
   // Touching $D011 etc will require them to be set again.
-  
-  // 100 characters per line
-  POKE(0xd058U,100);
+
+  // 100 characters per line x2 bytes = 200 bytes per row
+  POKE(0xd058U,200);
   POKE(0xd059U,0);
 
   // Adjust top and bottom borders
   POKE(0xd048,0x52);
   POKE(0xd04A,0x32);
   POKE(0xd04B,0x02);
+
   // Place character generator adjacent to freshly moved top border
   POKE(0xd04E,0x52);
+
+
+  lfill(SLIDE0_SCREEN_RAM, 0, SLIDE_SIZE);
+  lfill(SLIDE1_SCREEN_RAM, 0, SLIDE_SIZE);
+  lfill(SLIDE0_COLOUR_RAM, 1, SLIDE_SIZE);
+  lfill(SLIDE1_COLOUR_RAM, 1, SLIDE_SIZE);
+
+  screen_address = SLIDE0_SCREEN_RAM;
+  colour_address = SLIDE0_COLOUR_RAM;
+  screen_height = 60;
+  screen_width = 100;
+  char_size = sizeof(uint16_t);
 }
 
-void videoSetActiveSlideBuffer(unsigned bufferId)
+void videoSetActiveSlideBuffer(uint8_t bufferId)
 {
-  unsigned long screen_ram_base=SLIDE0_SCREEN_RAM;
-  unsigned long colour_ram_base=SLIDE0_COLOUR_RAM;
+  screen_address=SLIDE0_SCREEN_RAM;
+  colour_address=SLIDE0_COLOUR_RAM;
 
   // Reject invalid slide buffer numbers
   //   if (bufferId>2) return;    SEE BELOW
@@ -53,16 +67,16 @@ void videoSetActiveSlideBuffer(unsigned bufferId)
   if (bufferId>1) return;
 
   if (bufferId==1) {
-    screen_ram_base=SLIDE1_SCREEN_RAM;
-    colour_ram_base=SLIDE1_COLOUR_RAM;
+    screen_address=SLIDE1_SCREEN_RAM;
+    colour_address=SLIDE1_COLOUR_RAM;
   }
-  
-  lpoke(0xffd3060U,(screen_ram_base>>0U)&0xff);
-  lpoke(0xffd3061U,(screen_ram_base>>8U)&0xff);
-  lpoke(0xffd3062U,(screen_ram_base>>16U)&0xff);
 
-  lpoke(0xffd3064U,(colour_ram_base>>0U)&0xff);
-  lpoke(0xffd3065U,(colour_ram_base>>8U)&0xff);
+  lpoke(0xffd3060U,(screen_address>>0U)&0xff);
+  lpoke(0xffd3061U,(screen_address>>8U)&0xff);
+  lpoke(0xffd3062U,(screen_address>>16U)&0xff);
+
+  lpoke(0xffd3064U,(colour_address>>0U)&0xff);
+  lpoke(0xffd3065U,(colour_address>>8U)&0xff);
 
   return;
 }

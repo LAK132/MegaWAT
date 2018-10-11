@@ -2,10 +2,12 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "globals.h"
 #include "memory.h"
 #include "screen.h"
 #include "memorymap.h"
 #include "ascii.h"
+#include "videomodes.h"
 
 #define BORDER_COLOUR(X) POKE(0xD020U,X)
 #define SCREEN_COLOUR(X) POKE(0xD021U,X)
@@ -30,60 +32,34 @@
 #define KEY_DOWN        0x11
 #define KEY_UP_DOWN     0x11 // (KEY_UP & KEY_DOWN)
 
+// Screen ram attributes
+#define SATTRIB_TRIM(x)     (x<<5)
+
+// 8 bit colour ram attributes (high byte in 16bit mode)
+#define CATTRIB_BLINK       0x10
+#define CATTRIB_REVERSE     0x20
+#define CATTRIB_BOLD        0x40
+#define CATTRIB_UNDERLINE   0x80
+#define CATTRIB_ALT_PALETTE (CATTRIB_BOLD | CATTRIB_REVERSE)
+
+// 16 bit colour ram attributes
+#define CATTRIB_TRIM_TOP    0x8
+#define CATTRIB_GOTO        0x10
+#define CATTRIB_ALPHA_BLEND 0x20
+#define CATTRIB_HORI_FLIP   0x40
+#define CATTRIB_VERT_FLIP   0x80
+
 #define READ_KEY() (*(unsigned char *)0xD610)
 #define READ_MOD() (*(unsigned char *)0xD611)
 
-#define SCROLL_DOWN() {\
-    long _count = 23 * 80; \
-    lcopy(SCREEN_ADDRESS + 80, SCREEN_ADDRESS, _count); \
-    lcopy(COLOUR_RAM_ADDRESS + 80, COLOUR_RAM_ADDRESS, _count); \
-    lfill(SCREEN_ADDRESS + _count, ' ', 80); \
-    lfill(COLOUR_RAM_ADDRESS + _count, 1, 80); \
-    screen_line_address -= 80; \
-}
-
-#define SCROLL_UP() {\
-    long _index = 23 * 80; \
-    for (; _index > 0; _index -= 80) { \
-        lcopy(SCREEN_ADDRESS + _index - 80, SCREEN_ADDRESS + _index, 80); \
-        lcopy(COLOUR_RAM_ADDRESS + _index - 80, COLOUR_RAM_ADDRESS + _index, 80); \
-    } \
-    lfill(SCREEN_ADDRESS, ' ', 80); \
-    lfill(COLOUR_RAM_ADDRESS, 1, 80); \
-    screen_line_address += 80; \
-}
-
-#define SET_CURSOR_ATTRIB(x) \
-    lpoke(screen_line_address+SCREEN_COLOUR_OFFSET, (lpeek(screen_line_address+SCREEN_COLOUR_OFFSET) & 0xF) | x)
-#define SET_CURSOR(x) { \
-    char _cursor = lpeek(screen_line_address+SCREEN_COLOUR_OFFSET); \
-    lpoke(screen_line_address+SCREEN_COLOUR_OFFSET, _cursor & 0xF); \
-    screen_line_address = x + SCREEN_ADDRESS; \
-    if (screen_line_address < SCREEN_ADDRESS) SCROLL_UP() \
-    else if (screen_line_address - SCREEN_ADDRESS > 24*80) SCROLL_DOWN() \
-    lpoke(screen_line_address+SCREEN_COLOUR_OFFSET, \
-        (lpeek(screen_line_address+SCREEN_COLOUR_OFFSET) & 0xF) | _cursor & 0xF0); \
-}
-#define MOVE_CURSOR(x) { \
-    char _cursor = lpeek(screen_line_address+SCREEN_COLOUR_OFFSET); \
-    lpoke(screen_line_address+SCREEN_COLOUR_OFFSET, _cursor & 0xF); \
-    screen_line_address += x; \
-    if (screen_line_address < SCREEN_ADDRESS) SCROLL_UP() \
-    else if (screen_line_address - SCREEN_ADDRESS > 24*80) SCROLL_DOWN() \
-    lpoke(screen_line_address+SCREEN_COLOUR_OFFSET, \
-        (lpeek(screen_line_address+SCREEN_COLOUR_OFFSET) & 0xF) | _cursor & 0xF0); \
-}
-#define WRITE_STRING(s) { \
-    char _strlen = 0; \
-    while (s[_strlen]) ++_strlen; \
-    if((screen_line_address + _strlen) - SCREEN_ADDRESS >= 24*80) \
-        SCROLL_DOWN(); \
-    lcopy((long)&s[0], screen_line_address, _strlen); \
-    MOVE_CURSOR(_strlen); \
-}
-#define WRITE_CHAR(c) { \
-    if((screen_line_address + 1) - SCREEN_ADDRESS >= 24*80) \
-        SCROLL_DOWN(); \
-    POKE(screen_line_address, c); \
-    MOVE_CURSOR(1); \
-}
+void scrollDown(void);
+void scrollUp(void);
+// void liftCursor(void);
+void applyAttrib(int32_t len);
+#define liftCursor() applyAttrib(1);
+void setCursor(int32_t x);
+#define moveCursor(x) setCursor(((cursor_position/char_size) + x))
+void writeString(void *str, uint32_t len);
+void writeChar(uint16_t c);
+void writeChars(uint16_t c, int32_t len);
+uint32_t wstrlen(uint16_t *str);

@@ -28,7 +28,6 @@
 // UA 91 10010001
 
 #include "main.h"
-#include "videomodes.h"
 
 #ifdef __CC65__
 void main(void)
@@ -41,40 +40,54 @@ int main(int argc,char **argv)
     char key = 0;
     char mod = 0;
     uint32_t sdsize = 0;
+    uint16_t hello_world[] = {'H','E','L','L','O',',',' ','W','O','R','L','D','!'|(0x3<<0xD),0};
 
 #ifdef __CC65__
     m65_io_enable();
 
     videoSetSlideMode();
     videoSetActiveSlideBuffer(0);
-    
-    while(1) continue;
-    
-    setup_screen();
+    // POKE(0x400,screen_address>>0U);
+    // POKE(0x401,screen_address>>8U);
+    // POKE(0x402,screen_address>>16U);
+
+
+    // while(1) continue;
+
+    // setup_screen();
 #endif
 
     // set border and screen colours
-    BORDER_COLOUR(COLOUR_BLACK);
-    SCREEN_COLOUR(COLOUR_BLACK);
+    // BORDER_COLOUR(COLOUR_BLACK);
+    // SCREEN_COLOUR(COLOUR_BLACK);
+    // lfill(colour_address, 0, SLIDE_SIZE);
 
-    // Write a line of text
-    // write_line("MEGA WAT! 8bit PowerPoint",0);
-    // Change the colour of that line of text
-    // recolour_last_line(COLOUR_WHITE);
+    {
+        // unsigned char i;
+        // char _strlen = strlen(hello_world);
+        // for(i=0; hello_world[i]; i++) lpoke(cursor_position + screen_address + i + i, hello_world[i]);
+        // lfill(colour_address,0x00,12000);
+        // if(cursor_position + _strlen >= 24*80)
+        //     SCROLL_DOWN();
+        // lcopy((long)&hello_world[0], cursor_position + screen_address, wstrlen(hello_world));
+        // MOVE_CURSOR(_strlen);
+    }
 
-    // for (i = 0; i < 25; ++i)
-    //     write_string("Hello", i, i);
+    // WRITE_STRING(hello_world);
 
-    // // Read a line of input, and print it back out
-    // {
-    //     char line_of_input[80];
-    //     unsigned char len;
-    //     len=read_line2(line_of_input,80);
-    //     if (len) {
-    //         write_line(line_of_input,0);
-    //         recolour_last_line(COLOUR_YELLOW);
-    //     }
-    // }
+    // while (1) continue;
+
+    cursor_attrib = CATTRIB_ALT_PALETTE | ((CATTRIB_ALPHA_BLEND) << 8);
+
+    writeChar('!');
+
+    cursor_attrib = CATTRIB_ALT_PALETTE | ((CATTRIB_ALPHA_BLEND) << 8);
+
+    writeString(hello_world, sizeof(hello_world));
+
+    setCursor(screen_width);
+
+    writeString(hello_world, wstrlen(hello_world));
 
     while (key != KEY_ESC)
     {
@@ -86,66 +99,102 @@ int main(int argc,char **argv)
             {
                 unsigned int i;
                 READ_KEY() = 1;
-                for(i=0;i<25000;++i) mod |= READ_MOD();
+                for(i = 0; i < 25000; ++i) mod |= READ_MOD();
             }
             if (key == KEY_LEFT_RIGHT)
             {
                 if (mod & MOD_SHIFT) // LEFT
-                {
-                    MOVE_CURSOR(-1);
-                }
+                    moveCursor(-1);
                 else // RIGHT
-                {
-                    MOVE_CURSOR(1);
-                }
+                    moveCursor(1);
             }
             else if (key == KEY_UP_DOWN)
             {
                 if (mod & MOD_SHIFT) // UP
                 {
-                    MOVE_CURSOR(-80);
+                    if (mod & MOD_CTRL)
+                        scrollUp();
+                    else
+                        moveCursor(-screen_width);
                 }
                 else // DOWN
                 {
-                    MOVE_CURSOR(80);
+                    if (mod & MOD_CTRL)
+                        scrollDown();
+                    else
+                        moveCursor(screen_width);
                 }
             }
             else if (key == KEY_BACKSPACE)
             {
-                long diff = ((screen_line_address-SCREEN_ADDRESS)%80);
-                long len = -1;
-                diff = diff == 0 ? 80 : diff;
+                long diff = cursor_position % screenWidth();
+                long len = -char_size;
+                diff = diff == 0 ? screenWidth() : diff;
                 if (mod & MOD_CTRL)
                 {
-                    char c = PEEK(screen_line_address + len);
-                    while ((screen_line_address + len > SCREEN_ADDRESS) && (len > -diff) && (c == 0 || c == ' '))
-                        c = PEEK(screen_line_address + (--len));
-                    if (c != 0 && c != ' ' && len < -1) ++len;
+                    char c = lpeek(cursor_position + screen_address + len);
+                    while ((cursor_position + len > 0) && (len > -diff) && (c == 0 || c == ' '))
+                    {
+                        len -= char_size;
+                        c = lpeek(cursor_position + screen_address + (len));
+                    }
+                    if (c != 0 && c != ' ' && len < -char_size) len += char_size;
                 }
-                lcopy(screen_line_address, screen_line_address+len, SCREEN_ADDRESS+(23*80)-screen_line_address);
-                lcopy(screen_line_address+SCREEN_COLOUR_OFFSET,
-                    screen_line_address+SCREEN_COLOUR_OFFSET+len, SCREEN_ADDRESS+(23*80)-screen_line_address);
-                MOVE_CURSOR(len);
+                liftCursor();
+                lcopy(cursor_position + screen_address, cursor_position + screen_address + len,
+                    ((screen_height-1)*screenWidth())-cursor_position);
+                lcopy(cursor_position + colour_address, cursor_position + colour_address + len,
+                    ((screen_height-1)*screenWidth())-cursor_position);
+                // cursor_position += len;
+                moveCursor(len/char_size);
             }
             else if (key == KEY_RETURN)
             {
-                long i = SCREEN_ADDRESS+(23*80);
-                long diff = 80-((screen_line_address-SCREEN_ADDRESS)%80);
-                for (; i > screen_line_address + diff; i -= 80)
+                long i = (screen_height-1) * screenWidth();
+                long diff = screenWidth() - (cursor_position % screenWidth());
+                for (; i > cursor_position + diff; i -= screenWidth())
                 {
-                    lcopy(i - 80, i, 80);
-                    lcopy(i + SCREEN_COLOUR_OFFSET - 80, i + SCREEN_COLOUR_OFFSET, 80);
+                    lcopy(i + screen_address - screenWidth(), i + screen_address, screenWidth());
+                    lcopy(i + colour_address - screenWidth(), i + colour_address, screenWidth());
                 }
-                lcopy(screen_line_address, screen_line_address + diff, diff);
-                lcopy(screen_line_address + SCREEN_COLOUR_OFFSET,
-                    screen_line_address + diff + SCREEN_COLOUR_OFFSET, diff);
-                lfill(screen_line_address, ' ', diff);
-                lfill(screen_line_address+SCREEN_COLOUR_OFFSET, 1, diff);
-                MOVE_CURSOR(diff);
+                liftCursor();
+                lcopy(cursor_position + screen_address, cursor_position + screen_address + diff, diff);
+                lcopy(cursor_position + colour_address, cursor_position + colour_address + diff, diff);
+                // lfill(cursor_position + screen_address, ' ', diff);
+                // lfill(cursor_position + colour_address, 0x1, diff);
+                // cursor_position += diff;
+                // for(; diff > 0; diff -= char_size)
+                //     writeChar(' ');
+                writeChars(' ', diff/char_size);
+                // moveCursor(diff);
             }
-            else WRITE_CHAR(key);
+            else if (mod & MOD_CTRL) // control characters
+            {
+                lpoke(screen_address, key);
+                switch (key)
+                {
+                    case 'B':
+                    case 'b': {
+                        char_attrib ^= CATTRIB_BOLD;// << (8 * (char_size - 1));
+                    } break;
+                    case 'R':
+                    case 'r': {
+                        char_attrib ^= CATTRIB_REVERSE;// << (8 * (char_size - 1));
+                    } break;
+                    case 'U':
+                    case 'u': {
+                        char_attrib ^= CATTRIB_UNDERLINE;// << (8 * (char_size - 1));
+                    } break;
+                    // case 'C':
+                    // case 'c': {
+                    //     char_attrib
+                    // } break;
+                }
+                // applyAttrib(1);
+            }
+            else writeChar(key);
             // WRITE_STRING("Hello");
-            SET_CURSOR_ATTRIB(ATTRIB_REVERSE);
+            // SET_CURSOR_ATTRIB(ATTRIB_REVERSE, cursor_position, colour_address);
         }
     }
 
@@ -157,4 +206,116 @@ int main(int argc,char **argv)
     return 0;
 #endif
 
+}
+
+void scrollDown(void)
+{
+    int32_t count = (screen_height - 1) * screenWidth();
+    liftCursor();
+    lcopy(screen_address + screenWidth(), screen_address, count);
+    lcopy(colour_address + screenWidth(), colour_address, count);
+    lfill(screen_address + count, 0, screenWidth());
+    moveCursor(-screen_width);
+    applyAttrib(screen_width);
+}
+
+void scrollUp(void)
+{
+    int32_t i = (screen_height-1) * screenWidth();
+    liftCursor();
+    for(; i > 0; i -= screenWidth())
+    {
+        lcopy(screen_address + i - screenWidth(), screen_address + i, screenWidth());
+        lcopy(colour_address + i - screenWidth(), colour_address + i, screenWidth());
+    }
+    lfill(screen_address, 0, screenWidth());
+    applyAttrib(screen_width);
+    moveCursor(screen_width);
+}
+
+// void liftCursor(void)
+// {
+//     // lpoke(cursor_position + colour_address, char_attrib & 0xFF);
+//     // if (char_size > 1)
+//     //     lpoke(cursor_position + colour_address + 1, char_attrib >> 8);
+// }
+
+void setCursor(int32_t x)
+{
+    // reset attributes of previous cursor position
+    liftCursor();
+
+    // move cursor and scroll if off screen
+    cursor_position = x * char_size;
+    while (cursor_position < 0)
+        scrollUp();
+    while (cursor_position > screenSize())
+        scrollDown();
+
+    // save the attributes of the character at cursor
+    // char_attrib = lpeek(cursor_position + colour_address);
+    // if (char_size > 1)
+    //     char_attrib |= lpeek(cursor_position + colour_address + 1) << 8;
+
+    // apply the cursor attributes
+    lpoke(cursor_position + colour_address, cursor_attrib & 0xFF);
+    if (char_size > 1)
+        lpoke(cursor_position + colour_address + 1, cursor_attrib >> 8);
+}
+
+void writeString(void *str, uint32_t len)
+{
+    int32_t i;
+    while (cursor_position + len >= screenSize())
+        scrollDown();
+    lcopy((long)str, cursor_position + screen_address, len);
+    applyAttrib(len);
+    setCursor(cursor_position + len);
+}
+
+void writeChar(uint16_t c)
+{
+    while (cursor_position + char_size >= screenSize())
+        scrollDown();
+    lpoke(cursor_position + screen_address, c & 0xFF);
+    if (char_size > 1)
+        lpoke(cursor_position + screen_address + 1, c >> 8);
+    applyAttrib(1);
+    moveCursor(1);
+}
+
+void writeChars(uint16_t c, int32_t len)
+{
+    int32_t i;
+    while (cursor_position + (len * char_size) >= screenSize())
+        scrollDown();
+    for (i = 0; i < len; ++i)
+    {
+        lpoke(cursor_position + screen_address + (i * char_size), c & 0xFF);
+        if (char_size > 1)
+            lpoke(cursor_position + screen_address + 1 + (i * char_size), c >> 8);
+    }
+    applyAttrib(len);
+    moveCursor(len);
+}
+
+void applyAttrib(int32_t len)
+{
+    while (len --> 0)
+    {
+        if (char_size > 1)
+        {
+            lpoke(cursor_position + colour_address + 1 + (len * char_size), char_attrib & 0xFF);
+            lpoke(cursor_position + colour_address + (len * char_size), char_attrib >> 8);
+        }
+        else
+            lpoke(cursor_position + colour_address + (len * char_size), char_attrib & 0xFF);
+    }
+}
+
+uint32_t wstrlen(uint16_t *str)
+{
+    uint32_t len = 0;
+    while(str[len] != 0) ++len;
+    return len+len; // return number of *bytes*
 }
