@@ -2,4 +2,4 @@
 
 #include "globals.h"
 
-void patchFont(uint8_t *font);
+void patchFont(uint32_t font_address);
