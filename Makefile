@@ -15,7 +15,7 @@ XEMUDIR=	../xemu
 COREDIR=	../mega65-core
 CC65DIR=	$(COREDIR)/cc65
 CBMCONVDIR=	$(COREDIR)/cbmconvert
-FONTRSTDIR=	../c65gs-font-rasteriser
+FONTRSTDIR=	c65gs-font-rasteriser
 
 C65OPTS=	-t c64 -O -Or -Oi -Os --cpu 65c02 -I$(CC65DIR)/include
 L65OPTS=	-C c64-m65.cfg --asm-include-dir $(CC65DIR)/asminc --lib-path $(CC65DIR)/lib

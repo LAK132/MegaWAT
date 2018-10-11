@@ -48,6 +48,7 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
   // Default to allowing 24 rows above and 6 rows below for underhangs
   if (!b->baseline_row) b->baseline_row=24;
 
+  
   // XXX - Code points are in numerical order, so speed this up with
   // a binary search.
   for(i = 0; i < point_list_length; i += 5)
@@ -55,10 +56,6 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
       lcopy(point_list+i,(long)&the_code_point,2);
       if (the_code_point!=code_point) continue;
 
-      POKE(0x0410U,(point_list+i)&0xff);
-      POKE(0x0411U,((point_list+i)>>8)&0xff);
-      POKE(0x0412U,((point_list+i)>>16)&0xff);
-      
       // We have the glyph, so dig out the information on it.
       map_pos=0; lcopy(point_list+i+2,(long)&map_pos,3);
 
@@ -66,11 +63,6 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
       rows_below=lpeek(map_pos+1);
       bytes_per_row=lpeek(map_pos+2);
 
-      POKE(0x0413U,0);
-      POKE(0x0414U,rows_above);
-      POKE(0x0415U,rows_below);
-
-      
       // If glyph is 0 pixels wide, nothing to do.
       if (!bytes_per_row) continue;
       // If glyph would overrun the buffer, don't draw it.
@@ -102,20 +94,11 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
       colour+=b->columns_used;
       colour+=b->columns_used;
 
-      POKE(0x0400U,bytes_per_row);
-      
-      POKE(0x0401U,map_pos&0xff);
-      POKE(0x0402U,(map_pos>>8)&0xff);
-      POKE(0x0403U,(map_pos>>16)&0xff);
-      POKE(0x0404U,trim_pixels);
-      
       // Now we need to copy each row of data to the screen RAM and colour RAM buffers
       for(y=0;y!=(rows_above+rows_below);y++) {
 
 	// Copy screen data
 	lcopy((long)map_pos,(long)screen,bytes_per_row);
-
-      while(1)	POKE(0xD020U,(PEEK(0xD020U)&0xf)+1);	
 	
 	// Fill colour RAM.
 	// Bit 5 of low byte is alpha blending flag.  This is true for font glyphs, and false
@@ -135,10 +118,13 @@ void renderGlyph(uint32_t font_address,uint16_t code_point, struct render_buffer
 	if (bytes_per_row>4) lcopy((long)colour,(long)colour+2,bytes_per_row-2);
 
 	map_pos+=bytes_per_row;
+	
 	screen+=200;
 	colour+=200;
 
       }
+
+      b->columns_used+=(bytes_per_row>>1);
       	      
       break;
     }

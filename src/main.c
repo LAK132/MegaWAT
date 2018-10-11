@@ -52,6 +52,7 @@ int main(int argc,char **argv)
     videoSetSlideMode();
     videoSetActiveSlideBuffer(0);
 
+    
     // Copy bundled font into the asset area of memory
     lcopy(font_file+2, ASSET_RAM, font_file_size-2);
     // Then patch the pointers in the font to be correct
@@ -68,10 +69,22 @@ int main(int argc,char **argv)
 
     // Then try rendering a glyph
     renderGlyph(ASSET_RAM,0x0041U,&buffer,
-		0x20, // alpha blend
-		0x01 // White, no attributes
+		0x12, // Blinking red
+		0x20 // alpha blend
+		);
+    renderGlyph(ASSET_RAM,0x0062U,&buffer,
+		0x04, // green
+		0x20 // alpha blend
+		);
+    renderGlyph(ASSET_RAM,0x0063U,&buffer,
+		0x07, // Yellow
+		0x20 // alpha blend
 		);
 
+      while(1)	POKE(0xD020U,(PEEK(0xD020U)&0xf)+1);	
+	
+	
+    
     #if 0
     cursor_attrib = CATTRIB_ALT_PALETTE | ((CATTRIB_ALPHA_BLEND) << 8);
 
