@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "globals.h"
+#include "f65.h"
 #include "memory.h"
 #include "screen.h"
 #include "memorymap.h"

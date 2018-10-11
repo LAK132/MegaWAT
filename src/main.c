@@ -29,6 +29,9 @@
 
 #include "main.h"
 
+extern int16_t font_file;
+extern int16_t font_file_size;
+
 #ifdef __CC65__
 void main(void)
 #else
@@ -57,26 +60,11 @@ int main(int argc,char **argv)
     // setup_screen();
 #endif
 
-    // set border and screen colours
-    // BORDER_COLOUR(COLOUR_BLACK);
-    // SCREEN_COLOUR(COLOUR_BLACK);
-    // lfill(colour_address, 0, SLIDE_SIZE);
+    lcopy(font_file+2, ASSET_RAM, font_file_size-2);
 
-    {
-        // unsigned char i;
-        // char _strlen = strlen(hello_world);
-        // for(i=0; hello_world[i]; i++) lpoke(cursor_position + screen_address + i + i, hello_world[i]);
-        // lfill(colour_address,0x00,12000);
-        // if(cursor_position + _strlen >= 24*80)
-        //     SCROLL_DOWN();
-        // lcopy((long)&hello_world[0], cursor_position + screen_address, wstrlen(hello_world));
-        // MOVE_CURSOR(_strlen);
-    }
+    patchFont(ASSET_RAM);
 
-    // WRITE_STRING(hello_world);
-
-    // while (1) continue;
-
+    #if 0
     cursor_attrib = CATTRIB_ALT_PALETTE | ((CATTRIB_ALPHA_BLEND) << 8);
 
     writeChar('!');
@@ -197,6 +185,7 @@ int main(int argc,char **argv)
             // SET_CURSOR_ATTRIB(ATTRIB_REVERSE, cursor_position, colour_address);
         }
     }
+    #endif
 
     // This program doesn't clean up for return to C64 BASIC,
     // so it finishes in an infinite loop.
