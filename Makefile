@@ -4,6 +4,7 @@ COPT=		-Wall -g -std=gnu99
 SRCDIR=		src
 BINDIR=		bin
 OUTDIR=		out
+MKDIRS=		$(SRCDIR) $(BINDIR) $(OUTDIR)
 
 DISK=		$(OUTDIR)/DISK.D81
 PROGRAM=	$(OUTDIR)/megawat.prg
@@ -73,7 +74,7 @@ TTFTOF65=	$(FONTRSTDIR)/ttftof65
 
 # FUNCTIONS
 
-all:		dir-$(OUTDIR) dir-$(BINDIR) dir-$(SRCDIR) $(FILES)
+all:		$(FILES) | $(MKDIRS)
 
 clean:
 	if [ -d $(BINDIR) ]; then cd $(BINDIR) && rm -f *; fi
@@ -94,25 +95,28 @@ load:		$(MONLOAD) $(C65SYSROM) $(PROGRAM)
 
 # TEMPLATES
 
-dir-%: Makefile
-	if [ ! -d $* ]; then mkdir $*; fi
-
 .PRECIOUS: $(BINDIR)/%.s %.f65
 
 %.f65:	%.ttf Makefile $(TTFTOF65)
 	$(TTFTOF65) -A -P 32 -T $< -o $@
 
-
-$(BINDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) dir-$(BINDIR)
+$(BINDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) | $(BINDIR)
 	if [ -f $(SRCDIR)/$*.c ]; then $(CC65) $(C65OPTS) -o $@ $(SRCDIR)/$*.c; fi
 	if [ -f $(SRCDIR)/$*.s ]; then cp $(SRCDIR)/$*.s $@; fi
 
-$(OUTDIR)/%.prg:	$(ASSFILES) c64-m65.cfg dir-$(OUTDIR)
+$(OUTDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(OUTDIR)
 	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(ASSFILES)
 
-$(OUTDIR)/%.D81:	$(CBMCONVERT) $(FILES) dir-$(OUTDIR)
+$(OUTDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(OUTDIR)
 	if [ -f $@ ]; then rm -f $@; fi
 	$(CBMCONVERT) -v2 -D8o $@ $(FILES)
+
+define DIR_TEMPLATE =
+$(1):
+	mkdir $(1)
+endef
+
+$(foreach dir,$(MKDIRS),$(eval $(call DIR_TEMPLATE,$(dir))))
 
 # TOOLS
 
