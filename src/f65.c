@@ -112,11 +112,11 @@ void findFontStructures(uint32_t font_address)
 
 void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
 {
+    if (!b)
+        return;
     if (prev_font != font_address)
         findFontStructures(font_address);
 
-    if (!b)
-        return;
     // Default to allowing 24 rows above and 6 rows below for underhangs
     if (!b->baseline_row)
         b->baseline_row = 24;
@@ -160,7 +160,7 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
         // First, work out the address of the row
         screen = b->screen_ram;
         colour = b->colour_ram;
-        for (y = rows_above; y < b->baseline_row; y++)
+        for (y = rows_above; y < b->baseline_row; ++y)
         {
             screen += 200;
             colour += 200;
@@ -172,24 +172,30 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
         colour += b->columns_used;
 
         // Now we need to copy each row of data to the screen RAM and colour RAM buffers
-        for (y = 0; y != (rows_above + rows_below); y++)
+        for (y = 0; y < (rows_above + rows_below); ++y)
         {
 
             // Copy screen data
             lcopy((long)map_pos, (long)screen, bytes_per_row);
 
             // Fill colour RAM.
-            // Bit 5 of low byte is alpha blending flag.  This is true for font glyphs, and false
+            // Bit 5 of low byte is alpha blending flag. This is true for font glyphs, and false
             // for graphics tiles.
             // Then bottom 4 bits of high byte is foreground colour, and the upper 4 bits are VIC-III
             // attributes (blink, underline etc)
             // This requires 0x20 for the first byte, to enable alpha blending
             lpoke(colour, alpha_and_extras);
-            lpoke(colour + 1, colour_and_attributes);
+            if (y == rows_above-1)
+                lpoke(colour + 1, colour_and_attributes);
+            else
+                lpoke(colour + 1, colour_and_attributes & (~ATTRIB_UNDERLINE));
             if (bytes_per_row > 2)
             {
                 lpoke(colour + 2, alpha_and_extras);
-                lpoke(colour + 3, colour_and_attributes);
+                if (y == rows_above-1)
+                    lpoke(colour + 3, colour_and_attributes);
+                else
+                    lpoke(colour + 3, colour_and_attributes & (~ATTRIB_UNDERLINE));
             }
             // Then use DMA to copy the pair of bytes out
             // (DMA timing is a bit funny, hence we need to have the two copies setup above
@@ -212,7 +218,7 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
         // then apply trim to entire column
         trim_pixels = trim_pixels << 5;
         screen = b->screen_ram + b->columns_used + b->columns_used - 1;
-        for (y = 0; y < 30; y++)
+        for (y = 0; y < 30; ++y)
         {
             lpoke(screen, lpeek(screen) | trim_pixels);
             screen += 200;
