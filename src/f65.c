@@ -212,8 +212,8 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
         b->columns_used += (bytes_per_row >> 1);
         if (rows_above > b->max_above)
             b->max_above = rows_above;
-        if (rows_below > b->max_above)
-            b->max_above = rows_below;
+        if (rows_below > b->max_below)
+            b->max_below = rows_below;
 
         // then apply trim to entire column
         trim_pixels = trim_pixels << 5;
