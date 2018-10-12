@@ -34,21 +34,21 @@
 #define KEY_UP_DOWN     0x11 // (KEY_UP & KEY_DOWN)
 
 // Screen ram attributes
-#define SATTRIB_TRIM(x)     (x<<5)
+#define ATTRIB_TRIM_RIGHT(x)     (x<<5)
 
 // 8 bit colour ram attributes (high byte in 16bit mode)
-#define CATTRIB_BLINK       0x10
-#define CATTRIB_REVERSE     0x20
-#define CATTRIB_BOLD        0x40
-#define CATTRIB_UNDERLINE   0x80
-#define CATTRIB_ALT_PALETTE (CATTRIB_BOLD | CATTRIB_REVERSE)
+#define ATTRIB_BLINK       0x10
+#define ATTRIB_REVERSE     0x20
+#define ATTRIB_BOLD        0x40
+#define ATTRIB_UNDERLINE   0x80
+#define ATTRIB_ALT_PALETTE (ATTRIB_BOLD | ATTRIB_REVERSE)
 
 // 16 bit colour ram attributes
-#define CATTRIB_TRIM_TOP    0x8
-#define CATTRIB_GOTO        0x10
-#define CATTRIB_ALPHA_BLEND 0x20
-#define CATTRIB_HORI_FLIP   0x40
-#define CATTRIB_VERT_FLIP   0x80
+#define ATTRIB_TRIM_TOP    0x8
+#define ATTRIB_GOTO        0x10
+#define ATTRIB_ALPHA_BLEND 0x20
+#define ATTRIB_HORI_FLIP   0x40
+#define ATTRIB_VERT_FLIP   0x80
 
 #define READ_KEY() (*(unsigned char *)0xD610)
 #define READ_MOD() (*(unsigned char *)0xD611)

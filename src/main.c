@@ -45,7 +45,7 @@ int main(int argc, char **argv)
     char key = 0;
     char mod = 0;
     uint32_t sdsize = 0;
-    uint16_t hello_world[] = {'H', 'e', 'l', 'l', 'o', ',', ' ', 'W', 'o', 'r', 'l', 'd', '!' | (0x3 << 0xD), 0};
+    uint16_t hello_world[] = {'H', 'e', 'l', 'l', 'o', ',', ' ', 'W', 'o', 'r', 'l', 'd', '!', 0};
 
     render_buffer_t buffer, scratch;
 
@@ -80,33 +80,33 @@ int main(int argc, char **argv)
 
     // Then try rendering some glyphs
     clearRenderBuffer(&scratch);
-    renderTextUTF16(ASSET_RAM, hello_world, &scratch, 0x11, 0x20);
+    renderTextUTF16(ASSET_RAM, hello_world, &scratch, ATTRIB_BLINK | COLOUR_WHITE, ATTRIB_ALPHA_BLEND);
     outputLineToRenderBuffer(&scratch, &buffer);
 
     clearRenderBuffer(&scratch);
     scratch.columns_used = 0;
-    renderTextASCII(ASSET_RAM, "This is another example of rendering text, but using 8-bit chars.", &scratch, 0x00, 0x20);
+    renderTextASCII(ASSET_RAM, "This is another example of rendering text, but using 8-bit chars.", &scratch, COLOUR_BLACK, ATTRIB_ALPHA_BLEND);
     outputLineToRenderBuffer(&scratch, &buffer);
 
     clearRenderBuffer(&scratch);
     scratch.columns_used = 0;
-    renderTextASCII(ASSET_RAM, "And we can use various", &scratch, 0x01, 0x20);
-    renderTextASCII(ASSET_RAM, " attributes ", &scratch, 0x12, 0x20);
-    renderTextASCII(ASSET_RAM, "on", &scratch, 0x23, 0x20);
-    renderTextASCII(ASSET_RAM, " the", &scratch, 0x44, 0x20);
-    renderTextASCII(ASSET_RAM, " same ", &scratch, 0x85, 0x20);
-    renderTextASCII(ASSET_RAM, "line", &scratch, 0xf7, 0x20);
+    renderTextASCII(ASSET_RAM, "And we can use various", &scratch, COLOUR_WHITE, ATTRIB_ALPHA_BLEND);
+    renderTextASCII(ASSET_RAM, " attributes ", &scratch, ATTRIB_BLINK | COLOUR_RED, ATTRIB_ALPHA_BLEND);
+    renderTextASCII(ASSET_RAM, "on", &scratch, ATTRIB_REVERSE | COLOUR_CYAN, ATTRIB_ALPHA_BLEND);
+    renderTextASCII(ASSET_RAM, " the", &scratch, ATTRIB_BOLD | COLOUR_PURPLE, ATTRIB_ALPHA_BLEND);
+    renderTextASCII(ASSET_RAM, " same ", &scratch, ATTRIB_UNDERLINE | COLOUR_GREEN, ATTRIB_ALPHA_BLEND);
+    renderTextASCII(ASSET_RAM, "line", &scratch, ATTRIB_BLINK | ATTRIB_UNDERLINE | ATTRIB_ALT_PALETTE | COLOUR_YELLOW, ATTRIB_ALPHA_BLEND);
     outputLineToRenderBuffer(&scratch, &buffer);
 
     while (1)
         POKE(0xD020U, (PEEK(0xD020U) & 0xf) + 1);
 
 #if 0
-    cursor_attrib = CATTRIB_ALT_PALETTE | ((CATTRIB_ALPHA_BLEND) << 8);
+    cursor_attrib = ATTRIB_ALT_PALETTE | ((ATTRIB_ALPHA_BLEND) << 8);
 
     writeChar('!');
 
-    cursor_attrib = CATTRIB_ALT_PALETTE | ((CATTRIB_ALPHA_BLEND) << 8);
+    cursor_attrib = ATTRIB_ALT_PALETTE | ((ATTRIB_ALPHA_BLEND) << 8);
 
     writeString(hello_world, sizeof(hello_world));
 
@@ -200,15 +200,15 @@ int main(int argc, char **argv)
                 {
                     case 'B':
                     case 'b': {
-                        char_attrib ^= CATTRIB_BOLD;// << (8 * (char_size - 1));
+                        char_attrib ^= ATTRIB_BOLD;// << (8 * (char_size - 1));
                     } break;
                     case 'R':
                     case 'r': {
-                        char_attrib ^= CATTRIB_REVERSE;// << (8 * (char_size - 1));
+                        char_attrib ^= ATTRIB_REVERSE;// << (8 * (char_size - 1));
                     } break;
                     case 'U':
                     case 'u': {
-                        char_attrib ^= CATTRIB_UNDERLINE;// << (8 * (char_size - 1));
+                        char_attrib ^= ATTRIB_UNDERLINE;// << (8 * (char_size - 1));
                     } break;
                     // case 'C':
                     // case 'c': {
