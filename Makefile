@@ -52,7 +52,7 @@ HEADERS=	Makefile \
 			$(SRCDIR)/ascii.h
 
 DATAFILES=	ascii8x8.bin \
-			example.f65
+			UbuntuMono-R.f65
 
 CC65=		$(CC65DIR)/bin/cc65
 CL65=		$(CC65DIR)/bin/cl65
@@ -100,7 +100,7 @@ dir-%:
 .PRECIOUS: $(BINDIR)/%.s %.f65
 
 %.f65:	%.ttf $(TTFTOF65)
-	$(TTFTOF65) -A -P 16 -T $< -o $@
+	$(TTFTOF65) -A -P 32 -T $< -o $@
 
 
 $(BINDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) dir-$(BINDIR)
