@@ -94,12 +94,12 @@ load:		$(MONLOAD) $(C65SYSROM) $(PROGRAM)
 
 # TEMPLATES
 
-dir-%:
+dir-%: Makefile
 	if [ ! -d $* ]; then mkdir $*; fi
 
 .PRECIOUS: $(BINDIR)/%.s %.f65
 
-%.f65:	%.ttf $(TTFTOF65)
+%.f65:	%.ttf Makefile $(TTFTOF65)
 	$(TTFTOF65) -A -P 32 -T $< -o $@
 
 
