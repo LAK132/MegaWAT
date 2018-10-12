@@ -220,8 +220,8 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
         screen = b->screen_ram + b->columns_used + b->columns_used - 1;
         for (y = 0; y < 30; ++y)
         {
-            lpoke(screen, lpeek(screen) | trim_pixels);
-            screen += 200;
+	  lpoke(screen, (lpeek(screen) & 0x1f) | trim_pixels);
+	  screen += 200;
         }
 
         break;
