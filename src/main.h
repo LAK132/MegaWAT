@@ -21,3 +21,8 @@ void writeString(void *str, uint32_t len);
 void writeChar(uint16_t c);
 void writeChars(uint16_t c, int32_t len);
 uint32_t wstrlen(uint16_t *str);
+
+
+void editor_show_cursor(void);
+void editor_poll_keyboard(void);
+

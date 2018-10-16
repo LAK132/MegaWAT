@@ -27,6 +27,7 @@ FILES=		$(PROGRAM) \
 
 SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/screen.c \
+			$(SRCDIR)/editor.c \
 			$(SRCDIR)/videomodes.c \
 			$(SRCDIR)/memory.c \
 			$(SRCDIR)/f65.c \
@@ -36,6 +37,7 @@ SOURCES=	$(SRCDIR)/main.c \
 
 ASSFILES=	$(BINDIR)/main.s \
 			$(BINDIR)/screen.s \
+			$(BINDIR)/editor.s \
 			$(BINDIR)/videomodes.s \
 			$(BINDIR)/memory.s \
 			$(BINDIR)/f65.s \

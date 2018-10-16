@@ -33,22 +33,7 @@ extern int16_t font_file;
 extern int16_t font_file_size;
 
 extern uint8_t x, y;
-
-render_buffer_t buffer, scratch;
-
-unsigned char text_colour=1;
-unsigned char cursor_col=0;
-// Physical rows on the slide (as compared to the lines of text that
-// produce them).
-unsigned char current_row=0;
-unsigned char next_row=0;
-
-char maxlen = 80;
-char key = 0;
-char mod = 0;
-
-int xx;
-unsigned char h;
+extern render_buffer_t buffer, scratch;
 
 void main(void)
 {
@@ -96,97 +81,10 @@ void main(void)
   clearRenderBuffer(&buffer);
   clearRenderBuffer(&scratch);
 
-  // Put cursor in initial position
-  xx=6; y=30;
-  POKE(0xD000,xx & 0xFF);
-  POKE(0xD001,y);
-  if (xx&0x100) POKE(0xD010U,0x01); else POKE(0xD010U,0);
-  if (xx&0x200) POKE(0xD05FU,0x01); else POKE(0xD05FU,0);
+  editor_show_cursor();
   
-  while (key != KEY_ESC)
-    {
-      mod = READ_MOD();
-      key = READ_KEY();
-      if (key)
-	{
-	  while (READ_KEY())
-	    {
-	      unsigned int i;
-	      READ_KEY() = 1;
-	      mod |= READ_MOD();
-	    }
-	  
-	  if (key>=' '&&key<=0x7e) {
-	    // Natural key -- insert here
-	    renderGlyph(ASSET_RAM,key,&scratch,text_colour,ATTRIB_ALPHA_BLEND,cursor_col);
-	    buffer.rows_used=current_row;
-	    outputLineToRenderBuffer(&scratch,&buffer);
-	    next_row=buffer.rows_used;
-	    cursor_col++;
-	  } else {
-	    switch(key) {
-	    case 0x05: text_colour=0; break;
-	    case 0x1c: text_colour=1; break;
-	    case 0x9f: text_colour=2; break;
-	    case 0x9c: text_colour=3; break;
-	    case 0x1e: text_colour=4; break;
-	    case 0x1f: text_colour=5; break;
-	    case 0x9e: text_colour=6; break;
-	    case 0x81: text_colour=7; break;
-	    case 0x14:
-	      if (cursor_col) {
-		deleteGlyph(&scratch,cursor_col-1);
-		buffer.rows_used=current_row;
-		outputLineToRenderBuffer(&scratch,&buffer);
-		if (buffer.rows_used<next_row) {
-		  // Deleting a character reduced the row height,
-		  // So shuffle up the rows below, and fill in the
-		  // bottom of the screen.
-		}
-		next_row=buffer.rows_used;
-		cursor_col--;
-	      }
-	      break;
-	    case 0x9d:
-	      if (cursor_col) cursor_col--;
-	      break;
-	    case 0x1d:
-	      if (cursor_col<scratch.glyph_count) cursor_col++;
-	      break;
-	    default:
-	      break;
-	    }
-	  }
-
-    // Work out where cursor should be
-    xx=6; // Fudge factor
-    for(x=0;x<cursor_col;x++)
-      xx+=scratch.glyphs[x].columns*8-scratch.glyphs[x].trim_pixels;
-    // Work out cursor height
-    h=8*(scratch.max_above+scratch.max_below);
-    if (h<8) h=8;
-    y=30;
-    // Set extended Y height to match required height.
-    POKE(0xD056,h);
-    // Make cursor be text colour (will alternate to another colour as well)
-    POKE(0xD027U,text_colour);
-    // Move sprite to there
-    POKE(0xD000,xx & 0xFF);
-    POKE(0xD001,y);
-    if (xx&0x100) POKE(0xD010U,0x01); else POKE(0xD010U,0);
-    if (xx&0x200) POKE(0xD05FU,0x01); else POKE(0xD05FU,0);
-    
-    
-	  {
-	    int i;
-	    for(i=0;i<25000;i++) continue;
-	  }
-	} else {
-	// Toggle cursor on/off quickly
-	POKE(0xD015U,(PEEK(0xD015U) ^ 0x01) & 0x0f);
-      }
-    }
-    
+  while(1) editor_poll_keyboard();
+  
     // renderTextASCII(ASSET_RAM, "line", &scratch, ATTRIB_BLINK | ATTRIB_UNDERLINE | ATTRIB_ALT_PALETTE | COLOUR_YELLOW, ATTRIB_ALPHA_BLEND);
     // outputLineToRenderBuffer(&scratch, &buffer);
     
