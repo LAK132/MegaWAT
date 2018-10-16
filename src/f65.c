@@ -118,10 +118,6 @@ void outputLineToRenderBuffer(render_buffer_t *in, render_buffer_t *out)
     lcopy(in->screen_ram + rows_above * 200, out->screen_ram + 200 * out->rows_used, rows_below * 200);
     lcopy(in->colour_ram + rows_above * 200, out->colour_ram + 200 * out->rows_used, rows_below * 200);
 
-    POKE(0x0400U, rows_above);
-    POKE(0x0401U, rows_below);
-    POKE(0x0402U, out->rows_used);
-
     // Mark the rows used in the output buffer
     out->rows_used += rows_below;
 }
@@ -143,6 +139,102 @@ void findFontStructures(uint32_t font_address)
 }
 
 glyph_details_t *gd=0;
+
+void deleteGlyph(render_buffer_t *b,uint8_t glyph_num)
+{
+  // Make sure buffer and glyph number are ok
+  if (!b) return;
+  if (glyph_num>=b->glyph_count) return;
+
+  rows_above=b->max_above;
+  rows_below=b->max_below;
+
+  // Get start address for the first row we have to copy.
+  screen = b->screen_ram;
+  colour = b->colour_ram;
+  for (y = rows_above; y < b->baseline_row; ++y)
+    {
+      screen += 200;
+      colour += 200;
+    }
+  // then advance to the first unused column
+  screen += b->glyphs[glyph_num].first_column*2;
+  colour += b->glyphs[glyph_num].first_column*2;
+  x = b->glyphs[glyph_num].columns*2;
+  bytes_per_row = 200 - b->glyphs[glyph_num].first_column*2;
+
+  // Copy remaining glyphs on the line
+  if ((glyph_num+1)!=b->glyph_count) {
+    for (y = 0; y < (rows_above + rows_below); ++y)
+      {
+	
+	// Copy screen data
+	lcopy(screen+x, screen, bytes_per_row);
+	// Copy colour data
+	lcopy(colour+x, colour, bytes_per_row);
+	
+	screen+=200;
+	colour+=200;
+	
+      }
+  }
+
+  // Note if we need to recalculate rows above and rows below
+  if ((b->glyphs[glyph_num].rows_above==rows_above)
+      ||(b->glyphs[glyph_num].rows_below==rows_below))
+    x=1; else x=0;
+  
+  // Subtract the used columns
+  b->columns_used-=b->glyphs[glyph_num].columns;
+
+  // Now erase the tail of each line
+  screen = b->screen_ram + b->columns_used*2;
+  colour = b->colour_ram + b->columns_used*2;
+  bytes_per_row= b->glyphs[glyph_num].columns*2;  
+
+  for (y = rows_above; y < b->baseline_row; ++y)
+    {
+      screen += 200;
+      colour += 200;
+    }
+  
+  for (y = 0; y < (rows_above + rows_below); ++y)
+    {
+      // Clear screen data
+      lfill(screen, 0x00, bytes_per_row);
+      // Clear colour data
+      lfill(colour,0x00, bytes_per_row);
+      
+      screen+=200;
+      colour+=200;
+    }
+
+  POKE(0xd020U,3);
+  
+  // Now copy down the glyph details structure.
+  // We also do a DMA here for speed
+  lcopy((uint32_t)&b->glyphs[glyph_num+1],(uint32_t)&b->glyphs[glyph_num],99-glyph_num);
+
+  // Reduce number of remaining glyphs
+  b->glyph_count--;
+
+  // Update rows_above and rows_below if require
+  if (x) {
+    rows_above=0;
+    rows_below=0;
+    for(y=0;y<b->glyph_count;y++)
+      {
+	if (b->glyphs[y].rows_above>rows_above) rows_above=b->glyphs[y].rows_above;
+	if (b->glyphs[y].rows_below>rows_below) rows_below=b->glyphs[y].rows_below;
+      }
+    b->max_above=rows_above;
+    b->max_below=rows_below;
+  }
+
+}
+
+void replaceGlyph(render_buffer_t *b,uint8_t glyph_num, uint32_t font_address, uint16_t code_point);
+void insertGlyph(render_buffer_t *b,uint8_t glyph_num, uint32_t font_address, uint16_t code_point);
 
 void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
 {
@@ -181,6 +273,7 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
 	gd->columns=bytes_per_row;
 	gd->trim_pixels=trim_pixels;
 	gd->first_column=b->columns_used;
+	b->glyph_count++;
 	
         // If glyph is 0 pixels wide, nothing to do.
         if (!bytes_per_row)
