@@ -82,19 +82,9 @@ int main(int argc, char **argv)
     // Create a render buffer that points to the default active screen
     buffer.screen_ram = SLIDE0_SCREEN_RAM;
     buffer.colour_ram = SLIDE0_COLOUR_RAM;
-    buffer.rows_used = 0;
-    buffer.max_above = 0;
-    buffer.max_below = 0;
-    buffer.baseline_row = 24;
-    buffer.trimmed_pixels = 0;
 
     scratch.screen_ram = SCRATCH_SCREEN_RAM;
     scratch.colour_ram = SCRATCH_COLOUR_RAM;
-    scratch.columns_used = 0;
-    scratch.max_above = 0;
-    scratch.max_below = 0;
-    scratch.baseline_row = 24;
-    scratch.trimmed_pixels = 0;
 
     clearRenderBuffer(&buffer);
 

@@ -88,6 +88,13 @@ void clearRenderBuffer(render_buffer_t *buffer)
     lcopy((long)&end_of_line_pattern, buffer->screen_ram + 198, 2);
     // Then copy it down over the next 59 rows.
     lcopy(buffer->screen_ram, buffer->screen_ram + 200, 11800);
+
+    buffer->columns_used = 0;
+    buffer->max_above = 0;
+    buffer->max_below = 0;
+    buffer->baseline_row = 24;
+    buffer->trimmed_pixels = 0;
+    buffer->glyph_count=0;
 }
 
 void outputLineToRenderBuffer(render_buffer_t *in, render_buffer_t *out)
