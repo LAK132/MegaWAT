@@ -164,7 +164,7 @@ void editor_insert_codepoint(unsigned int code_point)
   h=scratch.glyph_count;
   renderGlyph(ASSET_RAM,code_point,&scratch,text_colour,ATTRIB_ALPHA_BLEND,cursor_col);
 
-  // XXX Check if this code point grew the height of the line.
+  // Check if this code point grew the height of the line.
   // If so, push everything else down before pasting
   if ((text_line+1)<EDITOR_MAX_LINES) {
     x=(scratch.max_above+scratch.max_below)
