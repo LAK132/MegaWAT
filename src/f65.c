@@ -161,7 +161,7 @@ void deleteGlyph(render_buffer_t *b,uint8_t glyph_num)
   screen += b->glyphs[glyph_num].first_column*2;
   colour += b->glyphs[glyph_num].first_column*2;
   x = b->glyphs[glyph_num].columns*2;
-  bytes_per_row = 200 - b->glyphs[glyph_num].first_column*2;
+  bytes_per_row = (b->columns_used - b->glyphs[glyph_num].first_column)*2;
 
   // Copy remaining glyphs on the line
   if ((glyph_num+1)!=b->glyph_count) {
@@ -201,7 +201,7 @@ void deleteGlyph(render_buffer_t *b,uint8_t glyph_num)
   for (y = 0; y < (rows_above + rows_below); ++y)
     {
       // Clear screen data
-      lfill(screen, 0x00, bytes_per_row);
+      lfill(screen, 0x20, bytes_per_row);
       // Clear colour data
       lfill(colour,0x00, bytes_per_row);
       
@@ -209,8 +209,6 @@ void deleteGlyph(render_buffer_t *b,uint8_t glyph_num)
       colour+=200;
     }
 
-  POKE(0xd020U,3);
-  
   // Now copy down the glyph details structure.
   // We also do a DMA here for speed
   lcopy((uint32_t)&b->glyphs[glyph_num+1],(uint32_t)&b->glyphs[glyph_num],99-glyph_num);

@@ -109,9 +109,6 @@ int main(int argc, char **argv)
     renderTextASCII(ASSET_RAM, " same ", &scratch, ATTRIB_UNDERLINE | COLOUR_GREEN, ATTRIB_ALPHA_BLEND);
     renderTextASCII(ASSET_RAM, "line", &scratch, ATTRIB_BLINK | ATTRIB_UNDERLINE | ATTRIB_ALT_PALETTE | COLOUR_YELLOW, ATTRIB_ALPHA_BLEND);
     outputLineToRenderBuffer(&scratch, &buffer);
-
-    deleteGlyph(&scratch,0);
-    outputLineToRenderBuffer(&scratch, &buffer);
     
     while (1)
         POKE(0xD020U, (PEEK(0xD020U) & 0xf) + 1);
