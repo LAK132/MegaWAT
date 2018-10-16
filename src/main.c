@@ -36,85 +36,107 @@ extern uint8_t x, y;
 
 render_buffer_t buffer, scratch;
 
-#ifdef __CC65__
+unsigned char text_colour=1;
+unsigned char cursor_col=0;
+unsigned char string[100];
+
 void main(void)
-#else
-int main(int argc, char **argv)
-#endif
 {
-    // char i = 0;
-    char maxlen = 80;
-    char key = 0;
-    char mod = 0;
-    uint32_t sdsize = 0;
-    uint16_t hello_world[] = {'H', 'e', 'l', 'l', 'o', ',', ' ', 'W', 'o', 'r', 'l', 'd', '!', 0};
-
-    m65_io_enable();
-
-    videoSetSlideMode();
-    videoSetActiveSlideBuffer(0);
-
+  // char i = 0;
+  char maxlen = 80;
+  char key = 0;
+  char mod = 0;
+  uint32_t sdsize = 0;
+  
+  m65_io_enable();
+  
+  videoSetSlideMode();
+  videoSetActiveSlideBuffer(0);
+  
 #if 0
-    for(x=0;x<255;x++)
-      for(y=0;y<8;y++)
-	POKE(0xE000U+(x&7)+((x/8)*64U)+(y*8),x);
+  // Draw alpha gradient for testing
+  for(x=0;x<255;x++)
+    for(y=0;y<8;y++)
+      POKE(0xE000U+(x&7)+((x/8)*64U)+(y*8),x);
 
-    for(x=0;x<100;x++) {
-      lpoke(SLIDE0_SCREEN_RAM+220U+x*2,(0xe000U/0x40+x)&0xff);
-      lpoke(SLIDE0_SCREEN_RAM+220U+x*2+1,(0xe000U/0x40+x)>>8);
-      lpoke(SLIDE0_COLOUR_RAM+220U+x*2,0x20); // 0x20 for alpha
-      lpoke(SLIDE0_COLOUR_RAM+220U+x*2+1,0x2);
-    }
+  for(x=0;x<100;x++) {
+    lpoke(SLIDE0_SCREEN_RAM+220U+x*2,(0xe000U/0x40+x)&0xff);
+    lpoke(SLIDE0_SCREEN_RAM+220U+x*2+1,(0xe000U/0x40+x)>>8);
+    lpoke(SLIDE0_COLOUR_RAM+220U+x*2,0x20); // 0x20 for alpha
+    lpoke(SLIDE0_COLOUR_RAM+220U+x*2+1,0x2);
+  }
 
-    x=90;
-    lpoke(SLIDE0_SCREEN_RAM+200U+x*2,0xff);
-    lpoke(SLIDE0_SCREEN_RAM+200U+x*2+1,0xff);
-    lpoke(SLIDE0_SCREEN_RAM+0U+x*2,0xff);
-    lpoke(SLIDE0_SCREEN_RAM+0U+x*2+1,0xff);
+  x=90;
+  lpoke(SLIDE0_SCREEN_RAM+200U+x*2,0xff);
+  lpoke(SLIDE0_SCREEN_RAM+200U+x*2+1,0xff);
+  lpoke(SLIDE0_SCREEN_RAM+0U+x*2,0xff);
+  lpoke(SLIDE0_SCREEN_RAM+0U+x*2+1,0xff);
 
     
-    while(1) POKE(0xd020U,PEEK(0xd012U));
+  while(1) POKE(0xd020U,PEEK(0xd012U));
 #endif
     
-    // Copy bundled font into the asset area of memory
-    lcopy(font_file + 2, ASSET_RAM, font_file_size - 2);
-    // Then patch the pointers in the font to be correct
-    patchFont(ASSET_RAM);
+  // Copy bundled font into the asset area of memory
+  lcopy(font_file + 2, ASSET_RAM, font_file_size - 2);
+  // Then patch the pointers in the font to be correct
+  patchFont(ASSET_RAM);
 
-    // Create a render buffer that points to the default active screen
-    buffer.screen_ram = SLIDE0_SCREEN_RAM;
-    buffer.colour_ram = SLIDE0_COLOUR_RAM;
+  // Create a render buffer that points to the default active screen
+  buffer.screen_ram = SLIDE0_SCREEN_RAM;
+  buffer.colour_ram = SLIDE0_COLOUR_RAM;
 
-    scratch.screen_ram = SCRATCH_SCREEN_RAM;
-    scratch.colour_ram = SCRATCH_COLOUR_RAM;
+  scratch.screen_ram = SCRATCH_SCREEN_RAM;
+  scratch.colour_ram = SCRATCH_COLOUR_RAM;
 
-    clearRenderBuffer(&buffer);
+  // Make sure they are clear
+  clearRenderBuffer(&buffer);
+  clearRenderBuffer(&scratch);
 
-    // Then try rendering some glyphs
-    clearRenderBuffer(&scratch);
-    renderTextUTF16(ASSET_RAM, hello_world, &scratch, /* ATTRIB_BLINK | */ COLOUR_WHITE, ATTRIB_ALPHA_BLEND);
-    outputLineToRenderBuffer(&scratch, &buffer);
-
-    while(1) POKE(0xd020U,PEEK(0xd012U));
+  for(x=0;x<100;x++) string[x]=0;
+  
+  while (key != KEY_ESC)
+    {
+      mod = READ_MOD();
+      key = READ_KEY() & 0x7F;
+      if (key)
+	{
+	  while (READ_KEY())
+	    {
+	      unsigned int i;
+	      READ_KEY() = 1;
+	      mod |= READ_MOD();
+	    }
+	  
+	  if (key>=' '&&key<=0x7e) {
+	    // Natural key -- insert here
+	    lcopy_safe(&string[cursor_col],&string[cursor_col+1],99-cursor_col);
+	    string[cursor_col]=key;
+	    renderGlyph(ASSET_RAM,key,&scratch,text_colour,ATTRIB_ALPHA_BLEND,cursor_col);
+	    outputLineToRenderBuffer(&scratch,&buffer);
+	    cursor_col++;
+	    POKE(0xd020U,cursor_col&0xf);
+	  } else {
+	    switch(key) {
+	    case 0x14:
+	      if (cursor_col) {
+		deleteGlyph(&scratch,0);
+		lcopy(&string[cursor_col],&string[cursor_col-1],99-cursor_col);
+		string[99]=0;
+		outputLineToRenderBuffer(&scratch,&buffer);
+	      }
+	      break;
+	    case 0x9d: if (cursor_col) cursor_col--; break;
+	    case 0x1d: if (cursor_col<99) cursor_col++; break;
+	    default:
+	      break;
+	    }
+	  }
+	}
+    }
     
-    clearRenderBuffer(&scratch);
-    scratch.columns_used = 0;
-    renderTextASCII(ASSET_RAM, "This is another example of rendering text, but using 8-bit chars.", &scratch, COLOUR_BLACK, ATTRIB_ALPHA_BLEND);
-    outputLineToRenderBuffer(&scratch, &buffer);
-
-    clearRenderBuffer(&scratch);
-    scratch.columns_used = 0;
-    renderTextASCII(ASSET_RAM, "And we can use various", &scratch, COLOUR_WHITE, ATTRIB_ALPHA_BLEND);
-    renderTextASCII(ASSET_RAM, " attributes ", &scratch, ATTRIB_BLINK | COLOUR_RED, ATTRIB_ALPHA_BLEND);
-    renderTextASCII(ASSET_RAM, "on", &scratch, ATTRIB_REVERSE | COLOUR_CYAN, ATTRIB_ALPHA_BLEND);
-    renderTextASCII(ASSET_RAM, " the", &scratch, ATTRIB_BOLD | COLOUR_PURPLE, ATTRIB_ALPHA_BLEND);
-    renderTextASCII(ASSET_RAM, " same ", &scratch, ATTRIB_UNDERLINE | COLOUR_GREEN, ATTRIB_ALPHA_BLEND);
-    renderTextASCII(ASSET_RAM, "line", &scratch, ATTRIB_BLINK | ATTRIB_UNDERLINE | ATTRIB_ALT_PALETTE | COLOUR_YELLOW, ATTRIB_ALPHA_BLEND);
-    outputLineToRenderBuffer(&scratch, &buffer);
+    // renderTextASCII(ASSET_RAM, "line", &scratch, ATTRIB_BLINK | ATTRIB_UNDERLINE | ATTRIB_ALT_PALETTE | COLOUR_YELLOW, ATTRIB_ALPHA_BLEND);
+    // outputLineToRenderBuffer(&scratch, &buffer);
     
-    while (1)
-        POKE(0xD020U, (PEEK(0xD020U) & 0xf) + 1);
-
 #if 0
     cursor_attrib = ATTRIB_ALT_PALETTE | ((ATTRIB_ALPHA_BLEND) << 8);
 
