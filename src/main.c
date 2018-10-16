@@ -38,6 +38,10 @@ render_buffer_t buffer, scratch;
 
 unsigned char text_colour=1;
 unsigned char cursor_col=0;
+// Physical rows on the slide (as compared to the lines of text that
+// produce them).
+unsigned char current_row=0;
+unsigned char next_row=0;
 
 char maxlen = 80;
 char key = 0;
@@ -92,6 +96,13 @@ void main(void)
   clearRenderBuffer(&buffer);
   clearRenderBuffer(&scratch);
 
+  // Put cursor in initial position
+  xx=6; y=30;
+  POKE(0xD000,xx & 0xFF);
+  POKE(0xD001,y);
+  if (xx&0x100) POKE(0xD010U,0x01); else POKE(0xD010U,0);
+  if (xx&0x200) POKE(0xD05FU,0x01); else POKE(0xD05FU,0);
+  
   while (key != KEY_ESC)
     {
       mod = READ_MOD();
@@ -108,9 +119,10 @@ void main(void)
 	  if (key>=' '&&key<=0x7e) {
 	    // Natural key -- insert here
 	    renderGlyph(ASSET_RAM,key,&scratch,text_colour,ATTRIB_ALPHA_BLEND,cursor_col);
+	    buffer.rows_used=current_row;
 	    outputLineToRenderBuffer(&scratch,&buffer);
+	    next_row=buffer.rows_used;
 	    cursor_col++;
-	    POKE(0xd020U,scratch.glyph_count&0xf);
 	  } else {
 	    switch(key) {
 	    case 0x05: text_colour=0; break;
@@ -124,8 +136,14 @@ void main(void)
 	    case 0x14:
 	      if (cursor_col) {
 		deleteGlyph(&scratch,cursor_col-1);
+		buffer.rows_used=current_row;
 		outputLineToRenderBuffer(&scratch,&buffer);
-		POKE(0xd020U,scratch.glyph_count&0xf);
+		if (buffer.rows_used<next_row) {
+		  // Deleting a character reduced the row height,
+		  // So shuffle up the rows below, and fill in the
+		  // bottom of the screen.
+		}
+		next_row=buffer.rows_used;
 		cursor_col--;
 	      }
 	      break;
@@ -138,7 +156,6 @@ void main(void)
 	    default:
 	      break;
 	    }
-	    POKE(0xD020,text_colour);
 	  }
 
     // Work out where cursor should be
