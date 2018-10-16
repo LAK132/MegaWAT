@@ -281,7 +281,6 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
         // If glyph would overrun the buffer, don't draw it.
         if ((bytes_per_row + b->columns_used) > 99)
             continue;
-        bytes_per_row = bytes_per_row << 1;
 
         // Don't allow glyphs that go too far above base line
         if (rows_above >= b->baseline_row)
@@ -303,6 +302,8 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
 	gd->columns=bytes_per_row;
 	gd->trim_pixels=trim_pixels;
 	gd->first_column=start_column;
+
+        bytes_per_row = bytes_per_row << 1;
 	
         // Skip header
         map_pos += 4;
