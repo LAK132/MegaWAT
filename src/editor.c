@@ -221,11 +221,11 @@ void editor_process_special_key(uint8_t key)
     //  case 0x9c: text_colour=15; break;
     // case 0x92: text_colour|=ATTRIB_BLINK; break;
     // CONTROL-u for underline
-  case 0x15: text_colour|=ATTRIB_UNDERLINE; break;
+  case 0x15: text_colour^=ATTRIB_UNDERLINE; break;
     // CONTROL-r (or RVS ON key once ASCII keyboard scanner fixed) for reverse
-  case 0x12: text_colour|=ATTRIB_REVERSE; break;
+  case 0x12: text_colour^=ATTRIB_REVERSE; break;
       // CONTROL-b for blink
-  case 0x02: text_colour|=ATTRIB_BLINK; break;
+  case 0x02: text_colour^=ATTRIB_BLINK; break;
     
     // Backspace (with CONTROL for DEL?)
   case 0x14:
