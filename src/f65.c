@@ -257,6 +257,11 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
     else {
       start_column=b->columns_used;
     }
+
+    if (start_column>99) {
+      POKE(0xD020U,0);
+      return;
+    }
     
     // XXX - Code points are in numerical order, so speed this up with
     // a binary search.

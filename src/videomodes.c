@@ -15,6 +15,23 @@ void videoSetSlideMode(void)
   // 16-bit text mode, 640H sprites, alpha blender and 50MHz CPU, horizontal smoothing (require to deal with artifacts)
   POKE(0xd054U,0xDD);
 
+  // Extended height mode for sprite 0 (cursor)
+  POKE(0xD055,1);
+
+  // Set Sprite 0 to point to $0400, where we draw a nice cursor sprite (4 pixels wide solid)
+  POKE(2040,0x400/0x40);
+  POKE(0x0400,0xf0); POKE(0x0401,0x00); POKE(0x0402,0x00);
+  lcopy(0x0400,0x0403,768-3);
+
+  // Cursor goes behind text
+  POKE(0xD01BU,1);
+  
+  // Cursor is white (toggles black/white)
+  POKE(0xD027U,1);
+  
+  // Enable sprite 0 (cursor)
+  POKE(0xD015U,0x01);
+  
   // No side borders
   POKE(0xd05cU,0);
   POKE(0xd05dU,0);

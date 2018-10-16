@@ -40,14 +40,15 @@ unsigned char text_colour=1;
 unsigned char cursor_col=0;
 unsigned char string[100];
 
+char maxlen = 80;
+char key = 0;
+char mod = 0;
+
+int xx;
+unsigned char h;
+
 void main(void)
 {
-  // char i = 0;
-  char maxlen = 80;
-  char key = 0;
-  char mod = 0;
-  uint32_t sdsize = 0;
-  
   m65_io_enable();
   
   videoSetSlideMode();
@@ -146,13 +147,25 @@ void main(void)
 	    POKE(0xD020,text_colour);
 	  }
 
-    POKE(0x0402U,scratch.glyph_count);
-    POKE(0x0403U,cursor_col);
-
-    for(x=0;x<16;x++) 
-      POKE(0x0408U+x,scratch.glyphs[x].code_point);
-	
-
+    // Work out where cursor should be
+    xx=6; // Fudge factor
+    for(x=0;x<cursor_col;x++)
+      xx+=scratch.glyphs[x].columns*8-scratch.glyphs[x].trim_pixels;
+    // Work out cursor height
+    h=8*(scratch.max_above+scratch.max_below);
+    if (h<8) h=8;
+    y=30;
+    // Set extended Y height to match required height.
+    POKE(0xD056,h);
+    // Toggle cursor colour to make easy to spot (black/white toggle)
+    POKE(0xD027U,(PEEK(0xD027U) ^ 0x01) & 0x0f);
+    // Move sprite to there
+    POKE(0xD000,xx & 0xFF);
+    POKE(0xD001,y);
+    if (xx&0x100) POKE(0xD010U,0x01); else POKE(0xD010U,0);
+    if (xx&0x200) POKE(0xD05FU,0x01); else POKE(0xD05FU,0);
+    
+    
 	  {
 	    int i;
 	    for(i=0;i<25000;i++) continue;
