@@ -38,7 +38,6 @@ render_buffer_t buffer, scratch;
 
 unsigned char text_colour=1;
 unsigned char cursor_col=0;
-unsigned char string[100];
 
 char maxlen = 80;
 char key = 0;
@@ -93,8 +92,6 @@ void main(void)
   clearRenderBuffer(&buffer);
   clearRenderBuffer(&scratch);
 
-  for(x=0;x<100;x++) string[x]=0;
-
   while (key != KEY_ESC)
     {
       mod = READ_MOD();
@@ -110,7 +107,6 @@ void main(void)
 	  
 	  if (key>=' '&&key<=0x7e) {
 	    // Natural key -- insert here
-	    lcopy_safe(&string[cursor_col],&string[cursor_col+1],99-cursor_col);
 	    renderGlyph(ASSET_RAM,key,&scratch,text_colour,ATTRIB_ALPHA_BLEND,cursor_col);
 	    outputLineToRenderBuffer(&scratch,&buffer);
 	    cursor_col++;
@@ -128,8 +124,6 @@ void main(void)
 	    case 0x14:
 	      if (cursor_col) {
 		deleteGlyph(&scratch,cursor_col-1);
-		lcopy(&string[cursor_col],&string[cursor_col-1],99-cursor_col);
-		string[99]=0;
 		outputLineToRenderBuffer(&scratch,&buffer);
 		POKE(0xd020U,scratch.glyph_count&0xf);
 		cursor_col--;
@@ -139,7 +133,7 @@ void main(void)
 	      if (cursor_col) cursor_col--;
 	      break;
 	    case 0x1d:
-	      if (cursor_col<99) cursor_col++;
+	      if (cursor_col<scratch.glyph_count) cursor_col++;
 	      break;
 	    default:
 	      break;
@@ -157,8 +151,8 @@ void main(void)
     y=30;
     // Set extended Y height to match required height.
     POKE(0xD056,h);
-    // Toggle cursor colour to make easy to spot (black/white toggle)
-    POKE(0xD027U,(PEEK(0xD027U) ^ 0x01) & 0x0f);
+    // Make cursor be text colour (will alternate to another colour as well)
+    POKE(0xD027U,text_colour);
     // Move sprite to there
     POKE(0xD000,xx & 0xFF);
     POKE(0xD001,y);
@@ -170,7 +164,10 @@ void main(void)
 	    int i;
 	    for(i=0;i<25000;i++) continue;
 	  }
-	}
+	} else {
+	// Toggle cursor on/off quickly
+	POKE(0xD015U,(PEEK(0xD015U) ^ 0x01) & 0x0f);
+      }
     }
     
     // renderTextASCII(ASSET_RAM, "line", &scratch, ATTRIB_BLINK | ATTRIB_UNDERLINE | ATTRIB_ALT_PALETTE | COLOUR_YELLOW, ATTRIB_ALPHA_BLEND);
