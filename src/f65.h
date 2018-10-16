@@ -33,8 +33,9 @@ typedef struct render_buffer
   
 } render_buffer_t;
 
+void deleteGlyph(render_buffer_t *b,uint8_t glyph_num);
 void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
-                uint8_t colour_and_attributes, uint8_t alpha_and_extras);
+		 uint8_t colour_and_attributes, uint8_t alpha_and_extras, uint8_t position);
 void findFontStructures(uint32_t font_address);
 void patchFont(uint32_t font_address);
 void clearRenderBuffer(render_buffer_t *buffer);
@@ -43,6 +44,3 @@ void renderTextUTF16(uint32_t font_address, uint16_t *string, render_buffer_t *s
                     uint8_t colour_and_attributes, uint8_t alpha_and_extras);
 void renderTextASCII(uint32_t font_address, uint8_t *string, render_buffer_t *scratch,
                     uint8_t colour_and_attributes, uint8_t alpha_and_extras);
-void deleteGlyph(render_buffer_t *b,uint8_t glyph_num);
-void replaceGlyph(render_buffer_t *b,uint8_t glyph_num, uint32_t font_address, uint16_t code_point);
-void insertGlyph(render_buffer_t *b,uint8_t glyph_num, uint32_t font_address, uint16_t code_point);

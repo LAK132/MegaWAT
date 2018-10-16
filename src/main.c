@@ -95,6 +95,8 @@ int main(int argc, char **argv)
     renderTextUTF16(ASSET_RAM, hello_world, &scratch, ATTRIB_BLINK | COLOUR_WHITE, ATTRIB_ALPHA_BLEND);
     outputLineToRenderBuffer(&scratch, &buffer);
 
+    while(1) POKE(0xd020U,PEEK(0xd012U));
+    
     clearRenderBuffer(&scratch);
     scratch.columns_used = 0;
     renderTextASCII(ASSET_RAM, "This is another example of rendering text, but using 8-bit chars.", &scratch, COLOUR_BLACK, ATTRIB_ALPHA_BLEND);

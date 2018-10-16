@@ -9,7 +9,7 @@
   in part because it doesn't know about the 32-bit indirect addressing
   mode of the MEGA65's CPU.
 */
-uint8_t x, y;
+uint8_t x, y, start_column;
 uint32_t i, j, k;
 uint32_t prev_font = 0U; // read only
 uint16_t glyph_count = 0U;
@@ -58,11 +58,13 @@ uint8_t gradient[] = {
 void renderTextUTF16(uint32_t font_address, uint16_t *string, render_buffer_t *scratch,
                     uint8_t colour_and_attributes, uint8_t alpha_and_extras)
 {
-    for (x = 0; string[x]; ++x)
-        renderGlyph(font_address, string[x], scratch,
-                    colour_and_attributes, // Various colours
-                    alpha_and_extras       // alpha blend
-        );
+  for (x = 0; string[x]; ++x) {
+    renderGlyph(font_address, string[x], scratch,
+		colour_and_attributes, // Various colours
+		alpha_and_extras,       // alpha blend
+		0xFF   // Append to end
+		);
+  }
 }
 
 void renderTextASCII(uint32_t font_address, uint8_t *string, render_buffer_t *scratch,
@@ -71,7 +73,8 @@ void renderTextASCII(uint32_t font_address, uint8_t *string, render_buffer_t *sc
     for (x = 0; string[x]; ++x)
         renderGlyph(font_address, string[x], scratch,
                     colour_and_attributes, // Various colours
-                    alpha_and_extras       // alpha blend
+                    alpha_and_extras,       // alpha blend
+		    0xFF // Append to end
         );
 }
 
@@ -234,7 +237,8 @@ void deleteGlyph(render_buffer_t *b,uint8_t glyph_num)
 void replaceGlyph(render_buffer_t *b,uint8_t glyph_num, uint32_t font_address, uint16_t code_point);
 void insertGlyph(render_buffer_t *b,uint8_t glyph_num, uint32_t font_address, uint16_t code_point);
 
-void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
+void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b, uint8_t colour_and_attributes,
+		 uint8_t alpha_and_extras, uint8_t position)
 {
     if (!b)
         return;
@@ -245,6 +249,16 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
     if (!b->baseline_row)
         b->baseline_row = 24;
 
+    if (position==0xFF) position=b->glyph_count;
+    
+    // Make space if this glyph is not at the end
+    if (position<b->glyph_count)
+      start_column=b->glyphs[position].first_column;
+    else {
+      start_column=b->columns_used;
+    }
+    b->glyph_count++;
+    
     // XXX - Code points are in numerical order, so speed this up with
     // a binary search.
     for (i = 0; i < point_list_size; i += 5)
@@ -262,17 +276,6 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
         bytes_per_row = lpeek(map_pos + 2);
         trim_pixels = lpeek(map_pos + 3);
 
-	// Record details about this glyph
-	gd=&b->glyphs[b->glyph_count];
-	gd->code_point=code_point;
-	gd->font_id=0; // XXX - Fix when we support multiple loaded fonts
-	gd->rows_above=rows_above;
-	gd->rows_below=rows_below;
-	gd->columns=bytes_per_row;
-	gd->trim_pixels=trim_pixels;
-	gd->first_column=b->columns_used;
-	b->glyph_count++;
-	
         // If glyph is 0 pixels wide, nothing to do.
         if (!bytes_per_row)
             continue;
@@ -287,30 +290,45 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
         if (rows_below >= (30 - b->baseline_row))
             break;
 
+	// Ok, we have a glyph, so now we make space in the glyph list
+	// This is an overlapping copy, so we have to copy to a temp location first
+	if (position<b->glyph_count)
+	  lcopy_safe(&b->glyphs[position],&b->glyphs[position+1],sizeof(glyph_details_t)*(b->glyph_count-position));
+	
+	// Record details about this glyph	
+	gd=&b->glyphs[position];
+	gd->code_point=code_point;
+	gd->font_id=0; // XXX - Fix when we support multiple loaded fonts
+	gd->rows_above=rows_above;
+	gd->rows_below=rows_below;
+	gd->columns=bytes_per_row;
+	gd->trim_pixels=trim_pixels;
+	gd->first_column=start_column;
+	
         // Skip header
         map_pos += 4;
 
         // Work out first address of screen and colour RAM
 
-        // First, work out the address of the row
-        screen = b->screen_ram;
-        colour = b->colour_ram;
+        // First, work out the address of the start row and column
+        screen = b->screen_ram + start_column*2;
+        colour = b->colour_ram + start_column*2;
         for (y = rows_above; y < b->baseline_row; ++y)
         {
             screen += 200;
             colour += 200;
         }
-        // then advance to the first unused column
-        screen += b->columns_used;
-        screen += b->columns_used;
-        colour += b->columns_used;
-        colour += b->columns_used;
 
         // Now we need to copy each row of data to the screen RAM and colour RAM buffers
         for (y = 0; y < (rows_above + rows_below); ++y)
         {
+	  if (position<b->glyph_count) {
+	    // Char is not on the end, so make space
+	    lcopy(screen,screen+bytes_per_row,198 - bytes_per_row - start_column*2);
+	    lcopy(colour,colour+bytes_per_row,198 - bytes_per_row - start_column*2);
+	  }
 
-            // Copy screen data
+	  // Copy screen data
             lcopy((long)map_pos, (long)screen, bytes_per_row);
 
             // Fill colour RAM.
@@ -344,6 +362,7 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
             colour += 200;
         }
 
+	b->glyph_count++;
         b->columns_used += (bytes_per_row >> 1);
         if (rows_above > b->max_above)
             b->max_above = rows_above;
