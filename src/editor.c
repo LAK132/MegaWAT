@@ -27,6 +27,7 @@ int xx;
 unsigned char h;
 
 extern uint8_t x,y;
+extern uint32_t screen,colour;
 
 render_buffer_t buffer, scratch;
 
@@ -170,15 +171,20 @@ void editor_insert_codepoint(unsigned int code_point)
       -(text_line_first_rows[text_line+1]-text_line_first_rows[text_line]);
     if (x&&x<0x80) {
       // Yes, it grew.
-      // Now shift everything down
-      #if 0
-      lcopy(scratch.screen_ram+text_line_first_rows[text_line+1]*200,
-	    scratch.screen_ram+(text_line_first_rows[text_line+1]+x)*200,
-	    );
-#endif
+
       // Adjust first row for all following lines
       for(y=text_line+1;y<EDITOR_MAX_LINES;y++)
 	text_line_first_rows[y]+=x;
+
+      // Now shift everything down
+      screen=scratch.screen_ram+(60-1)*200;
+      colour=scratch.colour_ram+(60-1)*200;
+      for(y=59;y>text_line_first_rows[text_line+1];y--) {
+	lcopy_safe(screen-200,screen,200);
+	lcopy_safe(colour-200,colour,200);
+	screen-=200;
+	colour-=200;
+      }
     }
   }
 
