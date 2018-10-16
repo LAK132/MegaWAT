@@ -34,6 +34,8 @@ extern int16_t font_file_size;
 
 extern uint8_t x, y;
 
+render_buffer_t buffer, scratch;
+
 #ifdef __CC65__
 void main(void)
 #else
@@ -47,13 +49,31 @@ int main(int argc, char **argv)
     uint32_t sdsize = 0;
     uint16_t hello_world[] = {'H', 'e', 'l', 'l', 'o', ',', ' ', 'W', 'o', 'r', 'l', 'd', '!', 0};
 
-    render_buffer_t buffer, scratch;
-
     m65_io_enable();
 
     videoSetSlideMode();
     videoSetActiveSlideBuffer(0);
 
+    for(x=0;x<255;x++)
+      for(y=0;y<8;y++)
+	POKE(0xE000U+(x&7)+((x/8)*64U)+(y*8),x);
+
+    for(x=0;x<100;x++) {
+      lpoke(SLIDE0_SCREEN_RAM+220U+x*2,(0xe000U/0x40+x)&0xff);
+      lpoke(SLIDE0_SCREEN_RAM+220U+x*2+1,(0xe000U/0x40+x)>>8);
+      lpoke(SLIDE0_COLOUR_RAM+220U+x*2,0x20); // 0x20 for alpha
+      lpoke(SLIDE0_COLOUR_RAM+220U+x*2+1,0x2);
+    }
+
+    x=90;
+    lpoke(SLIDE0_SCREEN_RAM+200U+x*2,0xff);
+    lpoke(SLIDE0_SCREEN_RAM+200U+x*2+1,0xff);
+    lpoke(SLIDE0_SCREEN_RAM+0U+x*2,0xff);
+    lpoke(SLIDE0_SCREEN_RAM+0U+x*2+1,0xff);
+
+    
+    while(1) POKE(0xd020U,PEEK(0xd012U));
+    
     // Copy bundled font into the asset area of memory
     lcopy(font_file + 2, ASSET_RAM, font_file_size - 2);
     // Then patch the pointers in the font to be correct

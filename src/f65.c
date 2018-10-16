@@ -135,6 +135,8 @@ void findFontStructures(uint32_t font_address)
     tile_array_address = font_address + tile_array_start;
 }
 
+glyph_details_t *gd=0;
+
 void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
 {
     if (!b)
@@ -163,6 +165,16 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
         bytes_per_row = lpeek(map_pos + 2);
         trim_pixels = lpeek(map_pos + 3);
 
+	// Record details about this glyph
+	gd=&b->glyphs[b->glyph_count];
+	gd->code_point=code_point;
+	gd->font_id=0; // XXX - Fix when we support multiple loaded fonts
+	gd->rows_above=rows_above;
+	gd->rows_below=rows_below;
+	gd->columns=bytes_per_row;
+	gd->trim_pixels=trim_pixels;
+	gd->first_column=b->columns_used;
+	
         // If glyph is 0 pixels wide, nothing to do.
         if (!bytes_per_row)
             continue;
