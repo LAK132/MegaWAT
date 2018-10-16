@@ -13,16 +13,23 @@ void videoSetSlideMode(void)
   */
 
   // 16-bit text mode, 640H sprites, alpha blender and 50MHz CPU, horizontal smoothing (require to deal with artifacts)
-  POKE(0xd054U,0xDD);
+  // POKE(0xd054U,0xDD);
+  POKE(0xD054U, 0x0
+    | 0x1 /*16bit mode*/
+    | 0x4 /*full colour*/
+    | 0x18 /*smear filter*/
+    | 0x40 /*48MHz mode*/
+    | 0x80 /*alpha compositor*/
+  );
 
-  // No side borders
+  // // No side borders
   POKE(0xd05cU,0);
   POKE(0xd05dU,0);
 
-  // Set H640 and V400 and enable extended attributes and 8-bit colour values
+  // // Set H640 and V400 and enable extended attributes and 8-bit colour values
   POKE(0xd031,0xa8);
 
-  // Update hot registers
+  // // Update hot registers
   POKE(0xd011U,0x1b);
 
   // The following must happen AFTER touching $D011
@@ -48,9 +55,10 @@ void videoSetSlideMode(void)
 
   screen_address = SLIDE0_SCREEN_RAM;
   colour_address = SLIDE0_COLOUR_RAM;
-  screen_height = 60;
-  screen_width = 100;
   char_size = sizeof(uint16_t);
+  // screen_height = 60;
+  screen_width = 100 * char_size;
+  screen_size = 60 * screen_width;
 }
 
 void videoSetActiveSlideBuffer(uint8_t bufferId)

@@ -43,15 +43,25 @@
 #define READ_KEY() (*(unsigned char *)0xD610)
 #define READ_MOD() (*(unsigned char *)0xD611)
 
-extern int8_t char_size;
-extern int32_t screen_width;
-extern int32_t screen_height;
 extern int32_t cursor_position;
-extern uint16_t cursor_attrib;
-extern uint16_t char_attrib;
+extern uint8_t cursor_attrib[2];
+
+extern int8_t char_size;
+extern uint8_t char_attrib[2];
+
 extern uint32_t screen_address;
 extern uint32_t colour_address;
+extern uint32_t screen_width;
+extern uint32_t screen_size;
 
-#define screen_size (screen_size * screen_height)
-#define screenWidth() (screen_width * char_size)
-#define screenSize() (screenWidth() * screen_height)
+void toggle_write_protection(void);
+
+// extern uint32_t full_screen_buffer;
+// extern uint32_t full_screen_buffer_size;
+// extern uint32_t full_colour_buffer;
+// extern uint32_t full_colour_buffer_size;
+
+// extern uint32_t small_screen_buffer;
+// extern uint32_t small_screen_buffer_size;
+// extern uint32_t small_colour_buffer;
+// extern uint32_t small_colour_buffer_size;

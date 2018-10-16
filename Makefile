@@ -32,7 +32,8 @@ SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/f65.c \
 			$(SRCDIR)/globals.c \
 			$(SRCDIR)/charset.s \
-			$(SRCDIR)/font.s
+			$(SRCDIR)/font.s \
+			$(SRCDIR)/romprotection.s
 
 ASSFILES=	$(BINDIR)/main.s \
 			$(BINDIR)/screen.s \
@@ -42,6 +43,7 @@ ASSFILES=	$(BINDIR)/main.s \
 			$(BINDIR)/globals.s \
 			$(BINDIR)/charset.s \
 			$(BINDIR)/font.s \
+			$(BINDIR)/romprotection.s
 
 HEADERS=	Makefile \
 			$(SRCDIR)/main.h \
@@ -62,8 +64,9 @@ LD65=		$(CC65DIR)/bin/ld65 -t none
 
 CBMCONVERT=	$(CBMCONVDIR)/cbmconvert
 
+ROMDIR=		$(XEMUDIR)/rom
 XC65=		$(XEMUDIR)/build/bin/xc65.native
-C65SYSROM=	$(XEMUDIR)/rom/c65-system.rom
+C65SYSROM=	$(ROMDIR)/c65-system.rom
 
 MONLOAD=	$(COREDIR)/src/tools/monitor_load
 KICKUP=		$(COREDIR)/bin/KICKUP.M65

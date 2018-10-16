@@ -16,11 +16,9 @@
 
 // 16k
 #define SLIDE_DATA1         0x0024000U
-#define SLIDE_DATA1_SIZE    0x0004000U
-
-// 8k
-#define SLIDE_DATA2         0x003C000U
-#define SLIDE_DATA2_SIZE    0x0002000U
+#define SLIDE_DATA2         0x0026000U
+#define SLIDE_DATA3         0x003C000U
+#define SLIDE_DATA_SIZE     0x0004000U
 
 #define ASSET_RAM           0x0040000U
 #define ASSET_RAM_SIZE      0x0020000U
