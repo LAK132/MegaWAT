@@ -9,8 +9,11 @@ unsigned char next_row=0;
 // Which line of text we are on
 unsigned char text_line=0;
 // Rows where each line of text is drawn
-unsigned char text_line_rows[60];
+unsigned char text_line_rows[30];
 unsigned char text_line_count=1;
+
+// XXX For now, have a fixed 100x30 buffer for text
+unsigned int editor_buffer[30][100];
 
 char maxlen = 80;
 char key = 0;
@@ -30,6 +33,12 @@ void editor_insert_line(unsigned char before)
 
 void editor_initialise(void)
 {
+  for(y=0;y<30;y++) {
+    lfill((long)&editor_buffer[y][0],0x00,100*2);
+    text_line_rows[y]=0;
+  }
+  text_line_count=0;
+
 }
 
 void editor_stash_line(unsigned char line_num)

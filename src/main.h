@@ -25,4 +25,4 @@ uint32_t wstrlen(uint16_t *str);
 
 void editor_show_cursor(void);
 void editor_poll_keyboard(void);
-
+void editor_initialise(void);
