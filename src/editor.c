@@ -9,7 +9,7 @@ unsigned char next_row=0;
 // Which line of text we are on
 unsigned char text_line=0;
 // Rows where each line of text is drawn
-unsigned char text_line_rows[30];
+unsigned char text_line_first_rows[30];
 unsigned char text_line_count=1;
 
 // XXX For now, have a fixed 128x30 buffer for text
@@ -41,7 +41,7 @@ void editor_initialise(void)
 {
   for(y=0;y<EDITOR_MAX_LINES;y++) {
     lfill((long)&editor_buffer[y][0],0x00,EDITOR_LINE_LEN*2);
-    text_line_rows[y]=0;
+    text_line_first_rows[y]=y;
   }
   text_line_count=0;
 
@@ -154,12 +154,27 @@ void editor_insert_codepoint(unsigned int code_point)
   h=scratch.glyph_count;
   renderGlyph(ASSET_RAM,code_point,&scratch,text_colour,ATTRIB_ALPHA_BLEND,cursor_col);
 
-  // Check if this code point grew the height of the line.
+  // XXX Check if this code point grew the height of the line.
   // If so, push everything else down before pasting
+  if ((text_line+1)<EDITOR_MAX_LINES) {
+    if ((current_row+text_line_first_rows[text_line])>
+	text_line_first_rows[text_line+1]) {
+      // Yes, it grew, so work out by how much
+      x=text_line_first_rows[text_line+1]-
+	(current_row+text_line_first_rows[text_line]);
+      // Now shift everything down
+      #if 0
+      lcopy(scratch.screen_ram+text_line_first_rows[text_line+1]*200,
+	    scratch.screen_ram+(text_line_first_rows[text_line+1]+x)*200,
+#endif
+    }
+  }
+
   
   buffer.rows_used=current_row;
   outputLineToRenderBuffer(&scratch,&buffer);
   next_row=buffer.rows_used;
+
   // Only advance cursor if the glyph was actually rendered
   if (scratch.glyph_count>h) cursor_col++;
   if (cursor_col>scratch.glyph_count) cursor_col=scratch.glyphs;
@@ -226,14 +241,14 @@ void editor_process_special_key(uint8_t key)
     cursor_col=0;
   case 0x11: // Cursor down
     editor_stash_line(text_line);
-    if (text_line<(text_line_count-1)) text_line++;
-    current_row=text_line_rows[text_line];
+    if (text_line<EDITOR_MAX_LINES) text_line++;
+    current_row=text_line_first_rows[text_line];
     editor_fetch_line(text_line);
     break;
   case 0x91: // Cursor up
     editor_stash_line(text_line);
     if (text_line) text_line--;
-    current_row=text_line_rows[text_line];
+    current_row=text_line_first_rows[text_line];
     editor_fetch_line(text_line);	      
     break;
   default:
