@@ -9,7 +9,10 @@
   in part because it doesn't know about the 32-bit indirect addressing
   mode of the MEGA65's CPU.
 */
-uint8_t x, y;
+
+uint8_t font_id = 0;
+
+uint8_t x, y, start_column;
 uint32_t i, j, k;
 uint32_t prev_font = 0U; // read only
 uint16_t glyph_count = 0U;
@@ -58,11 +61,13 @@ uint8_t gradient[] = {
 void renderTextUTF16(uint32_t font_address, uint16_t *string, render_buffer_t *scratch,
                     uint8_t colour_and_attributes, uint8_t alpha_and_extras)
 {
-    for (x = 0; string[x]; ++x)
-        renderGlyph(font_address, string[x], scratch,
-                    colour_and_attributes, // Various colours
-                    alpha_and_extras       // alpha blend
-        );
+  for (x = 0; string[x]; ++x) {
+    renderGlyph(font_address, string[x], scratch,
+		colour_and_attributes, // Various colours
+		alpha_and_extras,       // alpha blend
+		0xFF   // Append to end
+		);
+  }
 }
 
 void renderTextASCII(uint32_t font_address, uint8_t *string, render_buffer_t *scratch,
@@ -71,7 +76,8 @@ void renderTextASCII(uint32_t font_address, uint8_t *string, render_buffer_t *sc
     for (x = 0; string[x]; ++x)
         renderGlyph(font_address, string[x], scratch,
                     colour_and_attributes, // Various colours
-                    alpha_and_extras       // alpha blend
+                    alpha_and_extras,       // alpha blend
+		    0xFF // Append to end
         );
 }
 
@@ -88,6 +94,13 @@ void clearRenderBuffer(render_buffer_t *buffer)
     lcopy((long)&end_of_line_pattern, buffer->screen_ram + 198, 2);
     // Then copy it down over the next 59 rows.
     lcopy(buffer->screen_ram, buffer->screen_ram + 200, 11800);
+
+    buffer->columns_used = 0;
+    buffer->max_above = 0;
+    buffer->max_below = 0;
+    buffer->baseline_row = 24;
+    buffer->trimmed_pixels = 0;
+    buffer->glyph_count=0;
 }
 
 void outputLineToRenderBuffer(render_buffer_t *in, render_buffer_t *out)
@@ -111,10 +124,6 @@ void outputLineToRenderBuffer(render_buffer_t *in, render_buffer_t *out)
     lcopy(in->screen_ram + rows_above * 200, out->screen_ram + 200 * out->rows_used, rows_below * 200);
     lcopy(in->colour_ram + rows_above * 200, out->colour_ram + 200 * out->rows_used, rows_below * 200);
 
-    POKE(0x0400U, rows_above);
-    POKE(0x0401U, rows_below);
-    POKE(0x0402U, out->rows_used);
-
     // Mark the rows used in the output buffer
     out->rows_used += rows_below;
 }
@@ -135,7 +144,104 @@ void findFontStructures(uint32_t font_address)
     tile_array_address = font_address + tile_array_start;
 }
 
-void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
+glyph_details_t *gd=0;
+
+void deleteGlyph(render_buffer_t *b,uint8_t glyph_num)
+{
+  // Make sure buffer and glyph number are ok
+  if (!b) return;
+  if (glyph_num>=b->glyph_count) return;
+
+  rows_above=b->max_above;
+  rows_below=b->max_below;
+
+  // Get start address for the first row we have to copy.
+  screen = b->screen_ram;
+  colour = b->colour_ram;
+  for (y = rows_above; y < b->baseline_row; ++y)
+    {
+      screen += 200;
+      colour += 200;
+    }
+  // then advance to the first unused column
+  screen += b->glyphs[glyph_num].first_column*2;
+  colour += b->glyphs[glyph_num].first_column*2;
+  x = b->glyphs[glyph_num].columns*2;
+  bytes_per_row = (b->columns_used - b->glyphs[glyph_num].first_column)*2;
+
+  // Copy remaining glyphs on the line
+  if ((glyph_num+1)!=b->glyph_count) {
+    for (y = 0; y < (rows_above + rows_below); ++y)
+      {
+	
+	// Copy screen data
+	lcopy(screen+x, screen, bytes_per_row);
+	// Copy colour data
+	lcopy(colour+x, colour, bytes_per_row);
+	
+	screen+=200;
+	colour+=200;
+	
+      }
+  }
+
+  // Note if we need to recalculate rows above and rows below
+  if ((b->glyphs[glyph_num].rows_above==rows_above)
+      ||(b->glyphs[glyph_num].rows_below==rows_below))
+    x=1; else x=0;
+  
+  // Subtract the used columns
+  b->columns_used-=b->glyphs[glyph_num].columns;
+
+  // Now erase the tail of each line
+  screen = b->screen_ram + b->columns_used*2;
+  colour = b->colour_ram + b->columns_used*2;
+  bytes_per_row= b->glyphs[glyph_num].columns*2;  
+
+  for (y = rows_above; y < b->baseline_row; ++y)
+    {
+      screen += 200;
+      colour += 200;
+    }
+  
+  for (y = 0; y < (rows_above + rows_below); ++y)
+    {
+      // Clear screen data
+      lfill(screen, 0x20, bytes_per_row);
+      // Clear colour data
+      lfill(colour,0x00, bytes_per_row);
+      
+      screen+=200;
+      colour+=200;
+    }
+
+  // Now copy down the glyph details structure.
+  // We also do a DMA here for speed
+  lcopy((uint32_t)&b->glyphs[glyph_num+1],(uint32_t)&b->glyphs[glyph_num],99-glyph_num);
+
+  // Reduce number of remaining glyphs
+  b->glyph_count--;
+
+  // Update rows_above and rows_below if require
+  if (x) {
+    rows_above=0;
+    rows_below=0;
+    for(y=0;y<b->glyph_count;y++)
+      {
+	if (b->glyphs[y].rows_above>rows_above) rows_above=b->glyphs[y].rows_above;
+	if (b->glyphs[y].rows_below>rows_below) rows_below=b->glyphs[y].rows_below;
+      }
+    b->max_above=rows_above;
+    b->max_below=rows_below;
+  }
+
+}
+
+void replaceGlyph(render_buffer_t *b,uint8_t glyph_num, uint32_t font_address, uint16_t code_point);
+void insertGlyph(render_buffer_t *b,uint8_t glyph_num, uint32_t font_address, uint16_t code_point);
+
+void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b, uint8_t colour_and_attributes,
+		 uint8_t alpha_and_extras, uint8_t position)
 {
     if (!b)
         return;
@@ -146,6 +252,19 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
     if (!b->baseline_row)
         b->baseline_row = 24;
 
+    if (position==0xFF) position=b->glyph_count;
+    
+    // Make space if this glyph is not at the end
+    if (position<b->glyph_count)
+      start_column=b->glyphs[position].first_column;
+    else {
+      start_column=b->columns_used;
+    }
+
+    if (start_column>99) {
+      return;
+    }
+    
     // XXX - Code points are in numerical order, so speed this up with
     // a binary search.
     for (i = 0; i < point_list_size; i += 5)
@@ -169,7 +288,6 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
         // If glyph would overrun the buffer, don't draw it.
         if ((bytes_per_row + b->columns_used) > 99)
             continue;
-        bytes_per_row = bytes_per_row << 1;
 
         // Don't allow glyphs that go too far above base line
         if (rows_above >= b->baseline_row)
@@ -177,30 +295,73 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
         if (rows_below >= (30 - b->baseline_row))
             break;
 
+	// Ok, we have a glyph, so now we make space in the glyph list
+	// This is an overlapping copy, so we have to copy to a temp location first
+	if (position<b->glyph_count)
+	  lcopy_safe(&b->glyphs[position],&b->glyphs[position+1],sizeof(glyph_details_t)*(b->glyph_count-position));
+	
+	// Record details about this glyph	
+	gd=&b->glyphs[position];
+	gd->code_point=code_point;
+	gd->font_id=0; // XXX - Fix when we support multiple loaded fonts
+	gd->rows_above=rows_above;
+	gd->rows_below=rows_below;
+	gd->columns=bytes_per_row;
+	gd->trim_pixels=trim_pixels;
+	gd->first_column=start_column;
+	gd->colour_and_attributes=colour_and_attributes;
+
+        bytes_per_row = bytes_per_row << 1;
+	
         // Skip header
         map_pos += 4;
 
+	if (position<b->glyph_count) {
+	    // Char is not on the end, so make space
+
+	  // First, work out the address of the start row and column
+	  screen = b->screen_ram + start_column*2;
+	  colour = b->colour_ram + start_column*2;
+	  for (y = b->max_above; y < b->baseline_row; ++y)
+	    {
+	      screen += 200;
+	      colour += 200;
+	    }
+
+	  // Now we need to copy each row of data to the screen RAM and colour RAM buffers
+	  for (y = 0; y < (b->max_above + b->max_below); ++y)
+	    {
+	      // Make space
+	      lcopy_safe(screen,screen+bytes_per_row,(b->columns_used - start_column)*2);
+	      lcopy_safe(colour,colour+bytes_per_row,(b->columns_used - start_column)*2);
+
+	      // Fill screen and colour RAM with empty patterns
+	      lcopy((long)&clear_pattern,screen,bytes_per_row);
+	      lcopy(screen,screen+2,bytes_per_row-2);
+	      lfill(colour,0x00,bytes_per_row);
+	      
+	      screen += 200;
+	      colour += 200;
+	    }
+	}
+
+
+	
         // Work out first address of screen and colour RAM
 
-        // First, work out the address of the row
-        screen = b->screen_ram;
-        colour = b->colour_ram;
+        // First, work out the address of the start row and column
+        screen = b->screen_ram + start_column*2;
+        colour = b->colour_ram + start_column*2;
         for (y = rows_above; y < b->baseline_row; ++y)
         {
             screen += 200;
             colour += 200;
         }
-        // then advance to the first unused column
-        screen += b->columns_used;
-        screen += b->columns_used;
-        colour += b->columns_used;
-        colour += b->columns_used;
 
         // Now we need to copy each row of data to the screen RAM and colour RAM buffers
         for (y = 0; y < (rows_above + rows_below); ++y)
         {
-
-            // Copy screen data
+	  // Copy screen data
             lcopy((long)map_pos, (long)screen, bytes_per_row);
 
             // Fill colour RAM.
@@ -234,6 +395,7 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
             colour += 200;
         }
 
+	b->glyph_count++;
         b->columns_used += (bytes_per_row >> 1);
         if (rows_above > b->max_above)
             b->max_above = rows_above;
@@ -242,7 +404,7 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
 
         // then apply trim to entire column
         trim_pixels = trim_pixels << 5;
-        screen = b->screen_ram + b->columns_used + b->columns_used - 1;
+        screen = b->screen_ram + start_column + start_column + bytes_per_row - 1;
         for (y = 0; y < 30; ++y)
         {
             lpoke(screen, (lpeek(screen) & 0x1f) | trim_pixels);

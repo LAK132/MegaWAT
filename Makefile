@@ -27,6 +27,7 @@ FILES=		$(PROGRAM) \
 
 SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/screen.c \
+			$(SRCDIR)/editor.c \
 			$(SRCDIR)/videomodes.c \
 			$(SRCDIR)/memory.c \
 			$(SRCDIR)/f65.c \
@@ -37,6 +38,7 @@ SOURCES=	$(SRCDIR)/main.c \
 
 ASSFILES=	$(BINDIR)/main.s \
 			$(BINDIR)/screen.s \
+			$(BINDIR)/editor.s \
 			$(BINDIR)/videomodes.s \
 			$(BINDIR)/memory.s \
 			$(BINDIR)/f65.s \
@@ -55,7 +57,7 @@ HEADERS=	Makefile \
 			$(SRCDIR)/ascii.h
 
 DATAFILES=	ascii8x8.bin \
-			UbuntuMono-R.f65
+			example.f65
 
 CC65=		$(CC65DIR)/bin/cc65
 CL65=		$(CC65DIR)/bin/cl65
@@ -101,7 +103,7 @@ load:		$(MONLOAD) $(C65SYSROM) $(PROGRAM)
 .PRECIOUS: $(BINDIR)/%.s %.f65
 
 %.f65:	%.ttf Makefile $(TTFTOF65)
-	$(TTFTOF65) -A -P 32 -T $< -o $@
+	$(TTFTOF65) -A -P 20 -T $< -o $@
 
 $(BINDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) | $(BINDIR)
 	if [ -f $(SRCDIR)/$*.c ]; then $(CC65) $(C65OPTS) -o $@ $(SRCDIR)/$*.c; fi

@@ -31,6 +31,8 @@ struct dmagic_dmalist {
 struct dmagic_dmalist dmalist;
 unsigned char dma_byte;
 
+unsigned char copy_buffer[256];
+
 void do_dma(void)
 {
   m65_io_enable();
@@ -90,16 +92,26 @@ void lpoke(long address, unsigned char value)
   return;
 }
 
+void lcopy_safe(long src,long dst,unsigned int count)
+{
+  if (count>256) return;
+
+  lcopy(src,(long)copy_buffer,count);
+  lcopy((long)copy_buffer,dst,count);
+}
+
 void lcopy(long source_address, long destination_address,
 	  unsigned int count)
 {
+  if (!count) return;
+  
   dmalist.option_0b=0x0b;
   dmalist.option_80=0x80;
   dmalist.source_mb=source_address>>20;
   dmalist.option_81=0x81;
   dmalist.dest_mb=(destination_address>>20);
   dmalist.end_of_options=0x00;
-
+  
   dmalist.command=0x00; // copy
   dmalist.count=count;
   dmalist.sub_cmd=0;
