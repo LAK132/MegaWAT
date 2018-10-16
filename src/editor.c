@@ -30,6 +30,8 @@ extern uint8_t x,y;
 
 render_buffer_t buffer, scratch;
 
+uint8_t cursor_toggle = 0;
+
 void editor_insert_line(unsigned char before)
 {
   // Insert a new blank line before line #before
@@ -265,8 +267,13 @@ void editor_poll_keyboard(void)
 	    for(i=0;i<25000;i++) continue;
 	  }
 	} else {
-	// Toggle cursor on/off quickly
-	POKE(0xD015U,(PEEK(0xD015U) ^ 0x01) & 0x0f);
+	if (PEEK(0xD012U)>0xF0)
+	  {
+	    cursor_toggle++;
+	    if (!cursor_toggle)
+	      // Toggle cursor on/off quickly
+	      POKE(0xD015U,(PEEK(0xD015U) ^ 0x01) & 0x0f);
+	  }
       }
     }
   
