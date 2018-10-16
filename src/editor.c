@@ -128,6 +128,8 @@ void editor_show_cursor(void)
 
 void editor_update_cursor(void)
 {
+  if (cursor_col>scratch.glyph_count) cursor_col=scratch.glyph_count;
+
   // Work out where cursor should be
   xx=5; // Fudge factor
   for(x=0;x<cursor_col;x++)
@@ -136,7 +138,7 @@ void editor_update_cursor(void)
   // Note: Sprites use V200 dimensions, thus 4 V200 pixels per 8 V400 pixels.
   h=4*(scratch.max_above+scratch.max_below);
   if (h<4) h=4;
-  y=30;
+  y=30+text_line_first_rows[text_line]*4;
   // Set extended Y height to match required height.
   POKE(0xD056,h);
   // Make cursor be text colour (will alternate to another colour as well)
@@ -147,6 +149,12 @@ void editor_update_cursor(void)
   if (xx&0x100) POKE(0xD010U,0x01); else POKE(0xD010U,0);
   if (xx&0x200) POKE(0xD05FU,0x01); else POKE(0xD05FU,0);
     
+}
+
+void editor_redraw_line(void)
+{
+  buffer.rows_used=current_row;
+  outputLineToRenderBuffer(&scratch,&buffer);
 }
 
 void editor_insert_codepoint(unsigned int code_point)
@@ -245,13 +253,17 @@ void editor_process_special_key(uint8_t key)
     if (text_line<EDITOR_MAX_LINES) text_line++;
     current_row=text_line_first_rows[text_line];
     editor_fetch_line(text_line);
+    editor_update_cursor();
+    editor_redraw_line();
     break;
   case 0x91: // Cursor up
     editor_stash_line(text_line);
     if (text_line) text_line--;
     current_row=text_line_first_rows[text_line];
-    editor_fetch_line(text_line);	      
-    break;
+    editor_fetch_line(text_line);
+    editor_update_cursor();
+    editor_redraw_line();
+  break;
   default:
     break;
   }
