@@ -55,7 +55,7 @@ HEADERS=	Makefile \
 			$(SRCDIR)/ascii.h
 
 DATAFILES=	ascii8x8.bin \
-			UbuntuMono-R.f65
+			example.f65
 
 CC65=		$(CC65DIR)/bin/cc65
 CL65=		$(CC65DIR)/bin/cl65
@@ -100,7 +100,7 @@ load:		$(MONLOAD) $(C65SYSROM) $(PROGRAM)
 .PRECIOUS: $(BINDIR)/%.s %.f65
 
 %.f65:	%.ttf Makefile $(TTFTOF65)
-	$(TTFTOF65) -A -P 24 -T $< -o $@
+	$(TTFTOF65) -8 "abcdefghijklmnopqrstuvwxyzQAZXSWEDCVFRTGBNHYUJMKIOLP 1234567890!@#$%&*()-+_=,.<>/?;:'\"" -P 20 -T $< -o $@
 
 $(BINDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) | $(BINDIR)
 	if [ -f $(SRCDIR)/$*.c ]; then $(CC65) $(C65OPTS) -o $@ $(SRCDIR)/$*.c; fi
