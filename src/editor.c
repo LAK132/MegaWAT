@@ -210,13 +210,29 @@ void editor_process_special_key(uint8_t key)
   case 0x1f: text_colour=5; break;
   case 0x9e: text_colour=6; break;
   case 0x81: text_colour=7; break;
+  case 0x95: text_colour=8; break;
+  case 0x96: text_colour=9; break;
+  case 0x97: text_colour=10; break;
+  case 0x98: text_colour=11; break;
+  case 0x99: text_colour=12; break;
+  case 0x9a: text_colour=13; break;
+  case 0x9b: text_colour=14; break;
+    // The following need fixes to the ASCII keyboard scanner
+    //  case 0x9c: text_colour=15; break;
+    // case 0x92: text_colour|=ATTRIB_BLINK; break;
+    // CONTROL-u for underline
+  case 0x15: text_colour|=ATTRIB_UNDERLINE; break;
+    // CONTROL-r (or RVS ON key once ASCII keyboard scanner fixed) for reverse
+  case 0x12: text_colour|=ATTRIB_REVERSE; break;
+      // CONTROL-b for blink
+  case 0x02: text_colour|=ATTRIB_BLINK; break;
     
     // Backspace (with CONTROL for DEL?)
   case 0x14:
     if (cursor_col) {
       deleteGlyph(&scratch,cursor_col-1);
       buffer.rows_used=current_row;
-      outputLineToRenderBuffer(&scratch,&buffer);
+      editor_redraw_line();
       if (buffer.rows_used<next_row) {
 	// Deleting a character reduced the row height,
 	// So shuffle up the rows below, and fill in the
