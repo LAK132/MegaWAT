@@ -94,12 +94,6 @@ void main(void)
 
   for(x=0;x<100;x++) string[x]=0;
 
-  renderGlyph(ASSET_RAM,'1',&scratch,text_colour,ATTRIB_ALPHA_BLEND,3);
-  renderGlyph(ASSET_RAM,'2',&scratch,text_colour,ATTRIB_ALPHA_BLEND,3);
-  renderGlyph(ASSET_RAM,'3',&scratch,text_colour,ATTRIB_ALPHA_BLEND,3);
-  outputLineToRenderBuffer(&scratch,&buffer);
-
-  
   while (key != KEY_ESC)
     {
       mod = READ_MOD();
@@ -132,20 +126,33 @@ void main(void)
 	    case 0x81: text_colour=7; break;
 	    case 0x14:
 	      if (cursor_col) {
-		deleteGlyph(&scratch,0);
+		deleteGlyph(&scratch,cursor_col-1);
 		lcopy(&string[cursor_col],&string[cursor_col-1],99-cursor_col);
 		string[99]=0;
 		outputLineToRenderBuffer(&scratch,&buffer);
-		//		POKE(0xd020U,scratch.glyph_count&0xf);
+		POKE(0xd020U,scratch.glyph_count&0xf);
+		cursor_col--;
 	      }
 	      break;
-	    case 0x9d: if (cursor_col) cursor_col--; break;
-	    case 0x1d: if (cursor_col<99) cursor_col++; break;
+	    case 0x9d:
+	      if (cursor_col) cursor_col--;
+	      break;
+	    case 0x1d:
+	      if (cursor_col<99) cursor_col++;
+	      break;
 	    default:
 	      break;
 	    }
 	    POKE(0xD020,text_colour);
 	  }
+
+    POKE(0x0402U,scratch.glyph_count);
+    POKE(0x0403U,cursor_col);
+
+    for(x=0;x<16;x++) 
+      POKE(0x0408U+x,scratch.glyphs[x].code_point);
+	
+
 	  {
 	    int i;
 	    for(i=0;i<25000;i++) continue;
