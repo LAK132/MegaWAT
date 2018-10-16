@@ -133,8 +133,9 @@ void editor_update_cursor(void)
   for(x=0;x<cursor_col;x++)
     xx+=scratch.glyphs[x].columns*8-scratch.glyphs[x].trim_pixels;
   // Work out cursor height
-  h=8*(scratch.max_above+scratch.max_below);
-  if (h<8) h=8;
+  // Note: Sprites use V200 dimensions, thus 4 V200 pixels per 8 V400 pixels.
+  h=4*(scratch.max_above+scratch.max_below);
+  if (h<4) h=4;
   y=30;
   // Set extended Y height to match required height.
   POKE(0xD056,h);

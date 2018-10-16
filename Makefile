@@ -100,7 +100,7 @@ load:		$(MONLOAD) $(C65SYSROM) $(PROGRAM)
 .PRECIOUS: $(BINDIR)/%.s %.f65
 
 %.f65:	%.ttf Makefile $(TTFTOF65)
-	$(TTFTOF65) -8 "abcdefghijklmnopqrstuvwxyzQAZXSWEDCVFRTGBNHYUJMKIOLP 1234567890!@#$%&*()-+_=,.<>/?;:'\"" -P 20 -T $< -o $@
+	$(TTFTOF65) -8 "MEGA65!?." -P 80 -T $< -o $@
 
 $(BINDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) | $(BINDIR)
 	if [ -f $(SRCDIR)/$*.c ]; then $(CC65) $(C65OPTS) -o $@ $(SRCDIR)/$*.c; fi
