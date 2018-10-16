@@ -118,7 +118,7 @@ void editor_fetch_line(unsigned char line_num)
 void editor_show_cursor(void)
 {
   // Put cursor in initial position
-  xx=6; y=30;
+  xx=5; y=30;
   POKE(0xD000,xx & 0xFF);
   POKE(0xD001,y);
   if (xx&0x100) POKE(0xD010U,0x01); else POKE(0xD010U,0);
@@ -129,7 +129,7 @@ void editor_show_cursor(void)
 void editor_update_cursor(void)
 {
   // Work out where cursor should be
-  xx=6; // Fudge factor
+  xx=5; // Fudge factor
   for(x=0;x<cursor_col;x++)
     xx+=scratch.glyphs[x].columns*8-scratch.glyphs[x].trim_pixels;
   // Work out cursor height
@@ -151,6 +151,7 @@ void editor_update_cursor(void)
 void editor_insert_codepoint(unsigned int code_point)
 {
   // Natural key -- insert here
+  h=scratch.glyph_count;
   renderGlyph(ASSET_RAM,code_point,&scratch,text_colour,ATTRIB_ALPHA_BLEND,cursor_col);
 
   // Check if this code point grew the height of the line.
@@ -159,7 +160,9 @@ void editor_insert_codepoint(unsigned int code_point)
   buffer.rows_used=current_row;
   outputLineToRenderBuffer(&scratch,&buffer);
   next_row=buffer.rows_used;
-  cursor_col++;
+  // Only advance cursor if the glyph was actually rendered
+  if (scratch.glyph_count>h) cursor_col++;
+  if (cursor_col>scratch.glyph_count) cursor_col=scratch.glyphs;
 }
 
 void editor_process_special_key(uint8_t key)
