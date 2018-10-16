@@ -2,6 +2,8 @@
 
 #include "globals.h"
 
+extern uint8_t font_id;
+
 // Try to keep this structure 8 bytes = a power of two for efficiency
 typedef struct glyph_details {
   uint16_t code_point;
@@ -11,6 +13,7 @@ typedef struct glyph_details {
   uint8_t columns;
   uint8_t trim_pixels;
   uint8_t first_column;
+  uint8_t colour_and_attributes;
 } glyph_details_t;
 
 typedef struct render_buffer

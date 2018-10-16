@@ -9,6 +9,9 @@
   in part because it doesn't know about the 32-bit indirect addressing
   mode of the MEGA65's CPU.
 */
+
+uint8_t font_id = 0;
+
 uint8_t x, y, start_column;
 uint32_t i, j, k;
 uint32_t prev_font = 0U; // read only
@@ -306,6 +309,7 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
 	gd->columns=bytes_per_row;
 	gd->trim_pixels=trim_pixels;
 	gd->first_column=start_column;
+	gd->colour_and_attributes=colour_and_attributes;
 
         bytes_per_row = bytes_per_row << 1;
 	
