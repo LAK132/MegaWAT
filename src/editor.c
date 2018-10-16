@@ -166,16 +166,19 @@ void editor_insert_codepoint(unsigned int code_point)
   // XXX Check if this code point grew the height of the line.
   // If so, push everything else down before pasting
   if ((text_line+1)<EDITOR_MAX_LINES) {
-    if ((current_row+text_line_first_rows[text_line])>
-	text_line_first_rows[text_line+1]) {
-      // Yes, it grew, so work out by how much
-      x=text_line_first_rows[text_line+1]-
-	(current_row+text_line_first_rows[text_line]);
+    x=(scratch.max_above+scratch.max_below)
+      -(text_line_first_rows[text_line+1]-text_line_first_rows[text_line]);
+    if (x&&x<0x80) {
+      // Yes, it grew.
       // Now shift everything down
       #if 0
       lcopy(scratch.screen_ram+text_line_first_rows[text_line+1]*200,
 	    scratch.screen_ram+(text_line_first_rows[text_line+1]+x)*200,
+	    );
 #endif
+      // Adjust first row for all following lines
+      for(y=text_line+1;y<EDITOR_MAX_LINES;y++)
+	text_line_first_rows[y]+=x;
     }
   }
 
@@ -219,6 +222,11 @@ void editor_process_special_key(uint8_t key)
 	      (60-next_row)*200);
 	
 	// XXX Fill in bottom of screen
+
+	// Adjust starting rows for following lines
+	x=next_row-buffer.rows_used;
+	for(y=text_line+1;y<EDITOR_MAX_LINES;y++)
+	  text_line_first_rows[y]-=x;
 	
       }
       next_row=buffer.rows_used;
