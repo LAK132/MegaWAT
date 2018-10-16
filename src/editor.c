@@ -270,7 +270,7 @@ void editor_poll_keyboard(void)
 	    for(i=0;i<25000;i++) continue;
 	  }
 	} else {
-	if (PEEK(0xD012U)>0xF0)
+	if (PEEK(0xD012U)>0xF8)
 	  {
 	    cursor_toggle++;
 	    if (!cursor_toggle)
