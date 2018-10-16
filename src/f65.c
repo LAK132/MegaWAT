@@ -308,6 +308,37 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
         // Skip header
         map_pos += 4;
 
+	if (position<b->glyph_count) {
+	    // Char is not on the end, so make space
+
+	  // First, work out the address of the start row and column
+	  screen = b->screen_ram + start_column*2;
+	  colour = b->colour_ram + start_column*2;
+	  for (y = b->max_above; y < b->baseline_row; ++y)
+	    {
+	      screen += 200;
+	      colour += 200;
+	    }
+
+	  // Now we need to copy each row of data to the screen RAM and colour RAM buffers
+	  for (y = 0; y < (b->max_above + b->max_below); ++y)
+	    {
+	      // Make space
+	      lcopy_safe(screen,screen+bytes_per_row,(b->columns_used - start_column)*2);
+	      lcopy_safe(colour,colour+bytes_per_row,(b->columns_used - start_column)*2);
+
+	      // Fill screen and colour RAM with empty patterns
+	      lcopy((long)&clear_pattern,screen,bytes_per_row);
+	      lcopy(screen,screen+2,bytes_per_row-2);
+	      lfill(colour,0x00,bytes_per_row);
+	      
+	      screen += 200;
+	      colour += 200;
+	    }
+	}
+
+
+	
         // Work out first address of screen and colour RAM
 
         // First, work out the address of the start row and column
@@ -322,12 +353,6 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
         // Now we need to copy each row of data to the screen RAM and colour RAM buffers
         for (y = 0; y < (rows_above + rows_below); ++y)
         {
-	  if (position<b->glyph_count) {
-	    // Char is not on the end, so make space
-	    lcopy(screen,screen+bytes_per_row,198 - bytes_per_row - start_column*2);
-	    lcopy(colour,colour+bytes_per_row,198 - bytes_per_row - start_column*2);
-	  }
-
 	  // Copy screen data
             lcopy((long)map_pos, (long)screen, bytes_per_row);
 
@@ -371,7 +396,7 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, render_buffer_t *b,
 
         // then apply trim to entire column
         trim_pixels = trim_pixels << 5;
-        screen = b->screen_ram + b->columns_used + b->columns_used - 1;
+        screen = b->screen_ram + start_column + start_column + bytes_per_row - 1;
         for (y = 0; y < 30; ++y)
         {
             lpoke(screen, (lpeek(screen) & 0x1f) | trim_pixels);

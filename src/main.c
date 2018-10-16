@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 
     // Then try rendering some glyphs
     clearRenderBuffer(&scratch);
-    renderTextUTF16(ASSET_RAM, hello_world, &scratch, ATTRIB_BLINK | COLOUR_WHITE, ATTRIB_ALPHA_BLEND);
+    renderTextUTF16(ASSET_RAM, hello_world, &scratch, /* ATTRIB_BLINK | */ COLOUR_WHITE, ATTRIB_ALPHA_BLEND);
     outputLineToRenderBuffer(&scratch, &buffer);
 
     while(1) POKE(0xd020U,PEEK(0xd012U));
