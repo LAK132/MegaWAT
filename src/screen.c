@@ -44,22 +44,21 @@ void screen_hex(unsigned int addr, long value)
     POKE(addr + 7, to_screen_hex(value >> 0));
 }
 
+char dec9[9];
 void format_hex(const int addr, const long value, const char columns)
 {
-    char i, c;
-    char dec[9];
-    screen_hex((int)&dec[0], value);
+    screen_hex((int)&dec9[0], value);
 
     c = 8 - columns;
     while (c)
     {
-        for (i = 0; i < 7; i++)
-            dec[i] = dec[i + 1];
-        dec[7] = ' ';
+        for (i = 0; i < 7; ++i)
+            dec9[i] = dec9[i + 1];
+        dec9[7] = ' ';
         c--;
     }
-    for (i = 0; i < columns; i++)
-        lpoke(addr + i, dec[i]);
+    for (i = 0; i < columns; ++i)
+        lpoke(addr + i, dec9[i]);
 }
 
 unsigned char screen_decimal_digits[16][5] = {
@@ -105,7 +104,7 @@ unsigned char screen_decimal_digits[16][5] = {
 //     return;
 // }
 
-unsigned char ii, j, carry, temp;
+uint8_t carry, temp;
 unsigned int value;
 void screen_decimal(unsigned int addr, unsigned int v)
 {
@@ -115,19 +114,19 @@ void screen_decimal(unsigned int addr, unsigned int v)
     value = v;
 
     // Start with all zeros
-    for (ii = 0; ii < 5; ii++)
-        screen_hex_buffer[ii] = 0;
+    for (j = 0; j < 5; ++j)
+        screen_hex_buffer[j] = 0;
 
     // Add power of two strings for all non-zero bits in value.
     // XXX - We should use BCD mode to do this more efficiently
-    for (ii = 0; ii < 16; ii++)
+    for (j = 0; j < 16; ++j)
     {
         if (value & 1)
         {
             carry = 0;
-            for (j = 4; j < 128; j--)
+            for (k = 4; k < 128; --k)
             {
-                temp = screen_hex_buffer[j] + screen_decimal_digits[ii][j] + carry;
+                temp = screen_hex_buffer[j] + screen_decimal_digits[j][k] + carry;
                 if (temp > 9)
                 {
                     temp -= 10;
@@ -135,18 +134,18 @@ void screen_decimal(unsigned int addr, unsigned int v)
                 }
                 else
                     carry = 0;
-                screen_hex_buffer[j] = temp;
+                screen_hex_buffer[k] = temp;
             }
         }
         value = value >> 1;
     }
 
     // Now convert to ascii digits
-    for (j = 0; j < 5; j++)
-        screen_hex_buffer[j] = screen_hex_buffer[j] | '0';
+    for (k = 0; k < 5; ++k)
+        screen_hex_buffer[k] = screen_hex_buffer[k] | '0';
 
     // and shift out leading zeros
-    for (j = 0; j < 4; j++)
+    for (k = 0; k < 4; ++k)
     {
         if (screen_hex_buffer[0] != '0')
             break;
@@ -158,18 +157,17 @@ void screen_decimal(unsigned int addr, unsigned int v)
     }
 
     // Copy to screen
-    for (j = 0; j < 5; j++)
-        POKE(addr + j, screen_hex_buffer[j]);
+    for (k = 0; k < 5; ++k)
+        POKE(addr + k, screen_hex_buffer[k]);
 }
 
+char dec6[6];
 void format_decimal(const int addr, const int value, const char columns)
 {
-    char i;
-    char dec[6];
-    screen_decimal((int)&dec[0], value);
+    screen_decimal((int)&dec6[0], value);
 
-    for (i = 0; i < columns; i++)
-        lpoke(addr + i, dec[i]);
+    for (i = 0; i < columns; ++i)
+        lpoke(addr + i, dec6[i]);
 }
 
 long addr;
@@ -228,15 +226,13 @@ void screen_colour_line(unsigned char line, unsigned char colour)
     lfill(0x1f800 + (line << 6) + (line << 4), colour, 80);
 }
 
-unsigned char i;
-
 void fatal_error(unsigned char *filename, unsigned int line_number)
 {
     display_footer(FOOTER_FATAL);
-    for (i = 0; filename[i]; i++)
+    for (i = 0; filename[i]; ++i)
         POKE(FOOTER_ADDRESS + 44 + i, filename[i]);
     POKE(FOOTER_ADDRESS + 44 + i, ':');
-    i++;
+    ++i;
     screen_decimal(FOOTER_ADDRESS + 44 + i, line_number);
     lfill(COLOUR_RAM_ADDRESS - SCREEN_ADDRESS + FOOTER_ADDRESS, 2 | ATTRIB_REVERSE, 80);
     for (;;)
@@ -248,11 +244,11 @@ void set_screen_attributes(long p, unsigned char count, unsigned char attr)
     // This involves setting colour RAM values, so we need to either LPOKE, or
     // map the 2KB colour RAM in at $D800 and work with it there.
     // XXX - For now we are LPOKING
-    long addr = COLOUR_RAM_ADDRESS - SCREEN_ADDRESS + p;
-    for (i = 0; i < count; i++)
+    addr = COLOUR_RAM_ADDRESS - SCREEN_ADDRESS + p;
+    for (i = 0; i < count; ++i)
     {
         lpoke(addr, lpeek(addr) | attr);
-        addr++;
+        ++addr;
     }
 }
 

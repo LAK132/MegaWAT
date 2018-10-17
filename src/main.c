@@ -1,10 +1,10 @@
 /*
-    A simple example program using CC65 and some simple routines to
-    use an 80 column ASCII screen on the MEGA65.
+        A simple example program using CC65 and some simple routines to
+        use an 80 column ASCII screen on the MEGA65.
 
-    If you follow some restrictions, it is also possible to make such
-    programs compile and run natively on your development system for
-    testing.
+        If you follow some restrictions, it is also possible to make such
+        programs compile and run natively on your development system for
+        testing.
 
 */
 
@@ -29,61 +29,58 @@
 
 #include "main.h"
 
-extern int16_t font_file;
-extern int16_t font_file_size;
-
-extern uint8_t x, y;
-extern render_buffer_t buffer, scratch;
-
 void main(void)
 {
-  m65_io_enable();
-  
-  videoSetSlideMode();
-  videoSetActiveSlideBuffer(0);
-  
+    m65_io_enable();
+
+    videoSetSlideMode();
+    videoSetActiveSlideBuffer(0);
+
 #if 0
-  // Draw alpha gradient for testing
-  for(x=0;x<255;x++)
-    for(y=0;y<8;y++)
-      POKE(0xE000U+(x&7)+((x/8)*64U)+(y*8),x);
+    // Draw alpha gradient for testing
+    for (x = 0; x < 255; x++)
+        for (y = 0; y < 8; y++)
+            POKE(0xE000U + (x & 7) + ((x / 8) * 64U) + (y * 8), x);
 
-  for(x=0;x<100;x++) {
-    lpoke(SLIDE0_SCREEN_RAM+220U+x*2,(0xe000U/0x40+x)&0xff);
-    lpoke(SLIDE0_SCREEN_RAM+220U+x*2+1,(0xe000U/0x40+x)>>8);
-    lpoke(SLIDE0_COLOUR_RAM+220U+x*2,0x20); // 0x20 for alpha
-    lpoke(SLIDE0_COLOUR_RAM+220U+x*2+1,0x2);
-  }
+    for (x = 0; x < 100; x++)
+    {
+        lpoke(SLIDE0_SCREEN_RAM + 220U + x * 2, (0xe000U / 0x40 + x) & 0xff);
+        lpoke(SLIDE0_SCREEN_RAM + 220U + x * 2 + 1, (0xe000U / 0x40 + x) >> 8);
+        lpoke(SLIDE0_COLOUR_RAM + 220U + x * 2, 0x20); // 0x20 for alpha
+        lpoke(SLIDE0_COLOUR_RAM + 220U + x * 2 + 1, 0x2);
+    }
 
-  x=90;
-  lpoke(SLIDE0_SCREEN_RAM+200U+x*2,0xff);
-  lpoke(SLIDE0_SCREEN_RAM+200U+x*2+1,0xff);
-  lpoke(SLIDE0_SCREEN_RAM+0U+x*2,0xff);
-  lpoke(SLIDE0_SCREEN_RAM+0U+x*2+1,0xff);
+    x = 90;
+    lpoke(SLIDE0_SCREEN_RAM + 200U + x * 2, 0xff);
+    lpoke(SLIDE0_SCREEN_RAM + 200U + x * 2 + 1, 0xff);
+    lpoke(SLIDE0_SCREEN_RAM + 0U + x * 2, 0xff);
+    lpoke(SLIDE0_SCREEN_RAM + 0U + x * 2 + 1, 0xff);
 
-    
-  while(1) POKE(0xd020U,PEEK(0xd012U));
+    while (1)
+        POKE(0xd020U, PEEK(0xd012U));
 #endif
-    
-  // Copy bundled font into the asset area of memory
-  lcopy(font_file + 2, ASSET_RAM, font_file_size - 2);
-  // Then patch the pointers in the font to be correct
-  patchFont(ASSET_RAM);
 
-  // Create a render buffer that points to the default active screen
-  buffer.screen_ram = SLIDE0_SCREEN_RAM;
-  buffer.colour_ram = SLIDE0_COLOUR_RAM;
+    // Copy bundled font into the asset area of memory
+    lcopy(font_file + 2, ASSET_RAM, font_file_size - 2);
+    // Then patch the pointers in the font to be correct
+    patchFont(ASSET_RAM);
 
-  scratch.screen_ram = SCRATCH_SCREEN_RAM;
-  scratch.colour_ram = SCRATCH_COLOUR_RAM;
+    // Create a render buffer that points to the default active screen
+    screen_rbuffer.screen_ram = SLIDE0_SCREEN_RAM;
+    screen_rbuffer.colour_ram = SLIDE0_COLOUR_RAM;
 
-  // Make sure they are clear
-  clearRenderBuffer(&buffer);
-  clearRenderBuffer(&scratch);
+    scratch_rbuffer.screen_ram = SCRATCH_SCREEN_RAM;
+    scratch_rbuffer.colour_ram = SCRATCH_COLOUR_RAM;
 
-  editor_initialise();
-  editor_show_cursor();
-  
-  while(1) editor_poll_keyboard();
-  
+    // Make sure they are clear
+    active_rbuffer = &screen_rbuffer;
+    clearRenderBuffer(); // &buffer);
+    active_rbuffer = &scratch_rbuffer;
+    clearRenderBuffer(); // &scratch);
+
+    editor_initialise();
+    editor_show_cursor();
+
+    while (1)
+        editor_poll_keyboard();
 }

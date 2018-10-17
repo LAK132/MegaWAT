@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "memorymap.h"
 
 #define BORDER_COLOUR(X) POKE(0xD020U,X)
 #define SCREEN_COLOUR(X) POKE(0xD021U,X)
@@ -24,7 +25,7 @@
 #define KEY_UP_DOWN     0x11 // (KEY_UP & KEY_DOWN)
 
 // Screen ram attributes
-#define ATTRIB_TRIM_RIGHT(x)     (x<<5)
+#define ATTRIB_TRIM_RIGHT(x) (x<<5)
 
 // 8 bit colour ram attributes (high byte in 16bit mode)
 #define ATTRIB_BLINK       0x10
@@ -53,6 +54,9 @@ extern uint32_t screen_address;
 extern uint32_t colour_address;
 extern uint32_t screen_width;
 extern uint32_t screen_size;
+
+extern uint8_t c, x, y, z;
+extern uint32_t i, j, k, l;
 
 void toggle_write_protection(void);
 
