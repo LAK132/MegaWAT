@@ -24,8 +24,7 @@ unsigned int key = 0;
 char mod = 0;
 int xx;
 unsigned char h;
-uint32_t sram;
-int32_t cram;
+uint32_t sram, cram;
 uint16_t cursor_toggle = 0;
 
 void editor_insert_line(unsigned char before)
@@ -191,8 +190,8 @@ void editor_insert_codepoint(unsigned int code_point)
             // Now shift everything down (on the SCREEN buffer)
             sram = screen_rbuffer.screen_ram + (screen_size - screen_width);
             cram = screen_rbuffer.colour_ram + (screen_size - screen_width);
-            l    = screen_rbuffer.screen_ram + ((text_line_first_rows[text_line + 1] - 1) * screen_width);
-            while (sram > l)
+            l    = screen_rbuffer.screen_ram + (text_line_first_rows[text_line + 1] * screen_width);
+            while (sram >= l)
             {
                 lcopy_safe(sram - screen_width, sram, screen_width);
                 lcopy_safe(cram - screen_width, cram, screen_width);
@@ -218,21 +217,23 @@ void editor_process_special_key(uint8_t key)
     switch (key)
     {
         // Commodore colour selection keys
-        case 0x05: text_colour = 0; break;
-        case 0x1c: text_colour = 1; break;
-        case 0x9f: text_colour = 2; break;
-        case 0x9c: text_colour = 3; break;
-        case 0x1e: text_colour = 4; break;
-        case 0x1f: text_colour = 5; break;
-        case 0x9e: text_colour = 6; break;
-        case 0x81: text_colour = 7; break;
-        case 0x95: text_colour = 8; break;
-        case 0x96: text_colour = 9; break;
-        case 0x97: text_colour = 10; break;
-        case 0x98: text_colour = 11; break;
-        case 0x99: text_colour = 12; break;
-        case 0x9a: text_colour = 13; break;
-        case 0x9b: text_colour = 14; break;
+        // CTRL
+        case 0x05: text_colour = (text_colour & 0xF0) | COLOUR_BLACK; break;
+        case 0x1C: text_colour = (text_colour & 0xF0) | COLOUR_WHITE; break;
+        case 0x9F: text_colour = (text_colour & 0xF0) | COLOUR_RED; break;
+        case 0x9C: text_colour = (text_colour & 0xF0) | COLOUR_CYAN; break;
+        case 0x1E: text_colour = (text_colour & 0xF0) | COLOUR_PURPLE; break;
+        case 0x1F: text_colour = (text_colour & 0xF0) | COLOUR_GREEN; break;
+        case 0x9E: text_colour = (text_colour & 0xF0) | COLOUR_BLUE; break;
+        case 0x81: text_colour = (text_colour & 0xF0) | COLOUR_YELLOW; break;
+        // SUPER
+        case 0x95: text_colour = (text_colour & 0xF0) | COLOUR_ORANGE; break;
+        case 0x96: text_colour = (text_colour & 0xF0) | COLOUR_BROWN; break;
+        case 0x97: text_colour = (text_colour & 0xF0) | COLOUR_PINK; break;
+        case 0x98: text_colour = (text_colour & 0xF0) | COLOUR_DARKGREY; break;
+        case 0x99: text_colour = (text_colour & 0xF0) | COLOUR_MEDIUMGREY; break;
+        case 0x9A: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTGREEN; break;
+        case 0x9B: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTBLUE; break;
         // The following need fixes to the ASCII keyboard scanner
         // case 0x9c: text_colour=15; break;
         // case 0x92: text_colour|=ATTRIB_BLINK; break;
@@ -249,7 +250,7 @@ void editor_process_special_key(uint8_t key)
             if (cursor_col)
             {
                 active_rbuffer = &scratch_rbuffer;
-                deleteGlyph(cursor_col - 1);
+                deleteGlyph(--cursor_col);
                 screen_rbuffer.rows_used = current_row;
                 editor_redraw_line();
                 if (screen_rbuffer.rows_used < next_row)
@@ -259,9 +260,10 @@ void editor_process_special_key(uint8_t key)
                     // bottom of the screen.
 
                     // Copy rows up
-                    lcopy(screen_rbuffer.screen_ram + next_row * 200,
-                                screen_rbuffer.screen_ram + screen_rbuffer.rows_used * 200,
-                                (60 - next_row) * 200);
+                    lcopy(screen_rbuffer.screen_ram + next_row * screen_width,
+                        screen_rbuffer.screen_ram + (screen_rbuffer.rows_used * screen_width),
+                        screen_size - (screen_width * (60 - next_row))/
+                    );
 
                     // XXX Fill in bottom of screen
 
@@ -271,7 +273,6 @@ void editor_process_special_key(uint8_t key)
                         text_line_first_rows[y] -= x;
                 }
                 next_row = screen_rbuffer.rows_used;
-                cursor_col--;
             }
             else
             {

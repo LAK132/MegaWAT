@@ -13,26 +13,26 @@
 #define ATTRIB_UNDERLINE 0x80
 #define ATTRIB_HIGHLIGHT 0x40
 
-#define COLOUR_BLACK 0
-#define COLOUR_WHITE 1
-#define COLOUR_RED 2
-#define COLOUR_CYAN 3
-#define COLOUR_PURPLE 4
-#define COLOUR_GREEN 5
-#define COLOUR_BLUE 6
-#define COLOUR_YELLOW 7
-#define COLOUR_ORANGE 8
-#define COLOUR_BROWN 9
-#define COLOUR_PINK 10
-#define COLOUR_GREY1 11
-#define COLOUR_DARKGREY 11
-#define COLOUR_GREY2 12
-#define COLOUR_GREY 12
-#define COLOUR_MEDIUMGREY 12
-#define COLOUR_LIGHTGREEN 13
-#define COLOUR_LIGHTBLUE 14
-#define COLOUR_GREY3 15
-#define COLOUR_LIGHTGREY 15
+#define COLOUR_BLACK        0x0
+#define COLOUR_WHITE        0x1
+#define COLOUR_RED          0x2
+#define COLOUR_CYAN         0x3
+#define COLOUR_PURPLE       0x4
+#define COLOUR_GREEN        0x5
+#define COLOUR_BLUE         0x6
+#define COLOUR_YELLOW       0x7
+#define COLOUR_ORANGE       0x8
+#define COLOUR_BROWN        0x9
+#define COLOUR_PINK         0xA
+#define COLOUR_GREY1        0xB
+#define COLOUR_DARKGREY     0xB
+#define COLOUR_GREY2        0xC
+#define COLOUR_GREY         0xC
+#define COLOUR_MEDIUMGREY   0xC
+#define COLOUR_LIGHTGREEN   0xD
+#define COLOUR_LIGHTBLUE    0xE
+#define COLOUR_GREY3        0xF
+#define COLOUR_LIGHTGREY    0xF
 
 // void setup_screen(void);
 

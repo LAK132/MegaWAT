@@ -81,7 +81,7 @@ TTFTOF65=	$(FONTRSTDIR)/ttftof65
 
 all:		$(FILES) | $(MKDIRS)
 
-clean: clean-bin clean-out
+clean: clean-bin clean-out clean-font
 
 clean-bin:
 	if [ -d $(BINDIR) ]; then cd $(BINDIR) && rm -f *; fi
@@ -105,7 +105,7 @@ load:		$(MONLOAD) $(C65SYSROM) $(PROGRAM)
 .PRECIOUS: $(BINDIR)/%.s %.f65
 
 %.f65:	%.ttf Makefile $(TTFTOF65)
-	$(TTFTOF65) -A -P 20 -T $< -o $@
+	$(TTFTOF65) -A -P 16 -T $< -o $@
 
 $(BINDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) | $(BINDIR)
 	if [ -f $(SRCDIR)/$*.c ]; then $(CC65) $(C65OPTS) -o $@ $(SRCDIR)/$*.c; fi

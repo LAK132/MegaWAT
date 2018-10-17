@@ -103,10 +103,8 @@ void outputLineToRenderBuffer(void)
     j = rows_below * screen_width;
 
     // Do the copies via DMA
-    lcopy(scratch_rbuffer.screen_ram + i,
-        screen_rbuffer.screen_ram + (screen_rbuffer.rows_used * screen_width), j);
-    lcopy(scratch_rbuffer.colour_ram + i,
-        screen_rbuffer.colour_ram + (screen_rbuffer.rows_used * screen_width), j);
+    lcopy(scratch_rbuffer.screen_ram + i, screen_rbuffer.screen_ram + (screen_rbuffer.rows_used * screen_width), j);
+    lcopy(scratch_rbuffer.colour_ram + i, screen_rbuffer.colour_ram + (screen_rbuffer.rows_used * screen_width), j);
 
     // Mark the rows used in the output buffer
     screen_rbuffer.rows_used += rows_below;
@@ -152,8 +150,8 @@ void deleteGlyph(uint8_t glyph_num)
     // then advance to the first unused column
     screen += active_rbuffer->glyphs[glyph_num].first_column * char_size;
     colour += active_rbuffer->glyphs[glyph_num].first_column * char_size;
-    x = active_rbuffer->glyphs[glyph_num].columns * 2;
-    bytes_per_row = (active_rbuffer->columns_used - active_rbuffer->glyphs[glyph_num].first_column) * 2;
+    x       = active_rbuffer->glyphs[glyph_num].columns * char_size;
+    bytes_per_row = (active_rbuffer->columns_used - active_rbuffer->glyphs[glyph_num].first_column) * char_size;
 
     // Copy remaining glyphs on the line
     if ((glyph_num + 1) != active_rbuffer->glyph_count)
