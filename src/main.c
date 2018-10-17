@@ -61,7 +61,7 @@ void main(void)
 #endif
 
     // Copy bundled font into the asset area of memory
-    lcopy(font_file + 2, ASSET_RAM, font_file_size - 2);
+    lcopy(font_file, ASSET_RAM, font_file_size);
     // Then patch the pointers in the font to be correct
     patchFont(ASSET_RAM);
 
