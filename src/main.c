@@ -74,9 +74,9 @@ void main(void)
 
     // Make sure they are clear
     active_rbuffer = &screen_rbuffer;
-    clearRenderBuffer(); // &buffer);
+    clearRenderBuffer();
     active_rbuffer = &scratch_rbuffer;
-    clearRenderBuffer(); // &scratch);
+    clearRenderBuffer();
 
     editor_initialise();
     editor_show_cursor();

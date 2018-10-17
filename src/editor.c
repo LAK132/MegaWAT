@@ -24,7 +24,8 @@ unsigned int key = 0;
 char mod = 0;
 int xx;
 unsigned char h;
-uint32_t sram, cram;
+uint32_t sram;
+int32_t cram;
 uint16_t cursor_toggle = 0;
 
 void editor_insert_line(unsigned char before)
@@ -34,9 +35,9 @@ void editor_insert_line(unsigned char before)
 
 void editor_initialise(void)
 {
-    for (y = 0; y < EDITOR_MAX_LINES; y++)
+    for (y = 0; y < EDITOR_MAX_LINES; ++y)
     {
-        lfill((long)&editor_buffer[y][0], 0x00, EDITOR_LINE_LEN * 2);
+        lfill((long)&editor_buffer[y][0], 0x00, EDITOR_LINE_LEN * char_size);
         text_line_first_rows[y] = y;
     }
     text_line_count = 0;
@@ -52,10 +53,10 @@ void editor_stash_line(unsigned char line_num)
     text_colour = 1;
 
     y = 0;
-    for (x = 0; x < scratch_rbuffer.glyph_count; x++)
+    for (x = 0; x < scratch_rbuffer.glyph_count; ++x)
     {
         // Make sure we don't overflow
-        if (y >= (EDITOR_LINE_LEN - 2))
+        if (y >= (EDITOR_LINE_LEN - char_size))
             break;
 
         // Encode any required colour/attribute/font changes
@@ -75,7 +76,7 @@ void editor_stash_line(unsigned char line_num)
         editor_buffer[line_num][y++] = scratch_rbuffer.glyphs[x].code_point;
     }
     // Fill remainder of line with end of line markers
-    for (; y < EDITOR_LINE_LEN; y++)
+    for (; y < EDITOR_LINE_LEN; ++y)
         editor_buffer[line_num][y] = 0;
 }
 
@@ -84,7 +85,7 @@ void editor_fetch_line(unsigned char line_num)
     active_rbuffer = &scratch_rbuffer;
     // Fetch the specified line, and pre-render it into scratch
     clearRenderBuffer();
-    for (h = 0; editor_buffer[line_num][h] && (h < EDITOR_LINE_LEN); h++)
+    for (h = 0; editor_buffer[line_num][h] && (h < EDITOR_LINE_LEN); ++h)
         if ((editor_buffer[line_num][h] < 0xe000) || (editor_buffer[line_num][h] >= 0xf800))
             renderGlyph(ASSET_RAM,
                         editor_buffer[line_num][h],
@@ -163,33 +164,35 @@ void editor_update_cursor(void)
 void editor_redraw_line(void)
 {
     screen_rbuffer.rows_used = current_row;
-    outputLineToRenderBuffer(); // &scratch_rbuffer, &screen_rbuffer);
+    outputLineToRenderBuffer();
 }
 
 void editor_insert_codepoint(unsigned int code_point)
 {
     active_rbuffer = &scratch_rbuffer;
     // Natural key -- insert here
-    h = scratch_rbuffer.glyph_count;
+    z = scratch_rbuffer.glyph_count;
     renderGlyph(ASSET_RAM, code_point, text_colour, ATTRIB_ALPHA_BLEND, cursor_col);
 
     // Check if this code point grew the height of the line.
     // If so, push everything else down before pasting
     if ((text_line + 1) < EDITOR_MAX_LINES)
     {
-        x = (scratch_rbuffer.max_above + scratch_rbuffer.max_below) - (text_line_first_rows[text_line + 1] - text_line_first_rows[text_line]);
-        if (x && x < 0x80)
+        // s = glyph height - row height (how much bigger the glyph is than the row)
+        s = (scratch_rbuffer.max_above + scratch_rbuffer.max_below) -
+            (text_line_first_rows[text_line + 1] - text_line_first_rows[text_line]);
+        if (s > 0)
         {
             // Yes, it grew.
-
             // Adjust first row for all following lines
-            for (y = text_line + 1; y < EDITOR_MAX_LINES; y++)
-                text_line_first_rows[y] += x;
+            for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
+                text_line_first_rows[y] += s;
 
-            // Now shift everything down
-            sram = scratch_rbuffer.screen_ram + (screen_size - screen_width); // (60 - 1) * 200;
-            cram = scratch_rbuffer.colour_ram + (screen_size - screen_width); // (60 - 1) * 200;
-            for (y = (screen_size / screen_width) - 1; y > text_line_first_rows[text_line + 1]; --y)
+            // Now shift everything down (on the SCREEN buffer)
+            sram = screen_rbuffer.screen_ram + (screen_size - screen_width);
+            cram = screen_rbuffer.colour_ram + (screen_size - screen_width);
+            l    = screen_rbuffer.screen_ram + ((text_line_first_rows[text_line + 1] - 1) * screen_width);
+            while (sram > l)
             {
                 lcopy_safe(sram - screen_width, sram, screen_width);
                 lcopy_safe(cram - screen_width, cram, screen_width);
@@ -204,10 +207,10 @@ void editor_insert_codepoint(unsigned int code_point)
     next_row = screen_rbuffer.rows_used;
 
     // Only advance cursor if the glyph was actually rendered
-    if (scratch_rbuffer.glyph_count > h)
+    if (scratch_rbuffer.glyph_count > z)
         ++cursor_col;
-    if (cursor_col > scratch_rbuffer.glyph_count)
-        cursor_col = scratch_rbuffer.glyphs; // unsigned char = pointer ??
+    // if (cursor_col > scratch_rbuffer.glyph_count)
+    //     cursor_col = scratch_rbuffer.glyphs; // unsigned char = pointer ??
 }
 
 void editor_process_special_key(uint8_t key)
@@ -296,8 +299,7 @@ void editor_process_special_key(uint8_t key)
         case 0x11: { // Cursor down
             editor_stash_line(text_line);
             if (text_line < EDITOR_MAX_LINES)
-                ++text_line;
-            current_row = text_line_first_rows[text_line];
+                current_row = text_line_first_rows[++text_line];
             editor_fetch_line(text_line);
             editor_update_cursor();
             editor_redraw_line();
@@ -305,8 +307,7 @@ void editor_process_special_key(uint8_t key)
         case 0x91: { // Cursor up
             editor_stash_line(text_line);
             if (text_line)
-                --text_line;
-            current_row = text_line_first_rows[text_line];
+                current_row = text_line_first_rows[--text_line];
             editor_fetch_line(text_line);
             editor_update_cursor();
             editor_redraw_line();
@@ -339,11 +340,8 @@ void editor_poll_keyboard(void)
             for (l = 0; l < 25000; ++l)
                 continue;
         }
-        else
-        {
-            if (PEEK(0xD012U) > 0xF8)
-                if (!(cursor_toggle += 0x10))
-                    POKE(0xD015U, (PEEK(0xD015U) ^ 0x01) & 0x0f); // Toggle cursor on/off quickly
-        }
+        else if (PEEK(0xD012U) > 0xF8)
+            if (!(cursor_toggle += 0x10))
+                POKE(0xD015U, (PEEK(0xD015U) ^ 0x01) & 0x0f); // Toggle cursor on/off quickly
     }
 }

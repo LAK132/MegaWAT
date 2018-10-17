@@ -99,9 +99,14 @@ void outputLineToRenderBuffer(void)
     // And work out which is the first one
     rows_above = scratch_rbuffer.baseline_row - scratch_rbuffer.max_above;
 
+    i = rows_above * screen_width;
+    j = rows_below * screen_width;
+
     // Do the copies via DMA
-    lcopy(scratch_rbuffer.screen_ram + rows_above * screen_width, screen_rbuffer.screen_ram + screen_width * screen_rbuffer.rows_used, rows_below * screen_width);
-    lcopy(scratch_rbuffer.colour_ram + rows_above * screen_width, screen_rbuffer.colour_ram + screen_width * screen_rbuffer.rows_used, rows_below * screen_width);
+    lcopy(scratch_rbuffer.screen_ram + i,
+        screen_rbuffer.screen_ram + (screen_rbuffer.rows_used * screen_width), j);
+    lcopy(scratch_rbuffer.colour_ram + i,
+        screen_rbuffer.colour_ram + (screen_rbuffer.rows_used * screen_width), j);
 
     // Mark the rows used in the output buffer
     screen_rbuffer.rows_used += rows_below;
@@ -145,8 +150,8 @@ void deleteGlyph(uint8_t glyph_num)
         colour += screen_width;
     }
     // then advance to the first unused column
-    screen += active_rbuffer->glyphs[glyph_num].first_column * 2;
-    colour += active_rbuffer->glyphs[glyph_num].first_column * 2;
+    screen += active_rbuffer->glyphs[glyph_num].first_column * char_size;
+    colour += active_rbuffer->glyphs[glyph_num].first_column * char_size;
     x = active_rbuffer->glyphs[glyph_num].columns * 2;
     bytes_per_row = (active_rbuffer->columns_used - active_rbuffer->glyphs[glyph_num].first_column) * 2;
 
@@ -174,9 +179,9 @@ void deleteGlyph(uint8_t glyph_num)
     active_rbuffer->columns_used -= active_rbuffer->glyphs[glyph_num].columns;
 
     // Now erase the tail of each line
-    screen = active_rbuffer->screen_ram + active_rbuffer->columns_used * 2;
-    colour = active_rbuffer->colour_ram + active_rbuffer->columns_used * 2;
-    bytes_per_row = active_rbuffer->glyphs[glyph_num].columns * 2;
+    screen = active_rbuffer->screen_ram + active_rbuffer->columns_used * char_size;
+    colour = active_rbuffer->colour_ram + active_rbuffer->columns_used * char_size;
+    bytes_per_row = active_rbuffer->glyphs[glyph_num].columns * char_size;
 
     for (y = rows_above; y < active_rbuffer->baseline_row; ++y)
     {
@@ -237,17 +242,12 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, uint8_t colour_and_
         position = active_rbuffer->glyph_count;
 
     // Make space if this glyph is not at the end
-    if (position < active_rbuffer->glyph_count)
-        start_column = active_rbuffer->glyphs[position].first_column;
-    else
-    {
-        start_column = active_rbuffer->columns_used;
-    }
+    start_column = (position < active_rbuffer->glyph_count)
+        ? active_rbuffer->glyphs[position].first_column
+        : active_rbuffer->columns_used;
 
     if (start_column > 99)
-    {
         return;
-    }
 
     // XXX - Code points are in numerical order, so speed this up with
     // a binary search.
@@ -306,8 +306,8 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, uint8_t colour_and_
             // Char is not on the end, so make space
 
             // First, work out the address of the start row and column
-            screen = active_rbuffer->screen_ram + start_column * 2;
-            colour = active_rbuffer->colour_ram + start_column * 2;
+            screen = active_rbuffer->screen_ram + start_column * char_size;
+            colour = active_rbuffer->colour_ram + start_column * char_size;
             for (y = active_rbuffer->max_above; y < active_rbuffer->baseline_row; ++y)
             {
                 screen += screen_width;
@@ -334,8 +334,8 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, uint8_t colour_and_
         // Work out first address of screen and colour RAM
 
         // First, work out the address of the start row and column
-        screen = active_rbuffer->screen_ram + start_column * 2;
-        colour = active_rbuffer->colour_ram + start_column * 2;
+        screen = active_rbuffer->screen_ram + start_column * char_size;
+        colour = active_rbuffer->colour_ram + start_column * char_size;
         for (y = rows_above; y < active_rbuffer->baseline_row; ++y)
         {
             screen += screen_width;

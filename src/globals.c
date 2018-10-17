@@ -11,6 +11,7 @@ uint32_t colour_address = 0x1F800U;
 uint32_t screen_width = 80 * sizeof(uint8_t); // 80 * char_size
 uint32_t screen_size = 24 * 80 * sizeof(uint8_t); // 24 * screen_size
 
+int8_t s, r, t;
 uint8_t c, x, y, z;
 uint32_t i, j, k, l;
 
