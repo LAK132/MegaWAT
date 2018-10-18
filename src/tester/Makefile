@@ -16,7 +16,7 @@ DBGLINKOPT =			#bat DBGLINKOPT = /DEBUG
 RELCOMPOPT = -DNDEBUG	#bat RELCOMPOPT = /DNDEBUG
 RELLINKOPT =			#bat RELLINKOPT =
 
-SOURCES = src opengl lak_types lak_utils lak_runtime
+SOURCES = src opengl lak_types lak_utils lak_runtime megawat
 
 opengl_SRC = ./include/GL
 opengl_OBJ = gl3w.c
@@ -40,10 +40,14 @@ lak_runtime_HDR = mainloop.h
 lak_runtime_DEP = lak_types opengl
 lak_runtime_INC = include include/lak
 
+megawat_SRC = ../
+megawat_OBJ =
+megawat_HDR = editor.h f65.h globals.h main.h memory.h memorymap.h screen.h videomodes.h ascii.h
+
 src_SRC = .
-src_OBJ = main.cpp
+src_OBJ = main.cpp memory.c
 src_HDR = main.h
-src_DEP = opengl lak_types lak_utils lak_runtime
+src_DEP = opengl lak_types lak_utils lak_runtime megawat
 src_INC = include /usr/include/SDL2				#bat src_INC = include include/SDL
 
 # BUILD SCRIPT
