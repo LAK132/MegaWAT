@@ -7,3 +7,6 @@
 [submodule "c65gs-font-rasteriser"]
 	path = c65gs-font-rasteriser
 	url = https://github.com/gardners/c65gs-font-rasteriser.git
+[submodule "src/tester/include/lak"]
+	path = src/tester/include/lak
+	url = https://github.com/LAK132/lak
