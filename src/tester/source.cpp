@@ -40,6 +40,8 @@ void init(lak::loopData_t &ld)
     glViewport(0, 0, ld.screen.w, ld.screen.h);
     glClearColor(ud.clearColor[0], ud.clearColor[1], ud.clearColor[2], ud.clearColor[3]);
     glEnable(GL_DEPTH_TEST);
+
+    megamain();
 }
 
 void update(lak::loopData_t &ld)
@@ -58,6 +60,8 @@ void update(lak::loopData_t &ld)
         // ImGui_ImplSdlGL3_ProcessEvent(&event);
     }
     ld.events.clear();
+
+    editor_poll_keyboard();
 }
 
 void draw(lak::loopData_t &ld)

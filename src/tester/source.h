@@ -20,6 +20,7 @@ using std::tuple;
 
 #include <GL/gl3w.h>
 #include "lak/runtime/mainloop.h"
+#include "main.h"
 
 #ifndef TESTER_MAIN_H
 #define TESTER_MAIN_H

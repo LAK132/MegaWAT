@@ -85,6 +85,8 @@ void megamain()
     editor_initialise();
     editor_show_cursor();
 
+    #ifdef __MEGA65__
     while (1)
         editor_poll_keyboard();
+    #endif
 }
