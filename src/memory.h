@@ -1,11 +1,11 @@
 
+#include <stdint.h>
+
 void m65_io_enable(void);
-unsigned char lpeek(long address);
-void lpoke(long address, unsigned char value);
-void lcopy(long source_address, long destination_address,
-	   unsigned int count);
-void lcopy_safe(long src,long dst,unsigned int count);
-void lfill(long destination_address, unsigned char value,
-	   unsigned int count);
-#define POKE(X,Y) (*(unsigned char*)(X))=Y
-#define PEEK(X) (*(unsigned char*)(X))
+uint8_t lpeek(uint32_t address);
+void lpoke(uint32_t address, uint8_t value);
+void lcopy(uint32_t source_address, uint32_t destination_address, uint16_t count);
+void lcopy_safe(uint32_t src, uint32_t dst, uint16_t count);
+void lfill(uint32_t destination_address, uint8_t value, uint16_t count);
+#define POKE(X, Y) (*(uint8_t *)(X)) = Y
+#define PEEK(X) (*(uint8_t *)(X))
