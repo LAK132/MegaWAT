@@ -44,6 +44,8 @@
 #define READ_KEY() (*(unsigned char *)0xD610)
 #define READ_MOD() (*(unsigned char *)0xD611)
 
+#define TOGGLE_BACK() POKE(0xD020U, (PEEK(0xD020U) + 1) & 0xF)
+
 extern int32_t cursor_position;
 extern uint8_t cursor_attrib[2];
 
