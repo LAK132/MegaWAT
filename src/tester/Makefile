@@ -1,5 +1,6 @@
 CXX = /usr/bin/g++-8	#bat CXX = vcvarsall.bat
 CPPVER = c++17
+NASM = nasm
 
 APP = megawat			#bat APP = megawat.exe
 OUTDIR = out
@@ -40,29 +41,30 @@ lak_runtime_HDR = mainloop.h
 lak_runtime_DEP = lak_types opengl
 lak_runtime_INC = include include/lak
 
-megawat_SRC = ../
+megawat_SRC = ..
 megawat_OBJ =
 megawat_HDR = editor.h f65.h globals.h main.h memory.h memorymap.h screen.h videomodes.h ascii.h
 
 src_SRC = .
-src_OBJ = main.cpp memory.c
+src_OBJ = main.cpp memory.c font.s
 src_HDR = main.h
 src_DEP = opengl lak_types lak_utils lak_runtime megawat
 src_INC = include /usr/include/SDL2				#bat src_INC = include include/SDL
 
 # BUILD SCRIPT
 
-ALL_OBJ = $(foreach src,$(SOURCES),$(foreach obj,$($(src)_OBJ),$(src)$(obj).o))
+ALL_DBG = $(foreach src,$(SOURCES),$(foreach obj,$($(src)_OBJ),$(if $(findstring $(suffix $(obj)),.s),nasm,dbg)$(src)$(obj).o))
+ALL_REL = $(foreach src,$(SOURCES),$(foreach obj,$($(src)_OBJ),$(if $(findstring $(suffix $(obj)),.s),nasm,rel)$(src)$(obj).o))
 ALL_HDR = $(foreach src,$(SOURCES),$(foreach header,$($(src)_HDR),$($(src)_SRC)/$(header)))
 
 .PHONY: all
 all: release
 
-debug: $(BINDIR) $(OUTDIR) $(foreach obj,$(ALL_OBJ),$(BINDIR)/dbg$(obj))
-	$(CXX) -std=$(CPPVER) $(foreach obj,$(ALL_OBJ),$(BINDIR)/dbg$(obj)) $(foreach libdir,$(LIBDIR),-L$(libdir)) $(foreach lib,$(LIBS),-l$(lib)) $(COMPOPT) $(LINKOPT) $(DBGLINKOPT) -o $(OUTDIR)/$(APP)
+debug: $(BINDIR) $(OUTDIR) $(foreach obj,$(ALL_DBG),$(BINDIR)/$(obj))
+	$(CXX) -std=$(CPPVER) $(foreach obj,$(ALL_DBG),$(BINDIR)/$(obj)) $(foreach libdir,$(LIBDIR),-L$(libdir)) $(foreach lib,$(LIBS),-l$(lib)) $(COMPOPT) $(LINKOPT) $(DBGLINKOPT) -o $(OUTDIR)/$(APP)
 
-release: $(BINDIR) $(OUTDIR) $(foreach obj,$(ALL_OBJ),$(BINDIR)/rel$(obj))
-	$(CXX) -std=$(CPPVER) $(foreach obj,$(ALL_OBJ),$(BINDIR)/rel$(obj)) $(foreach libdir,$(LIBDIR),-L$(libdir)) $(foreach lib,$(LIBS),-l$(lib)) $(COMPOPT) $(LINKOPT) $(RELLINKOPT) -o $(OUTDIR)/$(APP)
+release: $(BINDIR) $(OUTDIR) $(foreach obj,$(ALL_REL),$(BINDIR)/$(obj))
+	$(CXX) -std=$(CPPVER) $(foreach obj,$(ALL_REL),$(BINDIR)/$(obj)) $(foreach libdir,$(LIBDIR),-L$(libdir)) $(foreach lib,$(LIBS),-l$(lib)) $(COMPOPT) $(LINKOPT) $(RELLINKOPT) -o $(OUTDIR)/$(APP)
 
 clean: $(BINDIR)
 	cd $(BINDIR) && rm -f *.o
@@ -76,6 +78,8 @@ $(BINDIR):
 	$(error Cannot find target $@)
 
 define COMPILE_TEMPLATE =
+$(BINDIR)/nasm$(1)$(2).o: $(3)/$(2) $(4)
+	$(NASM) -felf64 -o $$@ $$<
 $(BINDIR)/dbg$(1)$(2).o: $(3)/$(2) $(4)
 	$(CXX) -std=$(CPPVER) -c $(5) $(COMPOPT) $(DBGCOMPOPT) -o $$@ $$<
 $(BINDIR)/rel$(1)$(2).o: $(3)/$(2) $(4)
