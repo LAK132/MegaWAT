@@ -35,10 +35,10 @@ void videoSetSlideMode(void)
     POKE(0xd05cU,0);
     POKE(0xd05dU,0);
 
-    // // Set H640 and V400 and enable extended attributes and 8-bit colour values
+    // Set H640 and V400 and enable extended attributes and 8-bit colour values
     POKE(0xd031,0xa8);
 
-    // // Update hot registers
+    // Update hot registers
     POKE(0xd011U,0x1b);
 
     // The following must happen AFTER touching $D011
