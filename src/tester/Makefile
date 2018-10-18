@@ -46,8 +46,8 @@ megawat_OBJ = editor.c f65.c globals.c main.c screen.c videomodes.c
 megawat_HDR = editor.h f65.h globals.h main.h screen.h videomodes.h memory.h memorymap.h ascii.h
 
 src_SRC = .
-src_OBJ = main.cpp memory.c font.s
-src_HDR = main.h
+src_OBJ = source.cpp memory.c font.s
+src_HDR = source.h
 src_DEP = opengl lak_types lak_utils lak_runtime megawat
 src_INC = include /usr/include/SDL2				#bat src_INC = include include/SDL
 
