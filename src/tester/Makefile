@@ -1,6 +1,6 @@
 CXX = /usr/bin/g++-8	#bat CXX = vcvarsall.bat
 CPPVER = c++17
-NASM = nasm
+NASM = nasm -felf64
 
 APP = megawat			#bat APP = megawat.exe
 OUTDIR = out
@@ -8,7 +8,7 @@ BINDIR = bin
 LIBDIR = lib
 LIBS =					#bat LIBS = SDL2main.lib SDL2.lib
 
-COMPOPT = -ldl -lSDL2 -pthread -lstdc++fs	#bat COMPOPT = /nologo /EHa /MD /bigobj
+COMPOPT = -ldl -lSDL2 -pthread -lstdc++fs -fpermissive	#bat COMPOPT = /nologo /EHa /MD /bigobj
 LINKOPT =									#bat LINKOPT = /nologo
 
 DBGCOMPOPT =			#bat DBGCOMPOPT = /Zi
@@ -42,8 +42,8 @@ lak_runtime_DEP = lak_types opengl
 lak_runtime_INC = include include/lak
 
 megawat_SRC = ..
-megawat_OBJ =
-megawat_HDR = editor.h f65.h globals.h main.h memory.h memorymap.h screen.h videomodes.h ascii.h
+megawat_OBJ = editor.c f65.c globals.c main.c screen.c videomodes.c
+megawat_HDR = editor.h f65.h globals.h main.h screen.h videomodes.h memory.h memorymap.h ascii.h
 
 src_SRC = .
 src_OBJ = main.cpp memory.c font.s
@@ -79,7 +79,7 @@ $(BINDIR):
 
 define COMPILE_TEMPLATE =
 $(BINDIR)/nasm$(1)$(2).o: $(3)/$(2) $(4)
-	$(NASM) -felf64 -o $$@ $$<
+	$(NASM) -o $$@ $$<
 $(BINDIR)/dbg$(1)$(2).o: $(3)/$(2) $(4)
 	$(CXX) -std=$(CPPVER) -c $(5) $(COMPOPT) $(DBGCOMPOPT) -o $$@ $$<
 $(BINDIR)/rel$(1)$(2).o: $(3)/$(2) $(4)
