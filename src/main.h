@@ -12,3 +12,7 @@
 
 extern int16_t font_file;
 extern int16_t font_file_size;
+
+#ifndef __MEGA65__
+void megamain();
+#endif

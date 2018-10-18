@@ -29,7 +29,11 @@
 
 #include "main.h"
 
+#ifdef __MEGA65__
 void main(void)
+#else // PC
+void megamain()
+#endif
 {
     m65_io_enable();
 
