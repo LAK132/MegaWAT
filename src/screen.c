@@ -1,14 +1,17 @@
 #include "screen.h"
 #include "memory.h"
-#include "ascii.h"
 #include "main.h"
+
+#ifdef __MEGA65__
+#include "ascii.h"
+#endif
 
 extern unsigned char *charset;
 
 // long screen_line_address = SCREEN_ADDRESS;
 char screen_column = 0;
 
-unsigned char *footer_messages[FOOTER_MAX + 1] = {
+char *footer_messages[FOOTER_MAX + 1] = {
     "MEGA WAT! : (C) COPYRIGHT 2017-2018 PAUL GARDNER-STEPHEN ETC.    LAK132 was here",
     "                                                                                ",
     "A FATAL ERROR HAS OCCURRED, SORRY.                                              "

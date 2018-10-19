@@ -262,7 +262,7 @@ void editor_process_special_key(uint8_t key)
                     // Copy rows up
                     lcopy(screen_rbuffer.screen_ram + next_row * screen_width,
                         screen_rbuffer.screen_ram + (screen_rbuffer.rows_used * screen_width),
-                        screen_size - (screen_width * (60 - next_row))/
+                        screen_size - (screen_width * (60 - next_row))
                     );
 
                     // XXX Fill in bottom of screen

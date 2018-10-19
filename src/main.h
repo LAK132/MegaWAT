@@ -6,9 +6,12 @@
 #include "f65.h"
 #include "memory.h"
 #include "screen.h"
-#include "ascii.h"
 #include "videomodes.h"
 #include "editor.h"
+
+#ifdef __MEGA65__
+#include "ascii.h"
+#endif
 
 extern int16_t font_file;
 extern int16_t font_file_size;

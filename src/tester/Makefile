@@ -1,28 +1,32 @@
-CXX = /usr/bin/g++-8	#bat CXX = vcvarsall.bat
+CXX = /usr/bin/g++-8	#bat vcvarsall.bat
 CPPVER = c++17
 NASM = nasm -felf64
 
-APP = megawat			#bat APP = megawat.exe
+APP = megawat			#bat megawat.exe
 OUTDIR = out
 BINDIR = bin
 LIBDIR = lib
-LIBS =					#bat LIBS = SDL2main.lib SDL2.lib
+LIBS =					#bat SDL2main.lib SDL2.lib
 
-COMPOPT = -ldl -lSDL2 -pthread -lstdc++fs -fpermissive	#bat COMPOPT = /nologo /EHa /MD /bigobj
-LINKOPT =									#bat LINKOPT = /nologo
+COMPOPT = -ldl -lSDL2 -pthread -lstdc++fs -fpermissive	#bat /nologo /EHa /MD /bigobj /TP
+LINKOPT =				#bat /nologo
 
-DBGCOMPOPT = 			#bat DBGCOMPOPT = /Zi
-DBGLINKOPT =			#bat DBGLINKOPT = /DEBUG
+DBGCOMPOPT =			#bat /Zi
+DBGLINKOPT =			#bat /DEBUG
 
-RELCOMPOPT = -DNDEBUG	#bat RELCOMPOPT = /DNDEBUG
-RELLINKOPT =			#bat RELLINKOPT =
+RELCOMPOPT = -DNDEBUG	#bat /DNDEBUG
+RELLINKOPT =
 
-SOURCES = src opengl lak_types lak_utils lak_runtime megawat
+SOURCES = src opengl sdl glm lak_types lak_utils lak_runtime megawat
+
+sdl_SRC = ./usr/include/SDL2	#bat include/SDL
+
+glm_SRC = ./include/lak/glm
 
 opengl_SRC = ./include/GL
 opengl_OBJ = gl3w.c
 opengl_HDR = gl3w.h glcorearb.h
-opengl_INC = include /usr/include/SDL2				#bat lib_INC = include include/SDL
+opengl_INC = include
 
 lak_utils_SRC = ./include/lak/utils
 lak_utils_OBJ = stream.cpp
@@ -38,18 +42,18 @@ lak_types_INC = include include/lak
 lak_runtime_SRC = ./include/lak/runtime
 lak_runtime_OBJ = mainloop.cpp
 lak_runtime_HDR = mainloop.h
-lak_runtime_DEP = lak_types opengl
+lak_runtime_DEP = lak_types opengl sdl glm
 lak_runtime_INC = include include/lak
 
 megawat_SRC = ..
 megawat_OBJ = editor.c f65.c globals.c main.c screen.c videomodes.c
-megawat_HDR = editor.h f65.h globals.h main.h screen.h videomodes.h memory.h memorymap.h ascii.h
+megawat_HDR = editor.h f65.h globals.h main.h screen.h videomodes.h memory.h memorymap.h #ascii.h
 
 src_SRC = .
-src_OBJ = source.cpp memory.c font.s
+src_OBJ = source.cpp memory.c font.s #bat source.cpp memory.c font.cpp
 src_HDR = source.h
-src_DEP = opengl lak_types lak_utils lak_runtime megawat
-src_INC = include /usr/include/SDL2				#bat src_INC = include include/SDL
+src_DEP = opengl lak_types lak_utils lak_runtime megawat sdl glm
+src_INC = include
 
 # BUILD SCRIPT
 

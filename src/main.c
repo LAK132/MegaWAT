@@ -65,7 +65,7 @@ void megamain()
 #endif
 
     // Copy bundled font into the asset area of memory
-    lcopy(font_file, ASSET_RAM, font_file_size);
+    lcopy(((uint32_t)font_file)&0xFFFF, ASSET_RAM, font_file_size);
     // Then patch the pointers in the font to be correct
     patchFont(ASSET_RAM);
 
