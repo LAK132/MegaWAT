@@ -11,7 +11,7 @@ LIBS =					#bat LIBS = SDL2main.lib SDL2.lib
 COMPOPT = -ldl -lSDL2 -pthread -lstdc++fs -fpermissive	#bat COMPOPT = /nologo /EHa /MD /bigobj
 LINKOPT =									#bat LINKOPT = /nologo
 
-DBGCOMPOPT =			#bat DBGCOMPOPT = /Zi
+DBGCOMPOPT = 			#bat DBGCOMPOPT = /Zi
 DBGLINKOPT =			#bat DBGLINKOPT = /DEBUG
 
 RELCOMPOPT = -DNDEBUG	#bat RELCOMPOPT = /DNDEBUG
@@ -81,9 +81,9 @@ define COMPILE_TEMPLATE =
 $(BINDIR)/nasm$(1)$(2).o: $(3)/$(2) $(4)
 	$(NASM) -o $$@ $$<
 $(BINDIR)/dbg$(1)$(2).o: $(3)/$(2) $(4)
-	$(CXX) -std=$(CPPVER) -c $(5) $(COMPOPT) $(DBGCOMPOPT) -o $$@ $$<
+	$(CXX) -std=$(CPPVER) -c $(5) $(DBGCOMPOPT) $(COMPOPT) -o $$@ $$<
 $(BINDIR)/rel$(1)$(2).o: $(3)/$(2) $(4)
-	$(CXX) -std=$(CPPVER) -c $(5) $(COMPOPT) $(RELCOMPOPT) -o $$@ $$<
+	$(CXX) -std=$(CPPVER) -c $(5) $(RELCOMPOPT) $(COMPOPT) -o $$@ $$<
 endef
 
 $(foreach src,$(SOURCES),$(foreach obj,$($(src)_OBJ),$(eval $(call COMPILE_TEMPLATE,$(src),$(obj),$($(src)_SRC),$(foreach header,$($(src)_HDR), $($(src)_SRC)/$(header))$(foreach dep,$($(src)_DEP),$(foreach depobj,$($(dep)_OBJ), $($(dep)_SRC)/$(depobj))$(foreach dephdr,$($(dep)_HDR), $($(dep)_SRC)/$(dephdr))),$(foreach inc,$($(src)_INC), -I$(inc))$(foreach dep,$($(src)_DEP), -I$($(dep)_SRC)$(foreach depinc,$($(dep)_INC), -I$(depinc)))))))

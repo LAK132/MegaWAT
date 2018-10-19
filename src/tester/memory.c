@@ -1,12 +1,10 @@
 #include "../memory.h"
 #include <assert.h>
+#include <lak/utils/ldebug.h>
 
-#define RAM_SIZE 0x60000
-#define CRAM_SIZE 0x8000
-#define CRAM_BASE 0xFF80000
+#define RAM_SIZE 0x10000000
 
-uint8_t m65_ram[RAM_SIZE];   // 0x0000000 -> 0x005FFFF
-uint8_t m65_cram[CRAM_SIZE]; // 0xFF80000 -> 0xFF87FFF
+uint8_t m65_ram[RAM_SIZE];   // 0x0000000 -> 0xFF87FFF
 
 void m65_io_enable(void)
 {
@@ -19,19 +17,22 @@ void m65_io_enable(void)
 
 uint8_t lpeek(uint32_t address)
 {
-    assert((address < sizeof(m65_ram) || address >= CRAM_BASE) && "Out of range");
-    return address < sizeof(m65_ram)
-        ? m65_ram[address]
-        : m65_cram[address - CRAM_BASE];
+    if (address >= sizeof(m65_ram)) {
+        printf("Out of range 0x%zX\n", (size_t) address);
+        assert(false);
+    }
+    // LASSERT(address < sizeof(m65_ram), "Out of range");
+    return m65_ram[address];
 }
 
 void lpoke(uint32_t address, uint8_t value)
 {
-    assert((address < sizeof(m65_ram) || address >= CRAM_BASE) && "Out of range");
-    if (address < sizeof(m65_ram))
-        m65_ram[address] = value;
-    else
-        m65_cram[address - CRAM_BASE] = value;
+    if (address >= sizeof(m65_ram)) {
+        printf("Out of range 0x%zX\n", (size_t) address);
+        assert(false);
+    }
+    // LASSERT(address < sizeof(m65_ram), "Out of range");
+    m65_ram[address] = value;
 }
 
 void lcopy(uint32_t src, uint32_t dst, uint16_t count)
