@@ -8,8 +8,8 @@ BINDIR = bin
 LIBDIR = lib
 LIBS =					#bat SDL2main.lib SDL2.lib
 
-COMPOPT = -ldl -lSDL2 -pthread -lstdc++fs -fpermissive	#bat /nologo /EHa /MD /bigobj /TP
-LINKOPT =				#bat /nologo
+COMPOPT = -ldl -lSDL2 -pthread -fpermissive	#bat COMPOPT = /nologo /EHa /MD /bigobj
+LINKOPT =									#bat LINKOPT = /nologo
 
 DBGCOMPOPT =			#bat /Zi
 DBGLINKOPT =			#bat /DEBUG
@@ -17,33 +17,43 @@ DBGLINKOPT =			#bat /DEBUG
 RELCOMPOPT = -DNDEBUG	#bat /DNDEBUG
 RELLINKOPT =
 
-SOURCES = src opengl sdl glm lak_types lak_utils lak_runtime megawat
+SOURCES = lak cql opengl sdl lakutils laktypes lakruntime megawat src glm stb
 
-sdl_SRC = ./usr/include/SDL2	#bat include/SDL
+lak_SRC = ./include/lak
 
-glm_SRC = ./include/lak/glm
+glm_SRC = $(lak_SRC)/glm
 
-opengl_SRC = ./include/GL
+stb_SRC = $(lak_SRC)/stb
+
+cql_SRC = $(lak_SRC)/cql
+cql_HDR = cql.h
+cql_DEP = lak
+
+opengl_SRC = $(lak_SRC)/GL
 opengl_OBJ = gl3w.c
 opengl_HDR = gl3w.h glcorearb.h
-opengl_INC = include
+opengl_DEP = lak
 
-lak_utils_SRC = ./include/lak/utils
-lak_utils_OBJ = stream.cpp
-lak_utils_HDR = crc32_hash.h ldebug.h obj.h pnm.h stream.h type.h
-lak_utils_INC = include/lak
+sdl_SRC = /usr/include/SDL2			#bat sdl_SRC = ./include/lak/SDL
+# sdl_LIB = $(sdl_SRC)				#bat sdl_LIB = ./include/lak/SDL
 
-lak_types_SRC = ./include/lak/types
-lak_types_OBJ = shader.cpp mesh.cpp json.cpp queue.cpp stride_vector.cpp
-lak_types_HDR = shader.h mesh.h json.h queue.h stride_vector.h texture.h type_list.h color.h image.h
-lak_types_DEP = lak_utils
-lak_types_INC = include include/lak
+lakutils_SRC = $(lak_SRC)/utils		#bat lak_utils_SRC = ./include/lak/utils
+lakutils_OBJ = stream.cpp
+lakutils_HDR = crc32_hash.h ldebug.h obj.h pnm.h stream.h type.h
+lakutils_INC = $(lak_SRC)
+lakutils_DEP = lak
 
-lak_runtime_SRC = ./include/lak/runtime
-lak_runtime_OBJ = mainloop.cpp
-lak_runtime_HDR = mainloop.h
-lak_runtime_DEP = lak_types opengl sdl glm
-lak_runtime_INC = include include/lak
+laktypes_SRC = $(lak_SRC)/types		#bat lak_types_SRC = ./include/lak/types
+laktypes_OBJ = shader.cpp mesh.cpp json.cpp queue.cpp stride_vector.cpp
+laktypes_HDR = shader.h mesh.h json.h queue.h stride_vector.h texture.h type_list.h color.h image.h
+lakutils_INC = $(lak_SRC)
+laktypes_DEP = lak lakutils sdl glm opengl
+
+lakruntime_SRC = $(lak_SRC)/runtime	#bat lak_runtime_SRC = ./include/lak/runtime
+lakruntime_OBJ = mainloop.cpp
+lakruntime_HDR = mainloop.h
+lakruntime_INC = $(lak_SRC)
+lakruntime_DEP = lak laktypes lakutils glm sdl opengl
 
 megawat_SRC = ..
 megawat_OBJ = editor.c f65.c globals.c main.c screen.c videomodes.c
@@ -52,23 +62,23 @@ megawat_HDR = editor.h f65.h globals.h main.h screen.h videomodes.h memory.h mem
 src_SRC = .
 src_OBJ = source.cpp memory.c font.s #bat source.cpp memory.c font.cpp
 src_HDR = source.h
-src_DEP = opengl lak_types lak_utils lak_runtime megawat sdl glm
+src_DEP = cql lak laktypes lakutils glm sdl stb opengl megawat
 src_INC = include
 
 # BUILD SCRIPT
 
 ALL_DBG = $(foreach src,$(SOURCES),$(foreach obj,$($(src)_OBJ),$(if $(findstring $(suffix $(obj)),.s),nasm,dbg)$(src)$(obj).o))
 ALL_REL = $(foreach src,$(SOURCES),$(foreach obj,$($(src)_OBJ),$(if $(findstring $(suffix $(obj)),.s),nasm,rel)$(src)$(obj).o))
-ALL_HDR = $(foreach src,$(SOURCES),$(foreach header,$($(src)_HDR),$($(src)_SRC)/$(header)))
+ALL_HDR = $(foreach src,$(SOURCES),$(foreach hdr,$($(src)_HDR),$(strip $($(src)_SRC))/$(strip $(hdr))))
 
 .PHONY: all
 all: release
 
-debug: $(BINDIR) $(OUTDIR) $(foreach obj,$(ALL_DBG),$(BINDIR)/$(obj))
-	$(CXX) -std=$(CPPVER) $(foreach obj,$(ALL_DBG),$(BINDIR)/$(obj)) $(foreach libdir,$(LIBDIR),-L$(libdir)) $(foreach lib,$(LIBS),-l$(lib)) $(COMPOPT) $(LINKOPT) $(DBGLINKOPT) -o $(OUTDIR)/$(APP)
+debug: $(foreach obj,$(ALL_DBG),$(BINDIR)/$(obj)) | $(BINDIR) $(OUTDIR)
+	$(CXX) -std=$(CPPVER) $^ $(foreach libdir,$(LIBDIR),-L$(libdir)) $(foreach lib,$(LIBS),-l$(lib)) $(COMPOPT) $(LINKOPT) $(DBGLINKOPT) -o $(OUTDIR)/$(APP)
 
-release: $(BINDIR) $(OUTDIR) $(foreach obj,$(ALL_REL),$(BINDIR)/$(obj))
-	$(CXX) -std=$(CPPVER) $(foreach obj,$(ALL_REL),$(BINDIR)/$(obj)) $(foreach libdir,$(LIBDIR),-L$(libdir)) $(foreach lib,$(LIBS),-l$(lib)) $(COMPOPT) $(LINKOPT) $(RELLINKOPT) -o $(OUTDIR)/$(APP)
+release: $(foreach obj,$(ALL_REL),$(BINDIR)/$(obj)) | $(BINDIR) $(OUTDIR)
+	$(CXX) -std=$(CPPVER) $^ $(foreach libdir,$(LIBDIR),-L$(libdir)) $(foreach lib,$(LIBS),-l$(lib)) $(COMPOPT) $(LINKOPT) $(RELLINKOPT) -o $(OUTDIR)/$(APP)
 
 clean: $(BINDIR)
 	cd $(BINDIR) && rm -f *.o
@@ -82,12 +92,27 @@ $(BINDIR):
 	$(error Cannot find target $@)
 
 define COMPILE_TEMPLATE =
-$(BINDIR)/nasm$(1)$(2).o: $(3)/$(2) $(4)
+$(BINDIR)/nasm$(1)$(3).o: $(2)/$(3) $(4)
 	$(NASM) -o $$@ $$<
-$(BINDIR)/dbg$(1)$(2).o: $(3)/$(2) $(4)
+$(BINDIR)/dbg$(1)$(3).o: $(2)/$(3) $(4)
 	$(CXX) -std=$(CPPVER) -c $(5) $(DBGCOMPOPT) $(COMPOPT) -o $$@ $$<
-$(BINDIR)/rel$(1)$(2).o: $(3)/$(2) $(4)
+$(BINDIR)/rel$(1)$(3).o: $(2)/$(3) $(4)
 	$(CXX) -std=$(CPPVER) -c $(5) $(RELCOMPOPT) $(COMPOPT) -o $$@ $$<
 endef
 
-$(foreach src,$(SOURCES),$(foreach obj,$($(src)_OBJ),$(eval $(call COMPILE_TEMPLATE,$(src),$(obj),$($(src)_SRC),$(foreach header,$($(src)_HDR), $($(src)_SRC)/$(header))$(foreach dep,$($(src)_DEP),$(foreach depobj,$($(dep)_OBJ), $($(dep)_SRC)/$(depobj))$(foreach dephdr,$($(dep)_HDR), $($(dep)_SRC)/$(dephdr))),$(foreach inc,$($(src)_INC), -I$(inc))$(foreach dep,$($(src)_DEP), -I$($(dep)_SRC)$(foreach depinc,$($(dep)_INC), -I$(depinc)))))))
+$(foreach src,$(SOURCES),\
+	$(foreach obj,$($(src)_OBJ),\
+		$(eval $(call COMPILE_TEMPLATE,$(src),$(strip $($(src)_SRC)),$(obj),\
+			$(foreach header,$(strip $($(src)_HDR)), $(strip $($(src)_SRC))/$(header))\
+			$(foreach dep,$(strip $($(src)_DEP)),\
+				$(foreach depobj,$(strip $($(dep)_OBJ)), $(strip $($(dep)_SRC))/$(depobj))\
+				$(foreach dephdr,$(strip $($(dep)_HDR)), $(strip $($(dep)_SRC))/$(dephdr))\
+			),\
+			$(foreach inc,$(strip $($(src)_INC)), -I$(strip $(inc)))\
+			$(foreach dep,$(strip $($(src)_DEP)), \
+				$(if $(strip $($(dep)_SRC)),-I$(strip $($(dep)_SRC)),$(info bad dep $(dep) $($(dep)_SRC)))\
+				$(foreach depinc,$(strip $($(dep)_INC)), -I$(strip $(depinc)))\
+			)\
+		))\
+	)\
+)
