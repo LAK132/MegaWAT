@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include "megaint.h"
 #include "memorymap.h"
 #include "globals.h"
 

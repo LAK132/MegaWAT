@@ -54,6 +54,7 @@ HEADERS=	Makefile \
 			$(SRCDIR)/globals.h \
 			$(SRCDIR)/memory.h \
 			$(SRCDIR)/f65.h \
+			$(SRCDIR)/megaint.h \
 			$(SRCDIR)/ascii.h
 
 DATAFILES=	ascii8x8.bin \
@@ -96,6 +97,9 @@ clean-font:
 test:		$(XC65) $(C65SYSROM) $(DISK)
 	$(XC65) -rom $(C65SYSROM) -8 $(DISK)
 
+run:		$(MONLOAD) $(C65SYSROM)
+	$(MONLOAD) -b $(BITSTRM) -R $(C65SYSROM) -k $(KICKUP) -C $(CHARROM)
+
 # Load the program onto the MEGA65
 load:		$(MONLOAD) $(C65SYSROM) $(PROGRAM)
 	$(MONLOAD) -b $(BITSTRM) -R $(C65SYSROM) -k $(KICKUP) -C $(CHARROM) -4 -r $(PROGRAM)
@@ -105,7 +109,7 @@ load:		$(MONLOAD) $(C65SYSROM) $(PROGRAM)
 .PRECIOUS: $(BINDIR)/%.s %.f65
 
 %.f65:	%.ttf Makefile $(TTFTOF65)
-	$(TTFTOF65) -A -P 16 -T $< -o $@
+	$(TTFTOF65) -A -P 8 -T $< -o $@
 
 $(BINDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) | $(BINDIR)
 	if [ -f $(SRCDIR)/$*.c ]; then $(CC65) $(C65OPTS) -o $@ $(SRCDIR)/$*.c; fi

@@ -34,31 +34,33 @@
 #define COLOUR_GREY3        0xF
 #define COLOUR_LIGHTGREY    0xF
 
+#include "megaint.h"
+
 // void setup_screen(void);
 
-void display_footer(unsigned char index);
+void display_footer(uint8_t index);
 void footer_save(void);
 void footer_restore(void);
-void display_buffer_position_footer(char bid);
+void display_buffer_position_footer(int8_t bid);
 
-void screen_colour_line(unsigned char line,unsigned char colour);
+void screen_colour_line(uint8_t line, uint8_t colour);
 #define screen_colour_line_segment(LA,W,C) lfill(LA+(0x1f800-SCREEN_ADDRESS),C,W)
 
-void screen_hex(unsigned int addr,long value);
-void screen_hex_byte(unsigned int addr,long value);
-void screen_decimal(unsigned int addr,unsigned int value);
-void set_screen_attributes(long p,unsigned char count,unsigned char attr);
+void screen_hex(shortptr_t addr, int32_t value);
+void screen_hex_byte(shortptr_t addr, int32_t value);
+void screen_decimal(shortptr_t addr, uint16_t value);
+void set_screen_attributes(ptr_t p, uint8_t count, uint8_t attr);
 // void write_line(char *s,char col);
 // void recolour_last_line(char colour);
 // char read_line(char *buffer, unsigned char maxlen);
 
-void format_decimal(const int addr,const int value, const char columns);
-void format_hex(const int addr,const long value, const char columns);
+void format_decimal(const shortptr_t addr, const int16_t value, const int8_t columns);
+void format_hex(const shortptr_t addr, const int32_t value, const int8_t columns);
 
 // extern long screen_line_address;
 
-extern unsigned char ascii_map[256];
+extern uint8_t ascii_map[256];
 #define ascii_to_screen(X) ascii_map[X]
 
-void fatal_error(unsigned char *filename, unsigned int line_number);
+void fatal_error(charptr_t filename, uint16_t line_number);
 #define FATAL_ERROR fatal_error(__FILE__,__LINE__)

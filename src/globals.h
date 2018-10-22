@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include "megaint.h"
 #include "memorymap.h"
 
 #define BORDER_COLOUR(X) POKE(0xD020U,X)
@@ -41,8 +41,8 @@
 #define ATTRIB_HORI_FLIP   0x40
 #define ATTRIB_VERT_FLIP   0x80
 
-#define READ_KEY() (*(unsigned char *)0xD610)
-#define READ_MOD() (*(unsigned char *)0xD611)
+#define READ_KEY() (*(charptr_t)0xD610)
+#define READ_MOD() (*(charptr_t)0xD611)
 
 #define TOGGLE_BACK() POKE(0xD020U, (PEEK(0xD020U) + 1) & 0xF)
 

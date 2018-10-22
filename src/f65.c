@@ -15,25 +15,25 @@
 uint8_t font_id = 0;
 
 uint8_t start_column;
-uint32_t prev_font = 0U; // read only
+ptr_t prev_font = 0U; // read only
 uint16_t glyph_count = 0U;
 
 // point list
-uint32_t point_list_address = 0U, point_list_size = 0U;
+ptr_t point_list_address = 0U, point_list_size = 0U;
 
 // tile map
 uint16_t tile_map_start = 0U;
-uint32_t tile_map_address = 0U, tile_map_size = 0U;
+ptr_t tile_map_address = 0U, tile_map_size = 0U;
 
 // tile array
-uint32_t tile_array_start = 0U, tile_array_address = 0U;
+longptr_t tile_array_start = 0U, tile_array_address = 0U;
 
-uint32_t screen = 0U, colour = 0U;
+ptr_t screen = 0U, colour = 0U;
 uint8_t bytes_per_row;
 uint8_t rows_above;
 uint8_t rows_below;
-uint32_t map_pos, array_pos;
-uint32_t glyph_height, glyph_width, glyph_size;
+ptr_t map_pos, array_pos;
+ptr_t glyph_height, glyph_width, glyph_size;
 uint8_t trim_pixels;
 uint16_t the_code_point = 0U;
 
@@ -44,20 +44,20 @@ render_buffer_t screen_rbuffer;
 render_buffer_t scratch_rbuffer;
 render_buffer_t *active_rbuffer = 0;
 
-void renderTextUTF16(uint32_t font_address, uint16_t *string, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
+void renderTextUTF16(ptr_t font_address, uint16_t *str, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
 {
-    for (x = 0; string[x]; ++x)
-        renderGlyph(font_address, string[x],
+    for (x = 0; str[x]; ++x)
+        renderGlyph(font_address, str[x],
                     colour_and_attributes, // Various colours
                     alpha_and_extras,      // alpha blend
                     0xFF                   // Append to end
         );
 }
 
-void renderTextASCII(uint32_t font_address, uint8_t *string, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
+void renderTextASCII(ptr_t font_address, uint8_t *str, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
 {
-    for (x = 0; string[x]; ++x)
-        renderGlyph(font_address, string[x],
+    for (x = 0; str[x]; ++x)
+        renderGlyph(font_address, str[x],
                     colour_and_attributes, // Various colours
                     alpha_and_extras,      // alpha blend
                     0xFF                   // Append to end
@@ -70,11 +70,11 @@ void clearRenderBuffer(void)
         return;
 
     // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
-    lcopy((long)&clear_pattern, active_rbuffer->screen_ram, sizeof(clear_pattern));
+    lcopy((ptr_t)&clear_pattern, active_rbuffer->screen_ram, sizeof(clear_pattern));
     // Fill out to whole line
     lcopy(active_rbuffer->screen_ram, active_rbuffer->screen_ram + sizeof(clear_pattern), (screen_width - sizeof(clear_pattern)));
     // Then put end of line marker to stop displaying tiles from next line
-    lcopy((long)&end_of_line_pattern, active_rbuffer->screen_ram + (screen_width - sizeof(end_of_line_pattern)), sizeof(end_of_line_pattern));
+    lcopy((ptr_t)&end_of_line_pattern, active_rbuffer->screen_ram + (screen_width - sizeof(end_of_line_pattern)), sizeof(end_of_line_pattern));
     // Then copy it down over the next 59 rows.
     lcopy(active_rbuffer->screen_ram, active_rbuffer->screen_ram + screen_width, screen_size - screen_width);
 
@@ -110,18 +110,18 @@ void outputLineToRenderBuffer(void)
     screen_rbuffer.rows_used += rows_below;
 }
 
-void findFontStructures(uint32_t font_address)
+void findFontStructures(ptr_t font_address)
 {
     prev_font = font_address;
 
-    lcopy(font_address + 0x80, (long)&glyph_count, 2);
+    lcopy(font_address + 0x80, (ptr_t)&glyph_count, 2);
 
-    lcopy(font_address + 0x82, (long)&tile_map_start, 2);
+    lcopy(font_address + 0x82, (ptr_t)&tile_map_start, 2);
     point_list_size = tile_map_start - 0x100;
     point_list_address = font_address + 0x100;
     tile_array_start = 0;
-    lcopy(font_address + 0x84, (long)&tile_array_start, 3);
-    tile_map_size = font_address + tile_map_start - tile_array_start;
+    lcopy(font_address + 0x84, (ptr_t)&tile_array_start, 3);
+    tile_map_size = font_address + tile_map_start - (longptr_t)tile_array_start;
     tile_map_address = font_address + tile_map_start;
     tile_array_address = font_address + tile_array_start;
 }
@@ -200,7 +200,9 @@ void deleteGlyph(uint8_t glyph_num)
 
     // Now copy down the glyph details structure.
     // We also do a DMA here for speed
-    lcopy((uint32_t)&active_rbuffer->glyphs[glyph_num + 1], (uint32_t)&active_rbuffer->glyphs[glyph_num], 99 - glyph_num);
+    // lcopy((ptr_t)&active_rbuffer->glyphs[glyph_num + 1],
+    //     (ptr_t)&active_rbuffer->glyphs[glyph_num], sizeof(glyph_details_t) * (99 - glyph_num));
+    lcopy((ptr_t)&active_rbuffer->glyphs[glyph_num + 1], (ptr_t)&active_rbuffer->glyphs[glyph_num], 99 - glyph_num);
 
     // Reduce number of remaining glyphs
     active_rbuffer->glyph_count--;
@@ -210,7 +212,7 @@ void deleteGlyph(uint8_t glyph_num)
     {
         rows_above = 0;
         rows_below = 0;
-        for (y = 0; y < active_rbuffer->glyph_count; y++)
+        for (y = 0; y < active_rbuffer->glyph_count; ++y)
         {
             if (active_rbuffer->glyphs[y].rows_above > rows_above)
                 rows_above = active_rbuffer->glyphs[y].rows_above;
@@ -222,10 +224,10 @@ void deleteGlyph(uint8_t glyph_num)
     }
 }
 
-void replaceGlyph(uint8_t glyph_num, uint32_t font_address, uint16_t code_point);
-void insertGlyph(uint8_t glyph_num, uint32_t font_address, uint16_t code_point);
+void replaceGlyph(uint8_t glyph_num, ptr_t font_address, uint16_t code_point);
+void insertGlyph(uint8_t glyph_num, ptr_t font_address, uint16_t code_point);
 
-void renderGlyph(uint32_t font_address, uint16_t code_point, uint8_t colour_and_attributes, uint8_t alpha_and_extras, uint8_t position)
+void renderGlyph(ptr_t font_address, uint16_t code_point, uint8_t colour_and_attributes, uint8_t alpha_and_extras, uint8_t position)
 {
     if (!active_rbuffer)
         return;
@@ -251,13 +253,13 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, uint8_t colour_and_
     // a binary search.
     for (i = 0; i < point_list_size; i += 5)
     {
-        lcopy(point_list_address + i, (long)&the_code_point, 2);
+        lcopy(point_list_address + i, (ptr_t)&the_code_point, 2);
         if (the_code_point != code_point)
             continue;
 
         // We have the glyph, so dig out the information on it.
         map_pos = 0;
-        lcopy(point_list_address + i + 2, (long)&map_pos, 3);
+        lcopy(point_list_address + i + 2, (ptr_t)&map_pos, 3);
 
         rows_above = lpeek(map_pos);
         rows_below = lpeek(map_pos + 1);
@@ -280,7 +282,7 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, uint8_t colour_and_
         // Ok, we have a glyph, so now we make space in the glyph list
         // This is an overlapping copy, so we have to copy to a temp location first
         if (position < active_rbuffer->glyph_count)
-            lcopy_safe((long)&active_rbuffer->glyphs[position], (long)&active_rbuffer->glyphs[position + 1],
+            lcopy_safe((ptr_t)&active_rbuffer->glyphs[position], (ptr_t)&active_rbuffer->glyphs[position + 1],
                 sizeof(glyph_details_t) * (active_rbuffer->glyph_count - position));
 
         // Record details about this glyph
@@ -320,7 +322,7 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, uint8_t colour_and_
                 lcopy_safe(colour, colour + bytes_per_row, (active_rbuffer->columns_used - start_column) * 2);
 
                 // Fill screen and colour RAM with empty patterns
-                lcopy((long)&clear_pattern, screen, bytes_per_row);
+                lcopy((ptr_t)&clear_pattern, screen, bytes_per_row);
                 lcopy(screen, screen + 2, bytes_per_row - 2);
                 lfill(colour, 0x00, bytes_per_row);
 
@@ -344,7 +346,7 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, uint8_t colour_and_
         for (y = 0; y < (rows_above + rows_below); ++y)
         {
             // Copy screen data
-            lcopy((long)map_pos, (long)screen, bytes_per_row);
+            lcopy((ptr_t)map_pos, (ptr_t)screen, bytes_per_row);
 
             // Fill colour RAM.
             // Bit 5 of low byte is alpha blending flag. This is true for font glyphs, and false
@@ -369,7 +371,7 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, uint8_t colour_and_
             // (DMA timing is a bit funny, hence we need to have the two copies setup above
             //  for this to work reliably).
             if (bytes_per_row > 4)
-                lcopy((long)colour, (long)colour + 2, bytes_per_row - 2);
+                lcopy((ptr_t)colour, (ptr_t)colour + 2, bytes_per_row - 2);
 
             map_pos += bytes_per_row;
 
@@ -401,43 +403,43 @@ void renderGlyph(uint32_t font_address, uint16_t code_point, uint8_t colour_and_
     }
 }
 
-uint32_t point_tile, tile_address, tile_cards;
+ptr_t point_tile, tile_address, tile_cards;
 uint16_t card_address;
-void patchFont(uint32_t font_address)
+void patchFont(ptr_t font_address)
 {
     // if (prev_font == font_address) return;
 
     findFontStructures(font_address);
 
     // Patch tile_array_start
-    tile_array_start += font_address;
-    lcopy((long)&tile_array_start, font_address + 0x84, 3);
+    tile_array_start += (longptr_t)font_address;
+    lcopy((ptr_t)&tile_array_start, font_address + 0x84, 3);
 
     tile_array_start /= 0x40;
 
     for (i = 0; i < point_list_size; i += 5)
     {
         // map_pos = 0;
-        // lcopy(point_list + i + 2, (long)&map_pos, 3);
+        // lcopy(point_list + i + 2, (ptr_t)&map_pos, 3);
         // tile = map + map_pos;
         tile_address = 0;
         point_tile = point_list_address + i + 2;
-        lcopy(point_tile, (long)&tile_address, 3);
-        tile_address += tile_map_address;
-        lcopy((long)&tile_address, point_tile, 3);
+        lcopy(point_tile, (ptr_t)&tile_address, 3);
+        tile_address += (longptr_t)tile_map_address;
+        lcopy((ptr_t)&tile_address, point_tile, 3);
 
         rows_above = lpeek(tile_address);
         rows_below = lpeek(tile_address + 1);
         bytes_per_row = lpeek(tile_address + 2);
         // tile_address + 3 -> trim_pixels
         tile_cards = tile_address + 4;
-        glyph_size = (int)(rows_above + rows_below) * bytes_per_row;
+        glyph_size = (int16_t)(rows_above + rows_below) * bytes_per_row;
         for (j = 0; j < glyph_size; ++j)
         {
-            lcopy(tile_cards, (long)&card_address, 2);
-            // lcopy(gradient, (((uint32_t)card_address&0x0FFF) * 64) + tile_array_address, 64);
-            card_address += tile_array_start;
-            lcopy((long)&card_address, tile_cards, 2);
+            lcopy(tile_cards, (ptr_t)&card_address, 2);
+            // lcopy(gradient, (((longptr_t)card_address&0x0FFF) * 64) + tile_array_address, 64);
+            card_address += (longptr_t)tile_array_start;
+            lcopy((ptr_t)&card_address, tile_cards, 2);
             tile_cards += 2;
         }
     }

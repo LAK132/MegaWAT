@@ -1,16 +1,16 @@
 #include "editor.h"
 
-unsigned char text_colour = 1;
-unsigned char cursor_col = 0;
+uint8_t text_colour = 1;
+uint8_t cursor_col = 0;
 // Physical rows on the slide (as compared to the lines of text that
 // produce them).
-unsigned char current_row = 0;
-unsigned char next_row = 0;
+uint8_t current_row = 0;
+uint8_t next_row = 0;
 // Which line of text we are on
-unsigned char text_line = 0;
+uint8_t text_line = 0;
 // Rows where each line of text is drawn
-unsigned char text_line_first_rows[30];
-unsigned char text_line_count = 1;
+uint8_t text_line_first_rows[30];
+uint8_t text_line_count = 1;
 
 // XXX For now, have a fixed 128x30 buffer for text
 // (We allow 128 instead of 100, so that we can have a number of font and attribute/colour changes
@@ -23,11 +23,11 @@ char maxlen = 80;
 unsigned int key = 0;
 char mod = 0;
 int xx;
-unsigned char h;
+uint8_t h;
 uint32_t sram, cram;
 uint16_t cursor_toggle = 0;
 
-void editor_insert_line(unsigned char before)
+void editor_insert_line(uint8_t before)
 {
     // Insert a new blank line before line #before
 }
@@ -36,13 +36,13 @@ void editor_initialise(void)
 {
     for (y = 0; y < EDITOR_MAX_LINES; ++y)
     {
-        lfill((long)&editor_buffer[y][0], 0x00, EDITOR_LINE_LEN * char_size);
+        lfill((ptr_t)&editor_buffer[y][0], 0x00, EDITOR_LINE_LEN * char_size);
         text_line_first_rows[y] = y;
     }
     text_line_count = 0;
 }
 
-void editor_stash_line(unsigned char line_num)
+void editor_stash_line(uint8_t line_num)
 {
     // Stash the line encoded in scratch buffer into the specified line
 
@@ -79,7 +79,7 @@ void editor_stash_line(unsigned char line_num)
         editor_buffer[line_num][y] = 0;
 }
 
-void editor_fetch_line(unsigned char line_num)
+void editor_fetch_line(uint8_t line_num)
 {
     active_rbuffer = &scratch_rbuffer;
     // Fetch the specified line, and pre-render it into scratch
@@ -206,10 +206,12 @@ void editor_insert_codepoint(unsigned int code_point)
     next_row = screen_rbuffer.rows_used;
 
     // Only advance cursor if the glyph was actually rendered
-    if (scratch_rbuffer.glyph_count > z)
+    if (scratch_rbuffer.glyph_count > z) {
+        TOGGLE_BACK();
         ++cursor_col;
-    // if (cursor_col > scratch_rbuffer.glyph_count)
-    //     cursor_col = scratch_rbuffer.glyphs; // unsigned char = pointer ??
+    }
+    if (cursor_col > scratch_rbuffer.glyph_count)
+        cursor_col = scratch_rbuffer.glyph_count;
 }
 
 void editor_process_special_key(uint8_t key)
@@ -235,8 +237,8 @@ void editor_process_special_key(uint8_t key)
         case 0x9A: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTGREEN; break;
         case 0x9B: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTBLUE; break;
         // The following need fixes to the ASCII keyboard scanner
-        // case 0x9c: text_colour=15; break;
-        // case 0x92: text_colour|=ATTRIB_BLINK; break;
+        // case 0x9C: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTGREY; break;
+        // case 0x92: text_colour |= ATTRIB_BLINK; break;
 
         // CONTROL-u for underline
         case 0x15: text_colour ^= ATTRIB_UNDERLINE; break;
@@ -250,7 +252,8 @@ void editor_process_special_key(uint8_t key)
             if (cursor_col)
             {
                 active_rbuffer = &scratch_rbuffer;
-                deleteGlyph(--cursor_col);
+                --cursor_col;
+                deleteGlyph(cursor_col);
                 screen_rbuffer.rows_used = current_row;
                 editor_redraw_line();
                 if (screen_rbuffer.rows_used < next_row)

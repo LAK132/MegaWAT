@@ -9,7 +9,7 @@ LIBDIR = lib
 LIBS =					#bat SDL2main.lib SDL2.lib
 
 COMPOPT = -ldl -lSDL2 -pthread -fpermissive	#bat COMPOPT = /nologo /EHa /MD /bigobj
-LINKOPT =									#bat LINKOPT = /nologo
+LINKOPT = -fpermissive									#bat LINKOPT = /nologo
 
 DBGCOMPOPT =			#bat /Zi
 DBGLINKOPT =			#bat /DEBUG

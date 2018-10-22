@@ -6,36 +6,36 @@
 #include "ascii.h"
 #endif
 
-extern unsigned char *charset;
+extern charptr_t charset;
 
 // long screen_line_address = SCREEN_ADDRESS;
-char screen_column = 0;
+int8_t screen_column = 0;
 
-char *footer_messages[FOOTER_MAX + 1] = {
+charptr_t footer_messages[FOOTER_MAX + 1] = {
     "MEGA WAT! : (C) COPYRIGHT 2017-2018 PAUL GARDNER-STEPHEN ETC.    LAK132 was here",
     "                                                                                ",
     "A FATAL ERROR HAS OCCURRED, SORRY.                                              "
 };
 
-unsigned char screen_hex_buffer[6];
+uint8_t screen_hex_buffer[6];
 
-unsigned char screen_hex_digits[16] = {
+uint8_t screen_hex_digits[16] = {
         '0', '1', '2', '3', '4', '5',
         '6', '7', '8', '9', 0x41, 0x42, 0x43, 0x44, 0x45, 0x46
 };
 
-unsigned char to_screen_hex(unsigned char c)
+uint8_t to_screen_hex(uint8_t c)
 {
     return screen_hex_digits[c & 0xf];
 }
 
-void screen_hex_byte(unsigned int addr, long value)
+void screen_hex_byte(uint16_t addr, int32_t value)
 {
     POKE(addr + 0, to_screen_hex(value >> 4));
     POKE(addr + 1, to_screen_hex(value >> 0));
 }
 
-void screen_hex(unsigned int addr, long value)
+void screen_hex(shortptr_t addr, int32_t value)
 {
     POKE(addr + 0, to_screen_hex(value >> 28));
     POKE(addr + 1, to_screen_hex(value >> 24));
@@ -47,10 +47,10 @@ void screen_hex(unsigned int addr, long value)
     POKE(addr + 7, to_screen_hex(value >> 0));
 }
 
-char dec9[9];
-void format_hex(const int addr, const long value, const char columns)
+int8_t dec9[9];
+void format_hex(const shortptr_t addr, const int32_t value, const int8_t columns)
 {
-    screen_hex((int)&dec9[0], value);
+    screen_hex((shortptr_t)&dec9[0], value);
 
     c = 8 - columns;
     while (c)
@@ -64,7 +64,7 @@ void format_hex(const int addr, const long value, const char columns)
         lpoke(addr + i, dec9[i]);
 }
 
-unsigned char screen_decimal_digits[16][5] = {
+uint8_t screen_decimal_digits[16][5] = {
     {0, 0, 0, 0, 1},
     {0, 0, 0, 0, 2},
     {0, 0, 0, 0, 4},
@@ -108,8 +108,8 @@ unsigned char screen_decimal_digits[16][5] = {
 // }
 
 uint8_t carry, temp;
-unsigned int value;
-void screen_decimal(unsigned int addr, unsigned int v)
+uint16_t value;
+void screen_decimal(shortptr_t addr, uint16_t v)
 {
     // XXX - We should do this off-screen and copy into place later, to avoid glitching
     // on display.
@@ -164,43 +164,43 @@ void screen_decimal(unsigned int addr, unsigned int v)
         POKE(addr + k, screen_hex_buffer[k]);
 }
 
-char dec6[6];
-void format_decimal(const int addr, const int value, const char columns)
+int8_t dec6[6];
+void format_decimal(const shortptr_t addr, const int16_t value, const int8_t columns)
 {
-    screen_decimal((int)&dec6[0], value);
+    screen_decimal((shortptr_t)&dec6[0], value);
 
     for (i = 0; i < columns; ++i)
         lpoke(addr + i, dec6[i]);
 }
 
-long addr;
-void display_footer(unsigned char index)
+ptr_t addr;
+void display_footer(uint8_t index)
 {
-    addr = (long)footer_messages[index];
+    addr = (ptr_t)footer_messages[index];
     lcopy(addr, FOOTER_ADDRESS, 80);
     set_screen_attributes(FOOTER_ADDRESS, 80, ATTRIB_REVERSE);
 }
 
 // void setup_screen(void)
 // {
-//     unsigned char v;
+//     uint8_t v;
 
 //     m65_io_enable();
 
 //     // 80-column mode, fast CPU, extended attributes enable
-//     *((unsigned char *)0xD031) = 0xe0;
+//     *((charptr_t)0xD031) = 0xe0;
 
 //     // Put screen memory somewhere (2KB required)
 //     // We are using $8000-$87FF for screen
 //     // Using custom charset @ $A000
-//     *(unsigned char *)0xD018U =
+//     *(charptr_t)0xD018U =
 //             (((CHARSET_ADDRESS - 0x8000U) >> 11) << 1) + (((SCREEN_ADDRESS - 0x8000U) >> 10) << 4);
 
 //     // VIC RAM Bank to $8000-$BFFF
-//     v = *(unsigned char *)0xDD00U;
+//     v = *(charptr_t)0xDD00U;
 //     v &= 0xfc;
 //     v |= 0x01;
-//     *(unsigned char *)0xDD00U = v;
+//     *(charptr_t)0xDD00U = v;
 
 //     // Screen colours
 //     POKE(0xD020U, 0);
@@ -222,18 +222,18 @@ void display_footer(unsigned char index)
 //     display_footer(FOOTER_COPYRIGHT);
 // }
 
-void screen_colour_line(unsigned char line, unsigned char colour)
+void screen_colour_line(uint8_t line, uint8_t colour)
 {
     // Set colour RAM for this screen line to this colour
     // (use bit-shifting as fast alternative to multiply)
     lfill(0x1f800 + (line << 6) + (line << 4), colour, 80);
 }
 
-void fatal_error(unsigned char *filename, unsigned int line_number)
+void fatal_error(charptr_t filename, uint16_t line_number)
 {
     display_footer(FOOTER_FATAL);
-    for (i = 0; filename[i]; ++i)
-        POKE(FOOTER_ADDRESS + 44 + i, filename[i]);
+    for (i = 0; lpeek(filename + i); ++i)
+        POKE(FOOTER_ADDRESS + 44 + i, lpeek(filename + i));
     POKE(FOOTER_ADDRESS + 44 + i, ':');
     ++i;
     screen_decimal(FOOTER_ADDRESS + 44 + i, line_number);
@@ -242,7 +242,7 @@ void fatal_error(unsigned char *filename, unsigned int line_number)
         continue;
 }
 
-void set_screen_attributes(long p, unsigned char count, unsigned char attr)
+void set_screen_attributes(ptr_t p, uint8_t count, uint8_t attr)
 {
     // This involves setting colour RAM values, so we need to either LPOKE, or
     // map the 2KB colour RAM in at $D800 and work with it there.
@@ -255,7 +255,7 @@ void set_screen_attributes(long p, unsigned char count, unsigned char attr)
     }
 }
 
-// char read_line(char *buffer, unsigned char maxlen)
+// char read_line(char *buffer, uint8_t maxlen)
 // {
 //     char len = 0;
 //     char c;
@@ -265,7 +265,7 @@ void set_screen_attributes(long p, unsigned char count, unsigned char attr)
 
 //     while (len < maxlen)
 //     {
-//         c = *(unsigned char *)0xD610;
+//         c = *(charptr_t)0xD610;
 
 // #if 0
 //         reverse ^=0x20;
@@ -312,16 +312,16 @@ void set_screen_attributes(long p, unsigned char count, unsigned char attr)
 //                 buffer[len++] = c;
 //             }
 
-//             //      *(unsigned char *)0x8000 = c;
+//             //      *(charptr_t)0x8000 = c;
 
 //             // Clear keys from hardware keyboard scanner
 //             // XXX we clear all keys here, and work around a bug that causes crazy
 //             // fast key repeating. This can be turned back into acknowledging the
 //             // single key again later
-//             while (*(unsigned char *)0xD610)
+//             while (*(charptr_t)0xD610)
 //             {
-//                 unsigned int i;
-//                 *(unsigned char *)0xd610 = 1;
+//                 uint16_t i;
+//                 *(charptr_t)0xd610 = 1;
 
 //                 for (i = 0; i < 25000; i++)
 //                     continue;
