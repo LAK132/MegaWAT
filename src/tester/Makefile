@@ -80,7 +80,7 @@ debug: $(foreach obj,$(ALL_DBG),$(BINDIR)/$(obj)) | $(BINDIR) $(OUTDIR)
 release: $(foreach obj,$(ALL_REL),$(BINDIR)/$(obj)) | $(BINDIR) $(OUTDIR)
 	$(CXX) -std=$(CPPVER) $^ $(foreach libdir,$(LIBDIR),-L$(libdir)) $(foreach lib,$(LIBS),-l$(lib)) $(COMPOPT) $(LINKOPT) $(RELLINKOPT) -o $(OUTDIR)/$(APP)
 
-clean: $(BINDIR)
+clean: | $(BINDIR)
 	cd $(BINDIR) && rm -f *.o
 
 $(OUTDIR):
