@@ -9,7 +9,7 @@ LIBDIR = lib
 LIBS =					#bat SDL2main.lib SDL2.lib
 
 COMPOPT = -ldl -lSDL2 -pthread -fpermissive	#bat COMPOPT = /nologo /EHa /MD /bigobj
-LINKOPT = -fpermissive									#bat LINKOPT = /nologo
+LINKOPT =									#bat LINKOPT = /nologo
 
 DBGCOMPOPT =			#bat /Zi
 DBGLINKOPT =			#bat /DEBUG
@@ -17,43 +17,10 @@ DBGLINKOPT =			#bat /DEBUG
 RELCOMPOPT = -DNDEBUG	#bat /DNDEBUG
 RELLINKOPT =
 
-SOURCES = lak cql opengl sdl lakutils laktypes lakruntime megawat src glm stb
+SUBMODULES = lak
+export SOURCES = megawat src
 
-lak_SRC = ./include/lak
-
-glm_SRC = $(lak_SRC)/glm
-
-stb_SRC = $(lak_SRC)/stb
-
-cql_SRC = $(lak_SRC)/cql
-cql_HDR = cql.h
-cql_DEP = lak
-
-opengl_SRC = $(lak_SRC)/GL
-opengl_OBJ = gl3w.c
-opengl_HDR = gl3w.h glcorearb.h
-opengl_DEP = lak
-
-sdl_SRC = /usr/include/SDL2			#bat sdl_SRC = ./include/lak/SDL
-# sdl_LIB = $(sdl_SRC)				#bat sdl_LIB = ./include/lak/SDL
-
-lakutils_SRC = $(lak_SRC)/utils		#bat lak_utils_SRC = ./include/lak/utils
-lakutils_OBJ = stream.cpp
-lakutils_HDR = crc32_hash.h ldebug.h obj.h pnm.h stream.h type.h
-lakutils_INC = $(lak_SRC)
-lakutils_DEP = lak
-
-laktypes_SRC = $(lak_SRC)/types		#bat lak_types_SRC = ./include/lak/types
-laktypes_OBJ = shader.cpp mesh.cpp json.cpp queue.cpp stride_vector.cpp
-laktypes_HDR = shader.h mesh.h json.h queue.h stride_vector.h texture.h type_list.h color.h image.h
-lakutils_INC = $(lak_SRC)
-laktypes_DEP = lak lakutils sdl glm opengl
-
-lakruntime_SRC = $(lak_SRC)/runtime	#bat lak_runtime_SRC = ./include/lak/runtime
-lakruntime_OBJ = mainloop.cpp
-lakruntime_HDR = mainloop.h
-lakruntime_INC = $(lak_SRC)
-lakruntime_DEP = lak laktypes lakutils glm sdl opengl
+export lak_SRC = ./include/lak
 
 megawat_SRC = ..
 megawat_OBJ = editor.c f65.c globals.c main.c screen.c videomodes.c
@@ -62,14 +29,27 @@ megawat_HDR = editor.h f65.h globals.h main.h screen.h videomodes.h memory.h mem
 src_SRC = .
 src_OBJ = source.cpp memory.c font.s #bat source.cpp memory.c font.cpp
 src_HDR = source.h
-src_DEP = cql lak laktypes lakutils glm sdl stb opengl megawat
+src_DEP = cql lak lak_types lak_utils glm sdl stb opengl megawat
 src_INC = include
 
 # BUILD SCRIPT
 
+define SUBMODULE_TEMPLATE =
+$(1)_MKF = $$($(1)_SRC)/Makefile
+$$($(1)_SRC):
+	( if [ ! -d $$@ ]; then $$(error Submodule $$@ not found, use `git submodule update --init --recursive` to initialise submodules); fi )
+$$($(1)_MKF): | $$($(1)_SRC)
+	( if [ ! -f $$@ ]; then $$(error Submodule $$($(1)_SRC) not initialised, use `git submodule update --init --recursive` to initialise submodules) ; fi )
+include $$($(1)_MKF)
+endef
+
+$(foreach sub,$(SUBMODULES),$(eval $(call SUBMODULE_TEMPLATE,$(sub))))
+
 ALL_DBG = $(foreach src,$(SOURCES),$(foreach obj,$($(src)_OBJ),$(if $(findstring $(suffix $(obj)),.s),nasm,dbg)$(src)$(obj).o))
 ALL_REL = $(foreach src,$(SOURCES),$(foreach obj,$($(src)_OBJ),$(if $(findstring $(suffix $(obj)),.s),nasm,rel)$(src)$(obj).o))
 ALL_HDR = $(foreach src,$(SOURCES),$(foreach hdr,$($(src)_HDR),$(strip $($(src)_SRC))/$(strip $(hdr))))
+
+$(info $(foreach obj,$(ALL_OBJ),$(obj)))
 
 .PHONY: all
 all: release
