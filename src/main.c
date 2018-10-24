@@ -64,9 +64,7 @@ void megamain()
         POKE(0xd020U, PEEK(0xd012U));
 #endif
 
-    // Copy bundled font into the asset area of memory
-    lcopy(((uint32_t)font_file)&0xFFFF, ASSET_RAM, font_file_size);
-    // Then patch the pointers in the font to be correct
+    // Then patch the pointers in the font(s) to be correct
     patchFont(ASSET_RAM);
 
     // Create a render buffer that points to the default active screen
