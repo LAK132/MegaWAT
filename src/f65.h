@@ -4,7 +4,10 @@
 #ifndef F65_H
 #define F65_H
 
+#define MAX_FONTS 16
 extern uint8_t font_id;
+extern uint32_t font_addresses[MAX_FONTS];
+extern uint8_t font_count;
 
 // Try to keep this structure 8 bytes = a power of two for efficiency
 typedef struct glyph_details {

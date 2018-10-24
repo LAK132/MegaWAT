@@ -69,6 +69,10 @@ void editor_stash_line(uint8_t line_num)
         {
             editor_buffer[line_num][y++] = scratch_rbuffer.glyphs[x].font_id;
             font_id = scratch_rbuffer.glyphs[x].font_id;
+	    if (font_id < font_count)
+	      findFontStructures(font_addresses[font_id]);
+	    else
+	      findFontStructures(font_addresses[0]);
         }
 
         // Write glyph

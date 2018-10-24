@@ -13,7 +13,6 @@
 // TODO: replace 59 with screen_height-1
 
 // List of fonts
-#define MAX_FONTS 16
 uint32_t font_addresses[MAX_FONTS];
 uint8_t font_count=0;
 
