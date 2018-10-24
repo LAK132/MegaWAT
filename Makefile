@@ -55,8 +55,7 @@ HEADERS=	Makefile \
 			$(SRCDIR)/megaint.h \
 			$(SRCDIR)/ascii.h
 
-DATAFILES=	ascii8x8.bin \
-			example.f65
+DATAFILES=	ascii8x8.bin
 
 CC65=		$(CC65DIR)/bin/cc65
 CL65=		$(CC65DIR)/bin/cl65
@@ -113,27 +112,18 @@ $(BINDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) | $(BINDIR)
 	if [ -f $(SRCDIR)/$*.c ]; then $(CC65) $(C65OPTS) -o $@ $(SRCDIR)/$*.c; fi
 	if [ -f $(SRCDIR)/$*.s ]; then cp $(SRCDIR)/$*.s $@; fi
 
-c65.rom:
-	echo "You must have a 128KB C65-style ROM file called c65.rom"
-	echo "for some targets."
-
-fontpack.bin:	assets/	makefonts.sh $(TTFTOF65) /bin/csh
+fontpack.bin:	Makefile assets/*.ttf assets/*.otf
 	./makefonts.sh
-
-$(OUTDIR)/megawat+fonts.prg:	$(OUTDIR)/megawat.prg c65.rom fontpack.bin Makefile
-	# Assemble MegaWat!? program with C65 ROM and fonts for simple
-	# in-memory testing, while we work in implementing loading fonts from disk.
-	# We need to add 12KB of padding to end of program, then 2nd 64KB RAM, then the ROM, then
-	# the fonts with the $0801 prefix stripped
-	dd if=$(OUTDIR)/megawat.prg of=$@
-	dd if=/dev/zero of=$@ oflag=append conv=notrunc bs=1024 count=12
-	dd if=/dev/zero of=$@ oflag=append conv=notrunc bs=1024 count=64
-	dd if=c65.rom of=$@ oflag=append conv=notrunc bs=1024 count=128
-	# Now the fonts
-	dd if=fontpack.bin of=$@ oflag=append conv=notrunc bs=1024 count=128
 
 $(OUTDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(OUTDIR)
 	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(ASSFILES)
+
+$(OUTDIR)/megawat+fonts.prg:	Makefile fontpack.bin $(OUTDIR)/megawat.prg c65.rom
+	#	Generate single binary with fonts and ROM in place
+	dd if=$(OUTDIR)/megawat.prg of=$@
+	dd if=/dev/zero bs=1024 count=76 of=$@ oflag=append conv=notrunc
+	dd if=c65.rom bs=1024 count=128 of=$@ oflag=append conv=notrunc
+	dd if=fontpack.bin bs=1024 count=128 of=$@ oflag=append conv=notrunc
 
 $(OUTDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(OUTDIR)
 	if [ -f $@ ]; then rm -f $@; fi
@@ -163,3 +153,6 @@ $(MONLOAD):
 
 $(TTFTOF65):
 	( cd $(FONTRSTDIR) ; make )
+
+.DEFAULT:
+	$(error Could not find file $@)
