@@ -416,9 +416,20 @@ void renderGlyph(ptr_t font_address, uint16_t code_point, uint8_t colour_and_att
     }
 }
 
+uint32_t font_address;
 ptr_t point_tile, tile_address, tile_cards;
 uint16_t card_address;
-void patchFont(ptr_t font_address)
+
+void patchFonts(ptr_t first_address)
+{
+  font_address=first_address;
+  do {
+    patchFont();
+    font_address+=font_size;
+  } while(font_size);
+}
+
+void patchFont(void)
 {
     // if (prev_font == font_address) return;
 

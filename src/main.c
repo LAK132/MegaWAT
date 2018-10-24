@@ -28,6 +28,7 @@
 // UA 91 10010001
 
 #include "main.h"
+#include "f65.h"
 
 #ifdef __MEGA65__
 void main(void)
@@ -65,11 +66,7 @@ void megamain()
 #endif
 
     // Then patch the pointers in the font(s) to be correct
-    font_address=ASSET_RAM;
-    do {
-      patchFont(font_address);
-      font_address+=font_size;
-    } while(font_size)
+    patchFonts(ASSET_RAM);
 
     // Create a render buffer that points to the default active screen
     screen_rbuffer.screen_ram = SLIDE0_SCREEN_RAM;
