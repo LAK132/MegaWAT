@@ -207,6 +207,10 @@ void deleteGlyph(uint8_t glyph_num)
     // Reduce number of remaining glyphs
     active_rbuffer->glyph_count--;
 
+    // Update the first_column field of each of the shoved glyphs
+    for (y = glyph_num; y < active_rbuffer->glyph_count; y++)
+        active_rbuffer->glyphs[y].first_column -= active_rbuffer->glyphs[glyph_num].columns;
+
     // Update rows_above and rows_below if require
     if (x)
     {
@@ -283,7 +287,7 @@ void renderGlyph(ptr_t font_address, uint16_t code_point, uint8_t colour_and_att
         // This is an overlapping copy, so we have to copy to a temp location first
         if (position < active_rbuffer->glyph_count) {
             // Update the first_column field of each of the shoved glyphs
-            for (y = 0; y < active_rbuffer->glyph_count; y++)
+            for (y = position; y < active_rbuffer->glyph_count; y++)
                 active_rbuffer->glyphs[y].first_column += bytes_per_row;
             lcopy_safe((ptr_t)&active_rbuffer->glyphs[position], (ptr_t)&active_rbuffer->glyphs[position + 1],
                 sizeof(glyph_details_t) * (active_rbuffer->glyph_count - position));
