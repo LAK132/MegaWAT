@@ -338,8 +338,16 @@ void editor_poll_keyboard(void)
                 mod |= READ_MOD();
             }
 
-            if (key >= ' ' && key <= 0x7e)
-                editor_insert_codepoint(key);
+	    // Control+SHIFT <0-9> = select font
+	    if ((key>=0x21 && key <=0x29) & (mod & 0x04)) {
+	      font_id=key-0x21;
+	      if (font_id < font_count)
+		findFontStructures(font_addresses[font_id]);
+	      else
+		findFontStructures(font_addresses[0]);	      
+	    }	    
+            else if (key >= ' ' && key <= 0x7e)
+	      editor_insert_codepoint(key);
             else
                 editor_process_special_key(key);
 
