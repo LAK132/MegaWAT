@@ -5,7 +5,7 @@
 
 #define RAM_SIZE 0xFFF0000
 
-uint8_t m65_ram[RAM_SIZE];   // 0x0000000 -> 0xFF87FFF
+uint8_t m65_ram[RAM_SIZE];
 
 void m65_io_enable(void)
 {
@@ -18,7 +18,9 @@ void m65_io_enable(void)
 
 uint8_t lpeek(ptr_t address)
 {
-    return (longptr_t)address < sizeof(m65_ram) ? m65_ram[(longptr_t)address] : *(charptr_t)address;
+    return (longptr_t)address < sizeof(m65_ram)
+        ? m65_ram[(longptr_t)address]
+        : *(charptr_t)address;
 }
 
 void lpoke(ptr_t address, uint8_t value)

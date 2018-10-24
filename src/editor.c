@@ -178,8 +178,8 @@ void editor_insert_codepoint(unsigned int code_point)
     if ((text_line + 1) < EDITOR_MAX_LINES)
     {
         // s = glyph height - row height (how much bigger the glyph is than the row)
-        s = (scratch_rbuffer.max_above + scratch_rbuffer.max_below) -
-            (text_line_first_rows[text_line + 1] - text_line_first_rows[text_line]);
+        s = (scratch_rbuffer.max_above + scratch_rbuffer.max_below)
+            - (text_line_first_rows[text_line + 1] - text_line_first_rows[text_line]);
         if (s > 0)
         {
             // Yes, it grew.
