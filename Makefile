@@ -68,6 +68,12 @@ ROMDIR=		$(XEMUDIR)/rom
 XC65=		$(XEMUDIR)/build/bin/xc65.native
 C65SYSROM=	$(ROMDIR)/c65-system.rom
 
+# But use local ROM file if present
+F1_EXISTS=$(shell [ -e c65.rom ] && echo 1 || echo 0 )
+ifeq ($(F1_EXISTS), 1)
+	C65SYSROM=	c65.rom
+endif
+
 MONLOAD=	$(COREDIR)/src/tools/monitor_load
 KICKUP=		$(COREDIR)/bin/KICKUP.M65
 BITSTRM=	$(COREDIR)/bin/nexys4ddr.bit
