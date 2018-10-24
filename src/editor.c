@@ -69,10 +69,10 @@ void editor_stash_line(uint8_t line_num)
         {
             editor_buffer[line_num][y++] = scratch_rbuffer.glyphs[x].font_id;
             font_id = scratch_rbuffer.glyphs[x].font_id;
-	    if (font_id < font_count)
-	      findFontStructures(font_addresses[font_id]);
-	    else
-	      findFontStructures(font_addresses[0]);
+            if (font_id < font_count)
+                findFontStructures(font_addresses[font_id]);
+            else
+                findFontStructures(font_addresses[0]);
         }
 
         // Write glyph
@@ -90,7 +90,7 @@ void editor_fetch_line(uint8_t line_num)
     clearRenderBuffer();
     for (h = 0; editor_buffer[line_num][h] && (h < EDITOR_LINE_LEN); ++h)
         if ((editor_buffer[line_num][h] < 0xe000) || (editor_buffer[line_num][h] >= 0xf800))
-            renderGlyph(ASSET_RAM,
+            renderGlyph(current_font,
                         editor_buffer[line_num][h],
                         text_colour,
                         ATTRIB_ALPHA_BLEND,
@@ -175,7 +175,7 @@ void editor_insert_codepoint(unsigned int code_point)
     active_rbuffer = &scratch_rbuffer;
     // Natural key -- insert here
     z = scratch_rbuffer.glyph_count;
-    renderGlyph(ASSET_RAM, code_point, text_colour, ATTRIB_ALPHA_BLEND, cursor_col);
+    renderGlyph(current_font, code_point, text_colour, ATTRIB_ALPHA_BLEND, cursor_col);
 
     // Check if this code point grew the height of the line.
     // If so, push everything else down before pasting
@@ -210,7 +210,8 @@ void editor_insert_codepoint(unsigned int code_point)
     next_row = screen_rbuffer.rows_used;
 
     // Only advance cursor if the glyph was actually rendered
-    if (scratch_rbuffer.glyph_count > z) {
+    if (scratch_rbuffer.glyph_count > z)
+    {
         TOGGLE_BACK();
         ++cursor_col;
     }
@@ -338,16 +339,17 @@ void editor_poll_keyboard(void)
                 mod |= READ_MOD();
             }
 
-	    // Control+SHIFT <0-9> = select font
-	    if ((key>=0x21 && key <=0x29) & (mod & 0x04)) {
-	      font_id=key-0x21;
-	      if (font_id < font_count)
-		findFontStructures(font_addresses[font_id]);
-	      else
-		findFontStructures(font_addresses[0]);	      
-	    }	    
+            // Control+SHIFT <0-9> = select font
+            if ((key >= 0x21 && key <= 0x29) && (mod & MOD_CTRL))
+            {
+                font_id = key - 0x21;
+                if (font_id < font_count)
+                    findFontStructures(font_addresses[font_id]);
+                else
+                    findFontStructures(font_addresses[0]);
+            }
             else if (key >= ' ' && key <= 0x7e)
-	      editor_insert_codepoint(key);
+                editor_insert_codepoint(key);
             else
                 editor_process_special_key(key);
 
