@@ -7,7 +7,7 @@ OUTDIR=		out
 MKDIRS=		$(SRCDIR) $(BINDIR) $(OUTDIR)
 
 DISK=		$(OUTDIR)/DISK.D81
-PROGRAM=	$(OUTDIR)/megawat.prg
+PROGRAM=	$(OUTDIR)/megawat+fonts.prg
 
 CC65DIR=	cc65
 CBMCONVDIR=	cbmconvert
@@ -114,6 +114,24 @@ load:		$(MONLOAD) $(C65SYSROM) $(PROGRAM)
 $(BINDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) | $(BINDIR)
 	if [ -f $(SRCDIR)/$*.c ]; then $(CC65) $(C65OPTS) -o $@ $(SRCDIR)/$*.c; fi
 	if [ -f $(SRCDIR)/$*.s ]; then cp $(SRCDIR)/$*.s $@; fi
+
+c65.rom:
+	echo "You must have a 128KB C65-style ROM file called c65.rom"
+	echo "for some targets."
+
+fontpack.bin:	assets/	makefonts.sh $(TTFTOF65) /bin/csh
+	./makefonts.sh
+
+$(OUTDIR)/megawat+fonts.prg:	$(OUTDIR)/megawat.prg c65.rom fontpack.bin
+	# Assemble MegaWat!? program with C65 ROM and fonts for simple
+	# in-memory testing, while we work in implementing loading fonts from disk.
+	# We need to add 12KB of padding to end of program, then the ROM, then
+	# the fonts with the $0801 prefix stripped
+	dd if=$(OUTDIR)/megawat.prg of=$@
+	dd if=/dev/zero of=$@ conv=notrunc bs=1024 count=12
+	dd if=c65.rom of=$@ conv=notrunc bs=1024 count=128
+	# Now the fonts
+	dd if=fontpack.bin of=$@ conv=notrunc bs=1024 count=128
 
 $(OUTDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(OUTDIR)
 	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(ASSFILES)
