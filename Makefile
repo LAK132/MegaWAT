@@ -33,7 +33,6 @@ SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/f65.c \
 			$(SRCDIR)/globals.c \
 			$(SRCDIR)/charset.s \
-			$(SRCDIR)/font.s \
 			$(SRCDIR)/romprotection.s
 
 ASSFILES=	$(BINDIR)/main.s \
@@ -44,7 +43,6 @@ ASSFILES=	$(BINDIR)/main.s \
 			$(BINDIR)/f65.s \
 			$(BINDIR)/globals.s \
 			$(BINDIR)/charset.s \
-			$(BINDIR)/font.s \
 			$(BINDIR)/romprotection.s
 
 HEADERS=	Makefile \
