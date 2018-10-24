@@ -14,13 +14,13 @@
 
 // List of fonts
 uint32_t font_addresses[MAX_FONTS];
-uint8_t font_count=0;
+uint8_t font_count = 0;
 
-// Current font 
-uint8_t font_id = 0;
+// Current font
+uint8_t font_id = 0;      // ID of the current font
+ptr_t current_font = 0U;  // address of the current font
 
 uint8_t start_column;
-ptr_t prev_font = 0U; // read only
 uint16_t glyph_count = 0U;
 
 // point list
@@ -120,7 +120,7 @@ void outputLineToRenderBuffer(void)
 
 void findFontStructures(ptr_t font_address)
 {
-    prev_font = font_address;
+    current_font = font_address;
 
     lcopy(font_address + 0x80, (ptr_t)&glyph_count, 2);
 
@@ -133,7 +133,7 @@ void findFontStructures(ptr_t font_address)
     tile_map_address = font_address + tile_map_start;
     tile_array_address = font_address + tile_array_start;
 
-    lcopy(font_address + 0x8c, (ptr_t)&font_size,4);
+    lcopy(font_address + 0x8c, (ptr_t)&font_size, 4);
 }
 
 glyph_details_t *gd = 0;
@@ -160,7 +160,7 @@ void deleteGlyph(uint8_t glyph_num)
     // then advance to the first unused column
     screen += active_rbuffer->glyphs[glyph_num].first_column * char_size;
     colour += active_rbuffer->glyphs[glyph_num].first_column * char_size;
-    x       = active_rbuffer->glyphs[glyph_num].columns * char_size;
+    x = active_rbuffer->glyphs[glyph_num].columns * char_size;
     bytes_per_row = (active_rbuffer->columns_used - active_rbuffer->glyphs[glyph_num].first_column) * char_size;
 
     // Copy remaining glyphs on the line
@@ -180,8 +180,9 @@ void deleteGlyph(uint8_t glyph_num)
 
     // Note if we need to recalculate rows above and rows below
     x = (active_rbuffer->glyphs[glyph_num].rows_above == rows_above) ||
-        (active_rbuffer->glyphs[glyph_num].rows_below == rows_below)
-        ? 1 : 0;
+                (active_rbuffer->glyphs[glyph_num].rows_below == rows_below)
+            ? 1
+            : 0;
 
     // Subtract the used columns
     active_rbuffer->columns_used -= active_rbuffer->glyphs[glyph_num].columns;
@@ -245,7 +246,7 @@ void renderGlyph(ptr_t font_address, uint16_t code_point, uint8_t colour_and_att
 {
     if (!active_rbuffer)
         return;
-    if (prev_font != font_address)
+    if (current_font != font_address)
         findFontStructures(font_address);
 
     // Default to allowing 24 rows above and 6 rows below for underhangs
@@ -257,8 +258,8 @@ void renderGlyph(ptr_t font_address, uint16_t code_point, uint8_t colour_and_att
 
     // Make space if this glyph is not at the end
     start_column = (position < active_rbuffer->glyph_count)
-        ? active_rbuffer->glyphs[position].first_column
-        : active_rbuffer->columns_used;
+                       ? active_rbuffer->glyphs[position].first_column
+                       : active_rbuffer->columns_used;
 
     if (start_column > 99)
         return;
@@ -295,12 +296,13 @@ void renderGlyph(ptr_t font_address, uint16_t code_point, uint8_t colour_and_att
 
         // Ok, we have a glyph, so now we make space in the glyph list
         // This is an overlapping copy, so we have to copy to a temp location first
-        if (position < active_rbuffer->glyph_count) {
+        if (position < active_rbuffer->glyph_count)
+        {
             // Update the first_column field of each of the shoved glyphs
             for (y = position; y < active_rbuffer->glyph_count; y++)
                 active_rbuffer->glyphs[y].first_column += bytes_per_row;
             lcopy_safe((ptr_t)&active_rbuffer->glyphs[position], (ptr_t)&active_rbuffer->glyphs[position + 1],
-                sizeof(glyph_details_t) * (active_rbuffer->glyph_count - position));
+                       sizeof(glyph_details_t) * (active_rbuffer->glyph_count - position));
         }
 
         // Record details about this glyph
@@ -427,21 +429,27 @@ uint16_t card_address;
 
 void patchFonts(ptr_t first_address)
 {
-  font_count=0;
-  font_address=first_address;
-  do {
-    if (font_count==MAX_FONTS) break;
-    patchFont();
-    font_addresses[font_count++]=font_address;
-    font_address+=font_size;
-  } while(font_size);
+    font_count = 0;
+    font_address = first_address;
+    for (;;)
+    {
+        if (font_count == MAX_FONTS)
+            break;
+        patchFont();
+        font_addresses[font_count++] = font_address;
+        font_address += font_size;
+        if (!font_size)
+            break;
+    }
 }
 
 void patchFont(void)
 {
-    // if (prev_font == font_address) return;
+    // if (current_font == font_address) return;
 
     findFontStructures(font_address);
+    if (!font_size)
+        return;
 
     // Patch tile_array_start
     tile_array_start += (longptr_t)font_address;

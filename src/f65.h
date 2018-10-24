@@ -6,6 +6,7 @@
 
 #define MAX_FONTS 16
 extern uint8_t font_id;
+extern ptr_t current_font;
 extern uint32_t font_addresses[MAX_FONTS];
 extern uint8_t font_count;
 
