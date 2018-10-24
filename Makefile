@@ -2,13 +2,15 @@ CC=			gcc
 COPT=		-Wall -g -std=gnu99
 
 SRCDIR=		src
+OBJDIR=		obj
 BINDIR=		bin
-OUTDIR=		out
-MKDIRS=		$(SRCDIR) $(BINDIR) $(OUTDIR)
+ROMDIR=		rom
+MKDIRS=		$(SRCDIR) $(OBJDIR) $(BINDIR) $(ROMDIR)
 
-DISK=		$(OUTDIR)/DISK.D81
-PROGRAM=	$(OUTDIR)/megawat+fonts.prg
+DISK=		$(BINDIR)/DISK.D81
+PROGRAM=	$(BINDIR)/megawat+fonts.prg
 
+WGET=		wget
 CC65DIR=	cc65
 CBMCONVDIR=	cbmconvert
 FONTRSTDIR=	c65gs-font-rasteriser
@@ -35,15 +37,15 @@ SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/charset.s \
 			$(SRCDIR)/romprotection.s
 
-ASSFILES=	$(BINDIR)/main.s \
-			$(BINDIR)/screen.s \
-			$(BINDIR)/editor.s \
-			$(BINDIR)/videomodes.s \
-			$(BINDIR)/memory.s \
-			$(BINDIR)/f65.s \
-			$(BINDIR)/globals.s \
-			$(BINDIR)/charset.s \
-			$(BINDIR)/romprotection.s
+ASSFILES=	$(OBJDIR)/main.s \
+			$(OBJDIR)/screen.s \
+			$(OBJDIR)/editor.s \
+			$(OBJDIR)/videomodes.s \
+			$(OBJDIR)/memory.s \
+			$(OBJDIR)/f65.s \
+			$(OBJDIR)/globals.s \
+			$(OBJDIR)/charset.s \
+			$(OBJDIR)/romprotection.s
 
 HEADERS=	Makefile \
 			$(SRCDIR)/main.h \
@@ -57,6 +59,7 @@ HEADERS=	Makefile \
 
 DATAFILES=	ascii8x8.bin
 
+
 CC65=		$(CC65DIR)/bin/cc65
 CL65=		$(CC65DIR)/bin/cl65
 CA65=		$(CC65DIR)/bin/ca65 --cpu 4510
@@ -64,14 +67,14 @@ LD65=		$(CC65DIR)/bin/ld65 -t none
 
 CBMCONVERT=	$(CBMCONVDIR)/cbmconvert
 
-ROMDIR=		$(XEMUDIR)/rom
 XC65=		$(XEMUDIR)/build/bin/xc65.native
-C65SYSROM=	$(ROMDIR)/c65-system.rom
 
 # But use local ROM file if present
 F1_EXISTS=$(shell [ -e c65.rom ] && echo 1 || echo 0 )
 ifeq ($(F1_EXISTS), 1)
-	C65SYSROM=	c65.rom
+C65SYSROM=	c65.rom
+else
+C65SYSROM=	$(ROMDIR)/910111-390488-01.bin.rom
 endif
 
 MONLOAD=	$(COREDIR)/src/tools/monitor_load
@@ -88,10 +91,13 @@ all:		$(FILES) | $(MKDIRS)
 clean: clean-bin clean-out clean-font
 
 clean-bin:
-	if [ -d $(BINDIR) ]; then cd $(BINDIR) && rm -f *; fi
+	if [ -d $(OBJDIR) ]; then cd $(OBJDIR) && rm -f *; fi
 
 clean-out:
-	if [ -d $(OUTDIR) ]; then cd $(OUTDIR) && rm -f *; fi
+	if [ -d $(BINDIR) ]; then cd $(BINDIR) && rm -f *; fi
+
+clean-rom:
+	if [ -d $(ROMDIR) ]; then cd $(ROMDIR) && rm -f *; fi
 
 clean-font:
 	rm -f *.f65
@@ -109,29 +115,32 @@ load:		$(MONLOAD) $(C65SYSROM) $(PROGRAM)
 
 # TEMPLATES
 
-.PRECIOUS: $(BINDIR)/%.s %.f65
+.PRECIOUS: $(OBJDIR)/%.s %.f65 $(ROMDIR)/%.rom
 
 %.f65:	%.ttf Makefile $(TTFTOF65)
 	$(TTFTOF65) -A -P 8 -T $< -o $@
 
-$(BINDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) | $(BINDIR)
+$(OBJDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) | $(OBJDIR)
 	if [ -f $(SRCDIR)/$*.c ]; then $(CC65) $(C65OPTS) -o $@ $(SRCDIR)/$*.c; fi
 	if [ -f $(SRCDIR)/$*.s ]; then cp $(SRCDIR)/$*.s $@; fi
 
-fontpack.bin:	Makefile assets/*.ttf assets/*.otf
-	./makefonts.sh
+$(ROMDIR)/%.rom:	| $(ROMDIR)
+	$(WGET) -O $@ http://www.zimmers.net/anonftp/pub/cbm/firmware/computers/c65/$* || { rm -f $@ ; false; }
 
-$(OUTDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(OUTDIR)
+$(OBJDIR)/%.fpk:	Makefile assets/*.ttf assets/*.otf | assets
+	./makefonts.sh $@
+
+$(BINDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(BINDIR)
 	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(ASSFILES)
 
-$(OUTDIR)/megawat+fonts.prg:	Makefile fontpack.bin $(OUTDIR)/megawat.prg $(C65SYSROM)
+$(BINDIR)/megawat+fonts.prg:	Makefile $(OBJDIR)/fontpack.fpk $(BINDIR)/megawat.prg $(C65SYSROM)
 	#	Generate single binary with fonts and ROM in place
-	dd if=$(OUTDIR)/megawat.prg of=$@
+	dd if=$(BINDIR)/megawat.prg of=$@
 	dd if=/dev/zero bs=1024 count=76 of=$@ oflag=append conv=notrunc
 	dd if=$(C65SYSROM) bs=1024 count=128 of=$@ oflag=append conv=notrunc
-	dd if=fontpack.bin bs=1024 count=128 of=$@ oflag=append conv=notrunc
+	dd if=$(OBJDIR)/fontpack.fpk bs=1024 count=128 of=$@ oflag=append conv=notrunc
 
-$(OUTDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(OUTDIR)
+$(BINDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(BINDIR)
 	if [ -f $@ ]; then rm -f $@; fi
 	$(CBMCONVERT) -v2 -D8o $@ $(FILES)
 
