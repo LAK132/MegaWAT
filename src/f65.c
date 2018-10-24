@@ -198,6 +198,10 @@ void deleteGlyph(uint8_t glyph_num)
         colour += screen_width;
     }
 
+    // Update the first_column field of each of the shoved glyphs
+    for (y = glyph_num; y < active_rbuffer->glyph_count; y++)
+        active_rbuffer->glyphs[y].first_column -= active_rbuffer->glyphs[glyph_num].columns;
+
     // Now copy down the glyph details structure.
     // We also do a DMA here for speed
     // lcopy((ptr_t)&active_rbuffer->glyphs[glyph_num + 1],
@@ -206,10 +210,6 @@ void deleteGlyph(uint8_t glyph_num)
 
     // Reduce number of remaining glyphs
     active_rbuffer->glyph_count--;
-
-    // Update the first_column field of each of the shoved glyphs
-    for (y = glyph_num; y < active_rbuffer->glyph_count; y++)
-        active_rbuffer->glyphs[y].first_column -= active_rbuffer->glyphs[glyph_num].columns;
 
     // Update rows_above and rows_below if require
     if (x)
