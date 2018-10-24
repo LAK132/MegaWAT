@@ -127,7 +127,7 @@ $(OBJDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) | $(OBJDIR)
 $(ROMDIR)/%.rom:	| $(ROMDIR)
 	$(WGET) -O $@ http://www.zimmers.net/anonftp/pub/cbm/firmware/computers/c65/$* || { rm -f $@ ; false; }
 
-$(OBJDIR)/%.fpk:	Makefile assets/*.ttf assets/*.otf | assets $(OBJDIR)
+$(OBJDIR)/%.fpk:	Makefile assets/*.ttf assets/*.otf $(TTFTOF65) | assets $(OBJDIR)
 	./makefonts.sh $@
 
 $(BINDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(BINDIR)
