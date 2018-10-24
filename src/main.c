@@ -65,7 +65,11 @@ void megamain()
 #endif
 
     // Then patch the pointers in the font(s) to be correct
-    patchFont(ASSET_RAM);
+    font_address=ASSET_RAM;
+    do {
+      patchFont(font_address);
+      font_address+=font_size;
+    } while(font_size)
 
     // Create a render buffer that points to the default active screen
     screen_rbuffer.screen_ram = SLIDE0_SCREEN_RAM;

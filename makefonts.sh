@@ -38,5 +38,8 @@ foreach typeface ( $fontlist )
 ls -l $typeface
 dd if=${typeface} bs=1 skip=2 of=fontpack.bin conv=notrunc oflag=append
 end
+# Put end marker (empty 256 byte block) on
+dd if=/dev/zero bs=256 count=1 of=fontpack.bin conv=notrunc oflag=append
+
 
 ls -l fontpack.bin

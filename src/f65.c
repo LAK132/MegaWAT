@@ -28,6 +28,9 @@ ptr_t tile_map_address = 0U, tile_map_size = 0U;
 // tile array
 longptr_t tile_array_start = 0U, tile_array_address = 0U;
 
+// Size of font
+uint32_t font_size = 0U;
+
 ptr_t screen = 0U, colour = 0U;
 uint8_t bytes_per_row;
 uint8_t rows_above;
@@ -124,6 +127,8 @@ void findFontStructures(ptr_t font_address)
     tile_map_size = font_address + tile_map_start - (longptr_t)tile_array_start;
     tile_map_address = font_address + tile_map_start;
     tile_array_address = font_address + tile_array_start;
+
+    lcopy(font_address + 0x8c, (ptr_t)&font_size,4);
 }
 
 glyph_details_t *gd = 0;
