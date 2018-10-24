@@ -13,6 +13,7 @@
 // TODO: replace 59 with screen_height-1
 
 // List of fonts
+#define MAX_FONTS 16
 uint32_t font_addresses[MAX_FONTS];
 uint8_t font_count=0;
 
@@ -430,6 +431,7 @@ void patchFonts(ptr_t first_address)
   font_count=0;
   font_address=first_address;
   do {
+    if (font_count==MAX_FONTS) break;
     patchFont();
     font_addresses[font_count++]=font_address;
     font_address+=font_size;
