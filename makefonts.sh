@@ -32,14 +32,14 @@ set fontlist=( \
 set size=`ls -l $fontlist | cut -f5 -d" " | awk '{ n+=$1; } END { print n; }'`
 echo "This will take $size bytes"
 
-rm fontpack.bin
+rm $1
 
 foreach typeface ( $fontlist )
 ls -l $typeface
-dd if=${typeface} bs=1 skip=2 of=fontpack.bin conv=notrunc oflag=append
+dd if=${typeface} bs=1 skip=2 of=$1 conv=notrunc oflag=append
 end
 # Put end marker (empty 256 byte block) on
 dd if=/dev/zero bs=256 count=1 of=fontpack.bin conv=notrunc oflag=append
 
 
-ls -l fontpack.bin
+ls -l $1
