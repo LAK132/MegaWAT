@@ -28,7 +28,6 @@
 // UA 91 10010001
 
 #include "main.h"
-#include "f65.h"
 
 #ifdef __MEGA65__
 void main(void)
