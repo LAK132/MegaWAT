@@ -12,6 +12,11 @@
 
 // TODO: replace 59 with screen_height-1
 
+// List of fonts
+uint32_t font_addresses[MAX_FONTS];
+uint8_t font_count=0;
+
+// Current font 
 uint8_t font_id = 0;
 
 uint8_t start_column;
@@ -422,9 +427,11 @@ uint16_t card_address;
 
 void patchFonts(ptr_t first_address)
 {
+  font_count=0;
   font_address=first_address;
   do {
     patchFont();
+    font_addresses[font_count++]=font_address;
     font_address+=font_size;
   } while(font_size);
 }
