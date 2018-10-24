@@ -122,16 +122,17 @@ c65.rom:
 fontpack.bin:	assets/	makefonts.sh $(TTFTOF65) /bin/csh
 	./makefonts.sh
 
-$(OUTDIR)/megawat+fonts.prg:	$(OUTDIR)/megawat.prg c65.rom fontpack.bin
+$(OUTDIR)/megawat+fonts.prg:	$(OUTDIR)/megawat.prg c65.rom fontpack.bin Makefile
 	# Assemble MegaWat!? program with C65 ROM and fonts for simple
 	# in-memory testing, while we work in implementing loading fonts from disk.
-	# We need to add 12KB of padding to end of program, then the ROM, then
+	# We need to add 12KB of padding to end of program, then 2nd 64KB RAM, then the ROM, then
 	# the fonts with the $0801 prefix stripped
 	dd if=$(OUTDIR)/megawat.prg of=$@
-	dd if=/dev/zero of=$@ conv=notrunc bs=1024 count=12
-	dd if=c65.rom of=$@ conv=notrunc bs=1024 count=128
+	dd if=/dev/zero of=$@ oflag=append conv=notrunc bs=1024 count=12
+	dd if=/dev/zero of=$@ oflag=append conv=notrunc bs=1024 count=64
+	dd if=c65.rom of=$@ oflag=append conv=notrunc bs=1024 count=128
 	# Now the fonts
-	dd if=fontpack.bin of=$@ conv=notrunc bs=1024 count=128
+	dd if=fontpack.bin of=$@ oflag=append conv=notrunc bs=1024 count=128
 
 $(OUTDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(OUTDIR)
 	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(ASSFILES)
