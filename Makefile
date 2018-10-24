@@ -118,11 +118,11 @@ fontpack.bin:	Makefile assets/*.ttf assets/*.otf
 $(OUTDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(OUTDIR)
 	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(ASSFILES)
 
-$(OUTDIR)/megawat+fonts.prg:	Makefile fontpack.bin $(OUTDIR)/megawat.prg c65.rom
+$(OUTDIR)/megawat+fonts.prg:	Makefile fontpack.bin $(OUTDIR)/megawat.prg $(C65SYSROM)
 	#	Generate single binary with fonts and ROM in place
 	dd if=$(OUTDIR)/megawat.prg of=$@
 	dd if=/dev/zero bs=1024 count=76 of=$@ oflag=append conv=notrunc
-	dd if=c65.rom bs=1024 count=128 of=$@ oflag=append conv=notrunc
+	dd if=$(C65SYSROM) bs=1024 count=128 of=$@ oflag=append conv=notrunc
 	dd if=fontpack.bin bs=1024 count=128 of=$@ oflag=append conv=notrunc
 
 $(OUTDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(OUTDIR)
