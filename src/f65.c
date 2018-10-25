@@ -120,9 +120,12 @@ void outputLineToRenderBuffer(void)
 
 void setFont(uint8_t id)
 {
-    font_id = id < font_count ? id : 0;
-    current_font = font_addresses[font_id];
-    findFontStructures();
+    font_id = id < font_count + 1 ? id : 0;
+    if (font_id > 0)
+    {
+        current_font = font_addresses[font_id - 1];
+        findFontStructures();
+    } else current_font = 0;
 }
 
 void findFontStructures(void)
