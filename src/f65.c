@@ -276,8 +276,8 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
       for (i = 0; i < point_list_size; i += 5)
 	{
 	  lcopy(point_list_address + i, (ptr_t)&the_code_point, 2);
-	  if (the_code_point != code_point)
-            continue;
+	  if (the_code_point == code_point)
+            break;
 	}
       // No such glyph
       if (the_code_point != code_point) {
