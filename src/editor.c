@@ -142,7 +142,7 @@ void editor_update_cursor(void)
     // Set extended Y height to match required height.
     POKE(0xD056, h);
     // Make cursor be text colour (will alternate to another colour as well)
-    POKE(0xD027U, text_colour);
+    POKE(0xD027U, text_colour & 0xF);
     // Move sprite to there
     POKE(0xD000, xx & 0xFF);
     POKE(0xD001, y);
@@ -341,9 +341,7 @@ void editor_poll_keyboard(void)
 
             // Control+SHIFT <0-9> = select font
             if ((key >= 0x21 && key <= 0x29) && (mod & MOD_CTRL))
-            {
                 setFont(key - 0x21);
-            }
             else if (key >= ' ' && key <= 0x7e)
                 editor_insert_codepoint(key);
             else
