@@ -218,7 +218,7 @@ void deleteGlyph(uint8_t glyph_num)
     }
 
     // Update the first_column field of each of the shoved glyphs
-    for (y = glyph_num; y < active_rbuffer->glyph_count; y++)
+    for (y = glyph_num; y < active_rbuffer->glyph_count; ++y)
         active_rbuffer->glyphs[y].first_column -= active_rbuffer->glyphs[glyph_num].columns;
 
     // Now copy down the glyph details structure.
@@ -417,14 +417,18 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
         if (y == rows_above - 1)
             lpoke(colour + 1, colour_and_attributes);
         else
-            lpoke(colour + 1, colour_and_attributes & (~ATTRIB_UNDERLINE));
+            lpoke(colour + 1, colour_and_attributes & ATTRIB_UNDERLINE
+                ? (colour_and_attributes & ~(ATTRIB_BLINK | ATTRIB_UNDERLINE))
+                : colour_and_attributes);
         if (bytes_per_row > 2)
         {
             lpoke(colour + 2, alpha_and_extras);
             if (y == rows_above - 1)
                 lpoke(colour + 3, colour_and_attributes);
             else
-                lpoke(colour + 3, colour_and_attributes & (~ATTRIB_UNDERLINE));
+            lpoke(colour + 3, colour_and_attributes & ATTRIB_UNDERLINE
+                ? (colour_and_attributes & ~(ATTRIB_BLINK | ATTRIB_UNDERLINE))
+                : colour_and_attributes);
         }
         // Then use DMA to copy the pair of bytes out
         // (DMA timing is a bit funny, hence we need to have the two copies setup above
