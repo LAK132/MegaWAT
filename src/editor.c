@@ -210,6 +210,7 @@ void editor_insert_codepoint(uint16_t code_point)
 
 void editor_process_special_key(uint8_t key)
 {
+    k = 0; // if the cursor was moved
     switch (key)
     {
         // Commodore colour selection keys
@@ -280,11 +281,12 @@ void editor_process_special_key(uint8_t key)
                 // XXX - Re-render the previous line
                 //       (And shuffle everything down in the process if this line grew taller)
             }
+            k = 1;
         } break;
 
         // Cursor navigation within a line
-        case 0x9d: if (cursor_col) --cursor_col; break;
-        case 0x1d: if (cursor_col < scratch_rbuffer.glyph_count) ++cursor_col; break;
+        case 0x9d: if (cursor_col) --cursor_col; k = 1; break;
+        case 0x1d: if (cursor_col < scratch_rbuffer.glyph_count) ++cursor_col; k = 1; break;
 
         // Cursor navigation between lines
         // Here we adjust which line we are editing,
@@ -301,6 +303,7 @@ void editor_process_special_key(uint8_t key)
             editor_fetch_line(text_line);
             editor_update_cursor();
             editor_redraw_line();
+            k = 1;
         } break;
         case 0x91: { // Cursor up
             editor_stash_line(text_line);
@@ -309,12 +312,17 @@ void editor_process_special_key(uint8_t key)
             editor_fetch_line(text_line);
             editor_update_cursor();
             editor_redraw_line();
+            k = 1;
         } break;
         default: break;
     }
-    if (cursor_col > 0 && cursor_col <= scratch_rbuffer.glyph_count
-        && font_id != scratch_rbuffer.glyphs[cursor_col-1].font_id)
+    if (k && cursor_col > 0 && cursor_col <= scratch_rbuffer.glyph_count)
+    {
+        if (font_id != scratch_rbuffer.glyphs[cursor_col-1].font_id)
             setFont(scratch_rbuffer.glyphs[cursor_col-1].font_id);
+        if (text_colour != scratch_rbuffer.glyphs[cursor_col-1].colour_and_attributes)
+            text_colour = scratch_rbuffer.glyphs[cursor_col-1].colour_and_attributes;
+    }
 }
 
 void editor_poll_keyboard(void)
