@@ -52,20 +52,20 @@ render_buffer_t screen_rbuffer;
 render_buffer_t scratch_rbuffer;
 render_buffer_t *active_rbuffer = 0;
 
-void renderTextUTF16(ptr_t font_address, uint16_t *str, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
+void renderTextUTF16(uint16_t *str, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
 {
     for (x = 0; str[x]; ++x)
-        renderGlyph(font_address, str[x],
+        renderGlyph(str[x],
                     colour_and_attributes, // Various colours
                     alpha_and_extras,      // alpha blend
                     0xFF                   // Append to end
         );
 }
 
-void renderTextASCII(ptr_t font_address, uint8_t *str, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
+void renderTextASCII(uint8_t *str, uint8_t colour_and_attributes, uint8_t alpha_and_extras)
 {
     for (x = 0; str[x]; ++x)
-        renderGlyph(font_address, str[x],
+        renderGlyph(str[x],
                     colour_and_attributes, // Various colours
                     alpha_and_extras,      // alpha blend
                     0xFF                   // Append to end
@@ -118,22 +118,27 @@ void outputLineToRenderBuffer(void)
     screen_rbuffer.rows_used += rows_below;
 }
 
-void findFontStructures(ptr_t font_address)
+void setFont(uint8_t id)
 {
-    current_font = font_address;
+    font_id = id < font_count ? id : 0;
+    current_font = font_addresses[font_id];
+    findFontStructures();
+}
 
-    lcopy(font_address + 0x80, (ptr_t)&glyph_count, 2);
+void findFontStructures(void)
+{
+    lcopy(current_font + 0x80, (ptr_t)&glyph_count, 2);
 
-    lcopy(font_address + 0x82, (ptr_t)&tile_map_start, 2);
+    lcopy(current_font + 0x82, (ptr_t)&tile_map_start, 2);
     point_list_size = tile_map_start - 0x100;
-    point_list_address = font_address + 0x100;
+    point_list_address = current_font + 0x100;
     tile_array_start = 0;
-    lcopy(font_address + 0x84, (ptr_t)&tile_array_start, 3);
-    tile_map_size = font_address + tile_map_start - (longptr_t)tile_array_start;
-    tile_map_address = font_address + tile_map_start;
-    tile_array_address = font_address + tile_array_start;
+    lcopy(current_font + 0x84, (ptr_t)&tile_array_start, 3);
+    tile_map_size = current_font + tile_map_start - (longptr_t)tile_array_start;
+    tile_map_address = current_font + tile_map_start;
+    tile_array_address = current_font + tile_array_start;
 
-    lcopy(font_address + 0x8c, (ptr_t)&font_size, 4);
+    lcopy(current_font + 0x8c, (ptr_t)&font_size, 4);
 }
 
 glyph_details_t *gd = 0;
@@ -239,15 +244,13 @@ void deleteGlyph(uint8_t glyph_num)
     }
 }
 
-void replaceGlyph(uint8_t glyph_num, ptr_t font_address, uint16_t code_point);
-void insertGlyph(uint8_t glyph_num, ptr_t font_address, uint16_t code_point);
+void replaceGlyph(uint8_t glyph_num, uint16_t code_point);
+void insertGlyph(uint8_t glyph_num, uint16_t code_point);
 
-void renderGlyph(ptr_t font_address, uint16_t code_point, uint8_t colour_and_attributes, uint8_t alpha_and_extras, uint8_t position)
+void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alpha_and_extras, uint8_t position)
 {
     if (!active_rbuffer)
         return;
-    if (current_font != font_address)
-        findFontStructures(font_address);
 
     // Default to allowing 24 rows above and 6 rows below for underhangs
     if (!active_rbuffer->baseline_row)
@@ -308,7 +311,7 @@ void renderGlyph(ptr_t font_address, uint16_t code_point, uint8_t colour_and_att
         // Record details about this glyph
         gd = &active_rbuffer->glyphs[position];
         gd->code_point = code_point;
-        gd->font_id = 0; // XXX - Fix when we support multiple loaded fonts
+        gd->font_id = font_id;
         gd->rows_above = rows_above;
         gd->rows_below = rows_below;
         gd->columns = bytes_per_row;
@@ -423,37 +426,37 @@ void renderGlyph(ptr_t font_address, uint16_t code_point, uint8_t colour_and_att
     }
 }
 
-uint32_t font_address;
+ptr_t font_address = 0;
 ptr_t point_tile, tile_address, tile_cards;
 uint16_t card_address;
 
-void patchFonts(ptr_t first_address)
+void patchFonts(void)
 {
+    if (!current_font) return;
+    font_address = current_font; // backup the current font
     font_count = 0;
-    font_address = first_address;
     for (;;)
     {
         if (font_count == MAX_FONTS)
             break;
         patchFont();
-        font_addresses[font_count++] = font_address;
-        font_address += font_size;
+        font_addresses[font_count++] = current_font;
+        current_font += font_size;
         if (!font_size)
             break;
     }
+    current_font = font_address; // reapply the active font
 }
 
 void patchFont(void)
 {
-    // if (current_font == font_address) return;
-
-    findFontStructures(font_address);
+    findFontStructures();
     if (!font_size)
         return;
 
     // Patch tile_array_start
-    tile_array_start += (longptr_t)font_address;
-    lcopy((ptr_t)&tile_array_start, font_address + 0x84, 3);
+    tile_array_start += (longptr_t)current_font;
+    lcopy((ptr_t)&tile_array_start, current_font + 0x84, 3);
 
     tile_array_start /= 0x40;
 

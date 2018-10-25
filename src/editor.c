@@ -17,12 +17,12 @@ uint8_t text_line_count = 1;
 // in there.)
 #define EDITOR_LINE_LEN 128
 #define EDITOR_MAX_LINES 16
-unsigned int editor_buffer[EDITOR_MAX_LINES][EDITOR_LINE_LEN];
+uint16_t editor_buffer[EDITOR_MAX_LINES][EDITOR_LINE_LEN];
 
-char maxlen = 80;
-unsigned int key = 0;
-char mod = 0;
-int xx;
+int8_t maxlen = 80;
+uint8_t key = 0;
+uint8_t mod = 0;
+int16_t xx;
 uint8_t h;
 uint32_t sram, cram;
 uint16_t cursor_toggle = 0;
@@ -55,24 +55,22 @@ void editor_stash_line(uint8_t line_num)
     for (x = 0; x < scratch_rbuffer.glyph_count; ++x)
     {
         // Make sure we don't overflow
-        if (y >= (EDITOR_LINE_LEN - char_size))
-            break;
+        if (y >= (EDITOR_LINE_LEN - char_size)) break;
 
+        // x == 0 -> make sure we we always start with the correct font/colour
         // Encode any required colour/attribute/font changes
-        if (scratch_rbuffer.glyphs[x].colour_and_attributes != text_colour)
+        if (x == 0 || scratch_rbuffer.glyphs[x].colour_and_attributes != text_colour)
         {
             // Colour change, so write 0xe0XX, where XX is the colour
-            editor_buffer[line_num][y++] = 0xe000 + scratch_rbuffer.glyphs[x].colour_and_attributes;
+            editor_buffer[line_num][y++] = 0xE000 | (scratch_rbuffer.glyphs[x].colour_and_attributes & 0xFF);
             text_colour = scratch_rbuffer.glyphs[x].colour_and_attributes;
+            if (y >= (EDITOR_LINE_LEN - char_size)) break;
         }
-        if (scratch_rbuffer.glyphs[x].font_id != font_id)
+        if (x == 0 || scratch_rbuffer.glyphs[x].font_id != font_id)
         {
-            editor_buffer[line_num][y++] = scratch_rbuffer.glyphs[x].font_id;
+            editor_buffer[line_num][y++] = 0xE100 | (scratch_rbuffer.glyphs[x].font_id & 0xFF);
             font_id = scratch_rbuffer.glyphs[x].font_id;
-            if (font_id < font_count)
-                findFontStructures(font_addresses[font_id]);
-            else
-                findFontStructures(font_addresses[0]);
+            if (y >= (EDITOR_LINE_LEN - char_size)) break;
         }
 
         // Write glyph
@@ -89,30 +87,24 @@ void editor_fetch_line(uint8_t line_num)
     // Fetch the specified line, and pre-render it into scratch
     clearRenderBuffer();
     for (h = 0; editor_buffer[line_num][h] && (h < EDITOR_LINE_LEN); ++h)
-        if ((editor_buffer[line_num][h] < 0xe000) || (editor_buffer[line_num][h] >= 0xf800))
-            renderGlyph(current_font,
-                        editor_buffer[line_num][h],
-                        text_colour,
-                        ATTRIB_ALPHA_BLEND,
-                        0xFF // Append to end of line
-            );
-        else
+    {
+        // Reserved code points are used to record colour and other attribute changes
+        switch (editor_buffer[line_num][h] & 0xFF00)
         {
-            // Reserved code points are used to record colour and other attribute changes
-            switch (editor_buffer[line_num][h] & 0xff00)
-            {
-                case 0xe000: {
-                    // Set colour and attributes
-                    text_colour = editor_buffer[line_num][h] & 0xff;
-                } break;
-                case 0xe100: {
-                    // Set font id
-                    font_id = editor_buffer[line_num][h] & 0xff;
-                    // XXX - Set active font
-                } break;
-                default: break;
-            }
+            case 0xE000: {
+                // Set colour and attributes
+                text_colour = editor_buffer[line_num][h] & 0xFF;
+            } break;
+            case 0xE100: {
+                setFont(editor_buffer[line_num][h] & 0xFF);
+            } break;
+            default: {
+                // if this is actually a code point, render the relevant glyph
+                if ((editor_buffer[line_num][h] < 0xE000) || (editor_buffer[line_num][h] >= 0xF800))
+                    renderGlyph(editor_buffer[line_num][h], text_colour, ATTRIB_ALPHA_BLEND, 0xFF);
+            } break;
         }
+    }
 }
 
 void editor_show_cursor(void)
@@ -170,12 +162,12 @@ void editor_redraw_line(void)
     outputLineToRenderBuffer();
 }
 
-void editor_insert_codepoint(unsigned int code_point)
+void editor_insert_codepoint(uint16_t code_point)
 {
     active_rbuffer = &scratch_rbuffer;
     // Natural key -- insert here
     z = scratch_rbuffer.glyph_count;
-    renderGlyph(current_font, code_point, text_colour, ATTRIB_ALPHA_BLEND, cursor_col);
+    renderGlyph(code_point, text_colour, ATTRIB_ALPHA_BLEND, cursor_col);
 
     // Check if this code point grew the height of the line.
     // If so, push everything else down before pasting
@@ -211,10 +203,7 @@ void editor_insert_codepoint(unsigned int code_point)
 
     // Only advance cursor if the glyph was actually rendered
     if (scratch_rbuffer.glyph_count > z)
-    {
-        TOGGLE_BACK();
         ++cursor_col;
-    }
     if (cursor_col > scratch_rbuffer.glyph_count)
         cursor_col = scratch_rbuffer.glyph_count;
 }
@@ -342,11 +331,7 @@ void editor_poll_keyboard(void)
             // Control+SHIFT <0-9> = select font
             if ((key >= 0x21 && key <= 0x29) && (mod & MOD_CTRL))
             {
-                font_id = key - 0x21;
-                if (font_id < font_count)
-                    findFontStructures(font_addresses[font_id]);
-                else
-                    findFontStructures(font_addresses[0]);
+                setFont(key - 0x21);
             }
             else if (key >= ' ' && key <= 0x7e)
                 editor_insert_codepoint(key);
