@@ -271,7 +271,7 @@ void editor_process_special_key(uint8_t key)
 
                     // Adjust starting rows for following lines
                     x = next_row - screen_rbuffer.rows_used;
-                    for (y = text_line + 1; y < EDITOR_MAX_LINES; y++)
+                    for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
                         text_line_first_rows[y] -= x;
                 }
                 next_row = screen_rbuffer.rows_used;

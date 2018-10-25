@@ -323,7 +323,7 @@ void set_screen_attributes(ptr_t p, uint8_t count, uint8_t attr)
 //                 uint16_t i;
 //                 *(charptr_t)0xd610 = 1;
 
-//                 for (i = 0; i < 25000; i++)
+//                 for (i = 0; i < 25000; ++i)
 //                     continue;
 //             }
 //         }

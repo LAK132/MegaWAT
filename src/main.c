@@ -42,11 +42,11 @@ void megamain()
 
 #if 0
     // Draw alpha gradient for testing
-    for (x = 0; x < 255; x++)
-        for (y = 0; y < 8; y++)
+    for (x = 0; x < 255; ++x)
+        for (y = 0; y < 8; ++y)
             POKE(0xE000U + (x & 7) + ((x / 8) * 64U) + (y * 8), x);
 
-    for (x = 0; x < 100; x++)
+    for (x = 0; x < 100; ++x)
     {
         lpoke(SLIDE0_SCREEN_RAM + 220U + x * 2, (0xe000U / 0x40 + x) & 0xff);
         lpoke(SLIDE0_SCREEN_RAM + 220U + x * 2 + 1, (0xe000U / 0x40 + x) >> 8);
