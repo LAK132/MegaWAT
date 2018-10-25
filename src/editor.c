@@ -312,6 +312,9 @@ void editor_process_special_key(uint8_t key)
         } break;
         default: break;
     }
+    if (cursor_col > 0 && cursor_col <= scratch_rbuffer.glyph_count
+        && font_id != scratch_rbuffer.glyphs[cursor_col-1].font_id)
+            setFont(scratch_rbuffer.glyphs[cursor_col-1].font_id);
 }
 
 void editor_poll_keyboard(void)
