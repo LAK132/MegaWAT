@@ -233,7 +233,9 @@ void deleteGlyph(uint8_t glyph_num)
     // Update rows_above and rows_below if require
     if (x)
     {
-        rows_above = 0;
+        // 1 so that rows default to 1 block high
+        // if 0, can cause underlines to cascade down the page
+        rows_above = 1;
         rows_below = 0;
         for (y = 0; y < active_rbuffer->glyph_count; ++y)
         {
