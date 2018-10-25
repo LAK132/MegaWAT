@@ -164,6 +164,10 @@ void editor_redraw_line(void)
 
 void editor_insert_codepoint(uint16_t code_point)
 {
+    // Shift to fix ASCII vs PETSCI for the C64 font
+    if (!font_id && code_point >= 0x60)
+        code_point -= 0x60;
+
     active_rbuffer = &scratch_rbuffer;
     // Natural key -- insert here
     z = scratch_rbuffer.glyph_count;
