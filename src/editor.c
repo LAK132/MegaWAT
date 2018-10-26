@@ -9,15 +9,22 @@ uint8_t next_row = 0;
 // Which line of text we are on
 uint8_t text_line = 0;
 // Rows where each line of text is drawn
-uint8_t text_line_first_rows[30];
+#define EDITOR_MAX_LINES 61
+#define EDITOR_END_LINE (EDITOR_MAX_LINES - 1)
+uint32_t text_line_start[EDITOR_MAX_LINES];
+uint32_t text_line_first_rows[EDITOR_END_LINE];
 uint8_t text_line_count = 1;
 
 // XXX For now, have a fixed 128x30 buffer for text
 // (We allow 128 instead of 100, so that we can have a number of font and attribute/colour changes
 // in there.)
 #define EDITOR_LINE_LEN 128
-#define EDITOR_MAX_LINES 16
-uint16_t editor_buffer[EDITOR_MAX_LINES][EDITOR_LINE_LEN];
+// #define EDITOR_MAX_LINES 16
+// uint16_t editor_buffer[EDITOR_MAX_LINES][EDITOR_LINE_LEN];
+uint16_t editor_scratch[EDITOR_LINE_LEN];
+uint16_t editor_buffer[SLIDE_SIZE / sizeof(uint16_t)];
+uint32_t editor_buffer_size = sizeof(editor_buffer) / sizeof(uint16_t);
+
 
 int8_t maxlen = 80;
 uint8_t key = 0;
@@ -34,17 +41,35 @@ void editor_insert_line(uint8_t before)
 
 void editor_initialise(void)
 {
+    // for (y = 0; y < EDITOR_MAX_LINES; ++y)
+    // {
+    //     lfill((ptr_t)&editor_buffer[y][0], 0x00, EDITOR_LINE_LEN * char_size);
+    //     text_line_first_rows[y] = y;
+    // }
+
+    // Fill the rest of the buffer with zeros
+    lfill((ptr_t)&editor_buffer[0], 0x00,
+        sizeof(editor_buffer));
+
     for (y = 0; y < EDITOR_MAX_LINES; ++y)
-    {
-        lfill((ptr_t)&editor_buffer[y][0], 0x00, EDITOR_LINE_LEN * char_size);
+        text_line_start[y] = y;
+    for (y = 0; y < EDITOR_END_LINE; ++y)
         text_line_first_rows[y] = y;
-    }
+
     text_line_count = 0;
 }
 
 void editor_stash_line(uint8_t line_num)
 {
     // Stash the line encoded in scratch buffer into the specified line
+
+    // Can't stash end line
+    if (line_num == EDITOR_END_LINE)
+        return;
+
+    // Find how long this line is currently in the buffer
+    // +1 is safe here because text_line_first_rows is oversized by 1
+    z = text_line_start[line_num + 1] - text_line_start[line_num];
 
     // Setup default font and attributes, so that we can notice when
     // switching.
@@ -54,54 +79,86 @@ void editor_stash_line(uint8_t line_num)
     y = 0;
     for (x = 0; x < scratch_rbuffer.glyph_count; ++x)
     {
-        // Make sure we don't overflow
-        if (y >= (EDITOR_LINE_LEN - char_size)) break;
+        // Make sure we don't overflow and leave room for EOL
+        if (y >= EDITOR_LINE_LEN - 2) break;
 
         // x == 0 -> make sure we we always start with the correct font/colour
         // Encode any required colour/attribute/font changes
         if (x == 0 || scratch_rbuffer.glyphs[x].colour_and_attributes != text_colour)
         {
             // Colour change, so write 0xe0XX, where XX is the colour
-            editor_buffer[line_num][y++] = 0xE000 | (scratch_rbuffer.glyphs[x].colour_and_attributes & 0xFF);
+            editor_scratch[y++] = 0xE000 | (scratch_rbuffer.glyphs[x].colour_and_attributes & 0xFF);
             text_colour = scratch_rbuffer.glyphs[x].colour_and_attributes;
-            if (y >= (EDITOR_LINE_LEN - char_size)) break;
+            if (y >= EDITOR_LINE_LEN - 2) break;
         }
         if (x == 0 || scratch_rbuffer.glyphs[x].font_id != font_id)
         {
-            editor_buffer[line_num][y++] = 0xE100 | (scratch_rbuffer.glyphs[x].font_id & 0xFF);
+            editor_scratch[y++] = 0xE100 | (scratch_rbuffer.glyphs[x].font_id & 0xFF);
             font_id = scratch_rbuffer.glyphs[x].font_id;
-            if (y >= (EDITOR_LINE_LEN - char_size)) break;
+            if (y >= EDITOR_LINE_LEN - 2) break;
         }
 
         // Write glyph
-        editor_buffer[line_num][y++] = scratch_rbuffer.glyphs[x].code_point;
+        editor_scratch[y++] = scratch_rbuffer.glyphs[x].code_point;
     }
-    // Fill remainder of line with end of line markers
-    for (; y < EDITOR_LINE_LEN; ++y)
-        editor_buffer[line_num][y] = 0;
+    // Add EOL to scratch
+    editor_scratch[y++] = 0; // y is now the length of scratch used
+
+    if (z > y)
+    {
+        // Space available is bigger than space needed, shrink
+        x = z - y; // amount to shrink by
+        lcopy_safe(
+            (ptr_t)&editor_buffer[text_line_start[line_num + 1]],
+            (ptr_t)&editor_buffer[text_line_start[line_num + 1] - x],
+            text_line_start[EDITOR_END_LINE] - text_line_start[line_num + 1]
+        );
+        for (c = line_num + 1; c <= EDITOR_END_LINE; ++c)
+            text_line_start[c] -= x;
+    }
+    else if (y > z)
+    {
+        // Space available is smaller than space needed, expand
+        x = y - z; // amout to expand by
+        lcopy_safe(
+            (ptr_t)&editor_buffer[text_line_start[line_num + 1]],
+            (ptr_t)&editor_buffer[text_line_start[line_num + 1] + x],
+            text_line_start[EDITOR_END_LINE] - text_line_start[line_num + 1]
+        );
+        for (c = line_num + 1; c <= EDITOR_END_LINE; ++c)
+            text_line_start[c] += x;
+    }
+    // copy scratch into main buffer
+    lcopy((ptr_t)&editor_scratch[0], (ptr_t)&editor_buffer[text_line_start[line_num]], y);
 }
 
 void editor_fetch_line(uint8_t line_num)
 {
     active_rbuffer = &scratch_rbuffer;
+
     // Fetch the specified line, and pre-render it into scratch
     clearRenderBuffer();
-    for (h = 0; editor_buffer[line_num][h] && (h < EDITOR_LINE_LEN); ++h)
+    // Get the start of the next line
+    k = text_line_start[line_num + 1];
+    // Check if it's past the end of the buffer
+    if (k > editor_buffer_size) k = editor_buffer_size;
+
+    for (l = text_line_start[line_num]; editor_buffer[l] && l < k; ++l)
     {
         // Reserved code points are used to record colour and other attribute changes
-        switch (editor_buffer[line_num][h] & 0xFF00)
+        switch (editor_buffer[l] & 0xFF00)
         {
             case 0xE000: {
                 // Set colour and attributes
-                text_colour = editor_buffer[line_num][h] & 0xFF;
+                text_colour = editor_buffer[l] & 0xFF;
             } break;
             case 0xE100: {
-                setFont(editor_buffer[line_num][h] & 0xFF);
+                setFont(editor_buffer[l] & 0xFF);
             } break;
             default: {
                 // if this is actually a code point, render the relevant glyph
-                if ((editor_buffer[line_num][h] < 0xE000) || (editor_buffer[line_num][h] >= 0xF800))
-                    renderGlyph(editor_buffer[line_num][h], text_colour, ATTRIB_ALPHA_BLEND, 0xFF);
+                if ((editor_buffer[l] < 0xD800) || (editor_buffer[l] >= 0xF800))
+                    renderGlyph(editor_buffer[l], text_colour, ATTRIB_ALPHA_BLEND, 0xFF);
             } break;
         }
     }
