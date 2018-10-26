@@ -44,6 +44,30 @@ void do_dma(void)
   POKE(0xd705U,((uint16_t)&dmalist)&0xff); // triggers enhanced DMA
 }
 
+#ifdef __MEGA65__
+// XXX -- You can only place non-initialised variables into Zero Page
+#pragma bss-name (push,"ZEROPAGE")
+uint32_t fast_memory_address;
+uint8_t fast_memory_value;
+#pragma bss-name (pop)
+#endif // __MEGA65__
+
+#ifdef FAST_LPOKE
+uint8_t lpeek(register uint32_t a)
+{
+    fast_memory_address = a;
+    lpeek_asm();
+    return fast_memory_value;
+}
+
+void lpoke(uint32_t address, uint8_t value)
+{
+    fast_memory_address = address;
+    fast_memory_value = value;
+    lpoke_asm();
+}
+
+#else
 uint8_t lpeek(uint32_t address)
 {
   // Read the byte at <address> in 28-bit address space
@@ -90,6 +114,7 @@ void lpoke(uint32_t address, uint8_t value)
   do_dma();
   return;
 }
+#endif
 
 void lcopy_safe(uint32_t src, uint32_t dst, uint16_t count)
 {

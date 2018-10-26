@@ -32,6 +32,7 @@ SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/editor.c \
 			$(SRCDIR)/videomodes.c \
 			$(SRCDIR)/memory.c \
+			$(SRCDIR)/fast_memory.s \
 			$(SRCDIR)/f65.c \
 			$(SRCDIR)/globals.c \
 			$(SRCDIR)/charset.s \
@@ -42,6 +43,7 @@ ASSFILES=	$(OBJDIR)/main.s \
 			$(OBJDIR)/editor.s \
 			$(OBJDIR)/videomodes.s \
 			$(OBJDIR)/memory.s \
+			$(OBJDIR)/fast_memory.s \
 			$(OBJDIR)/f65.s \
 			$(OBJDIR)/globals.s \
 			$(OBJDIR)/charset.s \
