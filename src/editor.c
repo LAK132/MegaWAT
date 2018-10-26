@@ -266,6 +266,10 @@ void editor_process_special_key(uint8_t key)
                         screen_rbuffer.screen_ram + (screen_rbuffer.rows_used * screen_width),
                         screen_size - (screen_width * (60 - next_row))
                     );
+                    lcopy(screen_rbuffer.colour_ram + next_row * screen_width,
+                        screen_rbuffer.colour_ram + (screen_rbuffer.rows_used * screen_width),
+                        screen_size - (screen_width * (60 - next_row))
+                    );
 
                     // XXX Fill in bottom of screen
 

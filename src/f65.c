@@ -233,9 +233,7 @@ void deleteGlyph(uint8_t glyph_num)
     // Update rows_above and rows_below if require
     if (x)
     {
-        // 1 so that rows default to 1 block high
-        // if 0, can cause underlines to cascade down the page
-        rows_above = 1;
+        rows_above = 0;
         rows_below = 0;
         for (y = 0; y < active_rbuffer->glyph_count; ++y)
         {
@@ -293,7 +291,7 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
     {
         // Font ID 0 = C64 character ROM font
         // Valid only for 0x00 - 0xFF
-        if (code_point>0xFF) return;
+        if (code_point > 0xFF) return;
     }
 
     // We have the glyph, so dig out the information on it.
@@ -310,7 +308,7 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
     else
     {
         // C64 character ROM, so always 1x1 bytes, no trim.
-        rows_above=1; rows_below=0; bytes_per_row=1; trim_pixels=0;
+        rows_above = 1; rows_below = 0; bytes_per_row = 1; trim_pixels = 0;
     }
 
     // If glyph is 0 pixels wide, nothing to do.
@@ -333,7 +331,7 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
     {
         // Update the first_column field of each of the shoved glyphs
         for (y = position; y < active_rbuffer->glyph_count; ++y)
-        active_rbuffer->glyphs[y].first_column += bytes_per_row;
+            active_rbuffer->glyphs[y].first_column += bytes_per_row;
         lcopy_safe((ptr_t)&active_rbuffer->glyphs[position], (ptr_t)&active_rbuffer->glyphs[position + 1],
             sizeof(glyph_details_t) * (active_rbuffer->glyph_count - position));
     }
