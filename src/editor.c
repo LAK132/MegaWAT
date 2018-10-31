@@ -25,7 +25,6 @@ uint16_t editor_scratch[EDITOR_LINE_LEN];
 uint16_t editor_buffer[SLIDE_SIZE / sizeof(uint16_t)];
 uint32_t editor_buffer_size = sizeof(editor_buffer) / sizeof(uint16_t);
 
-
 int8_t maxlen = 80;
 uint8_t key = 0;
 uint8_t mod = 0;
@@ -41,12 +40,6 @@ void editor_insert_line(uint8_t before)
 
 void editor_initialise(void)
 {
-    // for (y = 0; y < EDITOR_MAX_LINES; ++y)
-    // {
-    //     lfill((ptr_t)&editor_buffer[y][0], 0x00, EDITOR_LINE_LEN * char_size);
-    //     text_line_first_rows[y] = y;
-    // }
-
     // Fill the rest of the buffer with zeros
     lfill((ptr_t)&editor_buffer[0], 0x00,
         sizeof(editor_buffer));
@@ -66,10 +59,6 @@ void editor_stash_line(uint8_t line_num)
     // Can't stash end line
     if (line_num == EDITOR_END_LINE)
         return;
-
-    // Find how long this line is currently in the buffer
-    // +1 is safe here because text_line_first_rows is oversized by 1
-    z = text_line_start[line_num + 1] - text_line_start[line_num];
 
     // Setup default font and attributes, so that we can notice when
     // switching.
@@ -104,16 +93,25 @@ void editor_stash_line(uint8_t line_num)
     // Add EOL to scratch
     editor_scratch[y++] = 0; // y is now the length of scratch used
 
-    if (z > y)
+    // We use line_num + 1 lots, so just do the calculation once
+    c = line_num + 1;
+
+    // Find how long this line is currently in the buffer
+    // +1 is safe here because text_line_first_rows is oversized by 1
+    z = text_line_start[c] - text_line_start[line_num];
+
+    // make sure we have enough space to stash the current line
+    // make sure there is at least 1 character (null) in the line
+    if (y && z > y)
     {
         // Space available is bigger than space needed, shrink
         x = z - y; // amount to shrink by
         lcopy_safe(
-            (ptr_t)&editor_buffer[text_line_start[line_num + 1]],
-            (ptr_t)&editor_buffer[text_line_start[line_num + 1] - x],
-            text_line_start[EDITOR_END_LINE] - text_line_start[line_num + 1]
+            (ptr_t)&editor_buffer[text_line_start[c]],
+            (ptr_t)&editor_buffer[text_line_start[c] - x],
+            text_line_start[EDITOR_END_LINE] - text_line_start[c]
         );
-        for (c = line_num + 1; c <= EDITOR_END_LINE; ++c)
+        for (; c < EDITOR_MAX_LINES; ++c)
             text_line_start[c] -= x;
     }
     else if (y > z)
@@ -121,15 +119,17 @@ void editor_stash_line(uint8_t line_num)
         // Space available is smaller than space needed, expand
         x = y - z; // amout to expand by
         lcopy_safe(
-            (ptr_t)&editor_buffer[text_line_start[line_num + 1]],
-            (ptr_t)&editor_buffer[text_line_start[line_num + 1] + x],
-            text_line_start[EDITOR_END_LINE] - text_line_start[line_num + 1]
+            (ptr_t)&editor_buffer[text_line_start[c]],
+            (ptr_t)&editor_buffer[text_line_start[c] + x],
+            text_line_start[EDITOR_END_LINE] - text_line_start[c]
         );
-        for (c = line_num + 1; c <= EDITOR_END_LINE; ++c)
+        for (; c < EDITOR_MAX_LINES; ++c)
             text_line_start[c] += x;
     }
+
     // copy scratch into main buffer
-    lcopy((ptr_t)&editor_scratch[0], (ptr_t)&editor_buffer[text_line_start[line_num]], y);
+    // x2 because it's 16 bit
+    lcopy((ptr_t)&editor_scratch[0], (ptr_t)&editor_buffer[text_line_start[line_num]], y + y);
 }
 
 void editor_fetch_line(uint8_t line_num)
@@ -138,6 +138,7 @@ void editor_fetch_line(uint8_t line_num)
 
     // Fetch the specified line, and pre-render it into scratch
     clearRenderBuffer();
+
     // Get the start of the next line
     k = text_line_start[line_num + 1];
     // Check if it's past the end of the buffer
