@@ -323,24 +323,24 @@ void editor_process_special_key(uint8_t key)
     {
         // Commodore colour selection keys
         // CTRL
-        case 0x05: text_colour = (text_colour & 0xF0) | COLOUR_BLACK; break;
-        case 0x1C: text_colour = (text_colour & 0xF0) | COLOUR_WHITE; break;
-        case 0x9F: text_colour = (text_colour & 0xF0) | COLOUR_RED; break;
-        case 0x9C: text_colour = (text_colour & 0xF0) | COLOUR_CYAN; break;
-        case 0x1E: text_colour = (text_colour & 0xF0) | COLOUR_PURPLE; break;
-        case 0x1F: text_colour = (text_colour & 0xF0) | COLOUR_GREEN; break;
-        case 0x9E: text_colour = (text_colour & 0xF0) | COLOUR_BLUE; break;
-        case 0x81: text_colour = (text_colour & 0xF0) | COLOUR_YELLOW; break;
+        case 0x90: text_colour = (text_colour & 0xF0) | COLOUR_BLACK; break;
+        case 0x05: text_colour = (text_colour & 0xF0) | COLOUR_WHITE; break;
+        case 0x1C: text_colour = (text_colour & 0xF0) | COLOUR_RED; break;
+        case 0x9F: text_colour = (text_colour & 0xF0) | COLOUR_CYAN; break;
+        case 0x9C: text_colour = (text_colour & 0xF0) | COLOUR_PURPLE; break;
+        case 0x1E: text_colour = (text_colour & 0xF0) | COLOUR_GREEN; break;
+        case 0x1F: text_colour = (text_colour & 0xF0) | COLOUR_BLUE; break;
+        case 0x9E: text_colour = (text_colour & 0xF0) | COLOUR_YELLOW; break;
         // SUPER
-        case 0x95: text_colour = (text_colour & 0xF0) | COLOUR_ORANGE; break;
-        case 0x96: text_colour = (text_colour & 0xF0) | COLOUR_BROWN; break;
-        case 0x97: text_colour = (text_colour & 0xF0) | COLOUR_PINK; break;
-        case 0x98: text_colour = (text_colour & 0xF0) | COLOUR_DARKGREY; break;
-        case 0x99: text_colour = (text_colour & 0xF0) | COLOUR_MEDIUMGREY; break;
-        case 0x9A: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTGREEN; break;
-        case 0x9B: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTBLUE; break;
+        case 0x81: text_colour = (text_colour & 0xF0) | COLOUR_ORANGE; break;
+        case 0x95: text_colour = (text_colour & 0xF0) | COLOUR_BROWN; break;
+        case 0x96: text_colour = (text_colour & 0xF0) | COLOUR_PINK; break;
+        case 0x97: text_colour = (text_colour & 0xF0) | COLOUR_DARKGREY; break;
+        case 0x98: text_colour = (text_colour & 0xF0) | COLOUR_MEDIUMGREY; break;
+        case 0x99: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTGREEN; break;
+        case 0x9A: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTBLUE; break;
         // The following need fixes to the ASCII keyboard scanner
-        // case 0x9C: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTGREY; break;
+        case 0x9B: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTGREY; break;
         // case 0x92: text_colour |= ATTRIB_BLINK; break;
 
         // CONTROL-u for underline
