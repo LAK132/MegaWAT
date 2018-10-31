@@ -6,8 +6,6 @@
 
 `$000C`: MegaWAT!? slide separator (Form Feed)
 
-`$001C`: MegaWAT!? presentation separator (File Separator)
-
 ---
 
 `$0020-$257F`: Unicode text

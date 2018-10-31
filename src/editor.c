@@ -1,5 +1,7 @@
 #include "editor.h"
 
+uint8_t active_slide = 0;
+uint8_t present_mode = 0;
 uint8_t text_colour = 1;
 uint8_t cursor_col = 0;
 // Physical rows on the slide (as compared to the lines of text that
@@ -273,7 +275,51 @@ void editor_insert_codepoint(uint16_t code_point)
 void editor_process_special_key(uint8_t key)
 {
     k = 0; // if the cursor was moved
-    switch (key)
+    if (present_mode) switch (key)
+    {
+        case 0x0D:
+        case 0x20:
+        case 0x11:
+        case 0x1D: { // next slide
+            // Switch active slide (next slide)
+            if (active_slide) // SLIDE1 active
+                active_slide = 0;
+            else // SLIDE0 active
+                active_slide = 1;
+            videoSetActiveSlideBuffer(active_slide);
+
+            // Move current slide (SLIDE0/1) to previous slide (SLIDE2)
+            lcopy(active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE2_SCREEN_RAM, SLIDE_SIZE);
+            lcopy(active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE2_COLOUR_RAM, SLIDE_SIZE);
+
+            // XXX - Get next slide
+        } break;
+        case 0x91:
+        case 0x9D: { // previous slide
+            // Move previous slide (SLIDE2) to next slide (SLIDE1/0)
+            lcopy(SLIDE2_SCREEN_RAM, active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE_SIZE);
+            lcopy(SLIDE2_COLOUR_RAM, active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE_SIZE);
+
+            // Switch active slide (now previous slide)
+            if (active_slide) // SLIDE1 active
+                active_slide = 0;
+            else // SLIDE0 active
+                active_slide = 1;
+            videoSetActiveSlideBuffer(active_slide);
+
+            // XXX - Get next previous slide
+        } break;
+        case 0x03:
+        case 0xF5: {
+            // XXX - Reload editor buffer for current slide
+            editor_fetch_line(text_line);
+            editor_redraw_line();
+            // XXX - Unhide cursor
+            present_mode = 0;
+        } break;
+        default: break;
+    }
+    else switch (key)
     {
         // Commodore colour selection keys
         // CTRL
@@ -338,7 +384,7 @@ void editor_process_special_key(uint8_t key)
                 }
                 next_row = screen_rbuffer.rows_used;
             }
-            else
+            else if (current_row)
             {
                 // Backspace from start of line
                 // XXX - Should combine remainder of line with previous line (if it will fit)
@@ -346,6 +392,13 @@ void editor_process_special_key(uint8_t key)
                 // XXX - Select the previous line
                 // XXX - Re-render the previous line
                 //       (And shuffle everything down in the process if this line grew taller)
+                editor_stash_line(text_line);
+                if (text_line)
+                    current_row = text_line_first_rows[--text_line];
+                editor_fetch_line(text_line);
+                cursor_col = scratch_rbuffer.glyph_count;
+                editor_update_cursor();
+                editor_redraw_line();
             }
             k = 1;
         } break;
@@ -380,6 +433,14 @@ void editor_process_special_key(uint8_t key)
             editor_redraw_line();
             k = 1;
         } break;
+        case 0xF5: {
+            editor_stash_line(text_line);
+            editor_redraw_line();
+            // XXX - Hide cursor
+            // XXX - Backup editor buffer
+            // XXX - Render next and previous slides
+            present_mode = 1;
+        } break;
         default: break;
     }
     if (k && cursor_col > 0 && cursor_col <= scratch_rbuffer.glyph_count)
@@ -406,9 +467,9 @@ void editor_poll_keyboard(void)
             }
 
             // Control+SHIFT <0-9> = select font
-            if ((key >= 0x21 && key <= 0x29) && (mod & MOD_CTRL))
+            if (!present_mode && (key >= 0x21 && key <= 0x29) && (mod & MOD_CTRL))
                 setFont(key - 0x21);
-            else if (key >= ' ' && key <= 0x7e)
+            else if (!present_mode && key >= ' ' && key <= 0x7e)
                 editor_insert_codepoint(key);
             else
                 editor_process_special_key(key);
