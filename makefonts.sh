@@ -22,7 +22,6 @@ end
 # Now make a pack of them that fits in 128KB
 set fontlist=( \
     assets/UbuntuMono-R-14.f65 \
-    assets/GlacialIndifference-Regular-14.f65 \
     assets/caladea-regular-14.f65 \
     assets/Entypo-22.f65 \
     assets/caladea-regular-22.f65 \
@@ -31,6 +30,10 @@ set fontlist=( \
 
 set size=`ls -l $fontlist | cut -f5 -d" " | awk '{ n+=$1; } END { print n; }'`
 echo "This will take $size bytes"
+if ( $size > 131071 ) then
+  echo "ERROR: Fonts must be <128KB in total"
+  exit 1
+end if
 
 rm $1
 
