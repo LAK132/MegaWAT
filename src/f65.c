@@ -476,8 +476,14 @@ void patchFonts(void)
         patchFont();
         font_addresses[font_count++] = current_font;
         current_font += font_size;
+
+	// Stop if end of list
         if (!font_size)
             break;
+
+	// Stop if we are at the end of the asset RAM area
+	if (current_font >= (ASSET_RAM + ASSET_RAM_SIZE))
+	  break;
     }
     current_font = font_address; // reapply the active font
 }
