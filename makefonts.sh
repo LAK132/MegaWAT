@@ -33,7 +33,7 @@ echo "This will take $size bytes"
 if ( $size > 131071 ) then
   echo "ERROR: Fonts must be <128KB in total"
   exit 1
-end if
+endif
 
 rm $1
 
