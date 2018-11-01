@@ -15,10 +15,8 @@
 #define SCRATCH_COLOUR_RAM  0xFF86800U
 
 // 16k
-#define SLIDE_DATA_SIZE     0x0004000U
-#define SLIDE0_DATA         0x0024000U
-#define SLIDE1_DATA         0x0026000U
-#define SLIDE2_DATA         0x003C000U
+#define SLIDE_DATA_SIZE     0x000C000U
+#define SLIDE_DATA          0x0024000U
 
 #define ASSET_RAM_SIZE      0x0020000U
 #define ASSET_RAM           0x0040000U
