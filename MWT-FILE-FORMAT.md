@@ -1,5 +1,5 @@
 # Overview
-MWT files begind with `^A`/`$01` (Start of Heading), followed by an offset to the font data (end of slide data), then the slides and fonts.
+MWT files begin with `^A`/`$01` (Start of Heading), followed by an offset to the font data (end of slide data), then the slides and fonts.
 
 `^A[32bit offset to fonts][slide texts][font datas]`
 
