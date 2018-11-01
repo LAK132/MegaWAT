@@ -27,6 +27,11 @@ uint16_t editor_scratch[EDITOR_LINE_LEN];
 uint16_t editor_buffer[SLIDE_SIZE / sizeof(uint16_t)];
 uint32_t editor_buffer_size = sizeof(editor_buffer) / sizeof(uint16_t);
 
+#define EDITOR_MAX_SLIDES 2
+#define EDITOR_END_SLIDE (EDITOR_MAX_LINES - 1)
+ptr_t slide_start[EDITOR_MAX_SLIDES];
+uint32_t slide_number = 0;
+
 int8_t maxlen = 80;
 uint8_t key = 0;
 uint8_t mod = 0;
@@ -40,18 +45,43 @@ void editor_insert_line(uint8_t before)
     // Insert a new blank line before line #before
 }
 
+void editor_get_line_info(void)
+{
+    y = 1;
+    text_line_start[0] = 0;
+    for (l = 0; y < EDITOR_MAX_LINES && l < sizeof(editor_buffer); ++l)
+        if (!editor_buffer[l])
+            text_line_start[y++] = l;
+    for (y = 0; y < EDITOR_END_LINE; ++y)
+        text_line_first_rows[y] = y;
+}
+
 void editor_initialise(void)
 {
     // Fill the rest of the buffer with zeros
     lfill((ptr_t)&editor_buffer[0], 0x00,
         sizeof(editor_buffer));
 
-    for (y = 0; y < EDITOR_MAX_LINES; ++y)
-        text_line_start[y] = y;
-    for (y = 0; y < EDITOR_END_LINE; ++y)
-        text_line_first_rows[y] = y;
+    // for (y = 0; y < EDITOR_MAX_LINES; ++y)
+    //     text_line_start[y] = y;
+    // for (y = 0; y < EDITOR_END_LINE; ++y)
+    //     text_line_first_rows[y] = y;
+
+    editor_get_line_info();
 
     text_line_count = 0;
+
+    lfill(SLIDE_DATA, 0, SLIDE_DATA_SIZE);
+    slide_start[0] = 0;
+    for (y = 1; y < EDITOR_MAX_SLIDES; ++y)
+        slide_start[y] = slide_start[y-1] + (EDITOR_MAX_LINES * 2);
+    // l = SLIDE_DATA;
+    // for (y = 0; y < EDITOR_MAX_SLIDES; ++y)
+    // {
+    //     slide_start[y] = l;
+    //     lfill(slide_start[y], 0x00, EDITOR_MAX_LINES * 2);
+    //     l = (longptr_t)slide_start[y] + ((EDITOR_MAX_LINES + 1) * 2);
+    // }
 }
 
 void editor_stash_line(uint8_t line_num)
@@ -111,7 +141,10 @@ void editor_stash_line(uint8_t line_num)
         lcopy_safe(
             (ptr_t)&editor_buffer[text_line_start[c]],
             (ptr_t)&editor_buffer[text_line_start[c] - x],
-            text_line_start[EDITOR_END_LINE] - text_line_start[c]
+            (text_line_start[EDITOR_END_LINE] - text_line_start[c]) * sizeof(uint16_t)
+        );
+        lfill((ptr_t)&editor_buffer[text_line_start[EDITOR_END_LINE]], 0x00,
+            sizeof(editor_buffer) - (text_line_start[EDITOR_END_LINE] * sizeof(uint16_t))
         );
         for (; c < EDITOR_MAX_LINES; ++c)
             text_line_start[c] -= x;
@@ -123,7 +156,8 @@ void editor_stash_line(uint8_t line_num)
         lcopy_safe(
             (ptr_t)&editor_buffer[text_line_start[c]],
             (ptr_t)&editor_buffer[text_line_start[c] + x],
-            text_line_start[EDITOR_END_LINE] - text_line_start[c]
+            sizeof(editor_buffer) - ((text_line_start[c] + x) * sizeof(uint16_t))
+            // text_line_start[EDITOR_END_LINE] - (text_line_start[c] + x)
         );
         for (; c < EDITOR_MAX_LINES; ++c)
             text_line_start[c] += x;
@@ -248,16 +282,21 @@ void editor_insert_codepoint(uint16_t code_point)
                 text_line_first_rows[y] += s;
 
             // Now shift everything down (on the SCREEN buffer)
-            sram = screen_rbuffer.screen_ram + (screen_size - screen_width);
-            cram = screen_rbuffer.colour_ram + (screen_size - screen_width);
-            l    = screen_rbuffer.screen_ram + (text_line_first_rows[text_line + 1] * screen_width);
-            while (sram >= l)
-            {
-                lcopy_safe(sram - screen_width, sram, screen_width);
-                lcopy_safe(cram - screen_width, cram, screen_width);
-                sram -= screen_width;
-                cram -= screen_width;
-            }
+            // sram = screen_rbuffer.screen_ram + (screen_size - screen_width);
+            // cram = screen_rbuffer.colour_ram + (screen_size - screen_width);
+            // l    = screen_rbuffer.screen_ram + (text_line_first_rows[text_line + 1] * screen_width);
+            // while (sram >= l)
+            // {
+            //     lcopy_safe(sram - screen_width, sram, screen_width);
+            //     lcopy_safe(cram - screen_width, cram, screen_width);
+            //     sram -= screen_width;
+            //     cram -= screen_width;
+            // }
+            l = text_line_first_rows[text_line] * screen_width;
+            sram = screen_rbuffer.screen_ram + l;
+            cram = screen_rbuffer.colour_ram + l;
+            lcopy_safe(sram, sram + screen_width, screen_size - (l + screen_width));
+            lcopy_safe(cram, cram + screen_width, screen_size - (l + screen_width));
         }
     }
 
@@ -272,8 +311,89 @@ void editor_insert_codepoint(uint16_t code_point)
         cursor_col = scratch_rbuffer.glyph_count;
 }
 
+void editor_save_slide(void)
+{
+    // editor_stash_line(text_line);
+    // Add EOL to scratch
+    // editor_scratch[y++] = 0; // y is now the length of scratch used
+    l = (text_line_start[EDITOR_END_LINE] - text_line_start[0]) * sizeof(uint16_t);
+
+    // We use slide_number + 1 lots, so just do the calculation once
+    c = slide_number + 1;
+
+    // Find how long this line is currently in the buffer
+    // +1 is safe here because text_line_first_rows is oversized by 1
+    // z = text_line_start[c] - text_line_start[line_num];
+    j = slide_start[c] - slide_start[slide_number];
+
+    lpoke((ptr_t)0xD000, (l >> 24) & 0xFF);
+    lpoke((ptr_t)0xD002, (l >> 16) & 0xFF);
+    lpoke((ptr_t)0xD002, (l >> 8) & 0xFF);
+    lpoke((ptr_t)0xD003, l & 0xFF);
+    lpoke((ptr_t)0xD004, (j >> 24) & 0xFF);
+    lpoke((ptr_t)0xD005, (j >> 16) & 0xFF);
+    lpoke((ptr_t)0xD006, (j >> 8) & 0xFF);
+    lpoke((ptr_t)0xD007, j & 0xFF);
+    // make sure we have enough space to stash the current line
+    // make sure there is at least 1 character (null) in the line
+    if (l && j > l)
+    {
+        // Space available is bigger than space needed, shrink
+        // i = j - l; // amount to shrink by
+        // lcopy_safe(
+        //     slide_start[c],
+        //     slide_start[c] - i,
+        //     (uint16_t)(slide_start[EDITOR_END_SLIDE] - slide_start[c])
+        // );
+        // for (; c < EDITOR_MAX_SLIDES; ++c)
+        //     slide_start[c] -= i;
+    }
+    else if (l > j)
+    {
+        // Space available is smaller than space needed, expand
+        // i = l - j; // amout to expand by
+        // lcopy_safe(
+        //     slide_start[c],
+        //     slide_start[c] + i,
+        //     SLIDE_DATA_SIZE - (uint16_t)(slide_start[c] + i)
+        //     // text_line_start[EDITOR_END_LINE] - (text_line_start[c] + i)
+        // );
+        // for (; c < EDITOR_MAX_SLIDES; ++c)
+        //     slide_start[c] += i;
+    }
+
+    // copy scratch into main buffer
+    // x2 because it's 16 bit
+    // lcopy((ptr_t)&editor_scratch[0], (ptr_t)&editor_buffer[text_line_start[line_num]], l + l);
+    // lcopy((ptr_t)&editor_buffer[0], slide_start[slide_number], l + l);
+}
+
+void editor_load_slide(void)
+{
+    lfill((ptr_t)&editor_buffer[0], 0x00, sizeof(editor_buffer));
+    // Copy the next slides buffer into editor buffer
+    j = slide_start[slide_number + 1] - slide_start[slide_number];
+    if (j > sizeof(editor_buffer))
+        j = sizeof(editor_buffer);
+    lcopy(slide_start[slide_number], (ptr_t)&editor_buffer[0], j);
+    lpoke((ptr_t)0xD008, (j >> 24) & 0xFF);
+    lpoke((ptr_t)0xD009, (j >> 16) & 0xFF);
+    lpoke((ptr_t)0xD00A, (j >> 8) & 0xFF);
+    lpoke((ptr_t)0xD00B, j & 0xFF);
+    // Update line starts for new buffer
+    editor_get_line_info();
+    // for (x = 0; x < EDITOR_MAX_LINES; ++x)
+    // {
+    //     // TOGGLE_BACK();
+    //     // editor_fetch_line(x);
+    //     // editor_redraw_line();
+    // }
+    // editor_fetch_line(text_line);
+}
+
 void editor_process_special_key(uint8_t key)
 {
+    // TOGGLE_BACK();
     k = 0; // if the cursor was moved
     if (present_mode) switch (key)
     {
@@ -281,33 +401,45 @@ void editor_process_special_key(uint8_t key)
         case 0x20:
         case 0x11:
         case 0x1D: { // next slide
-            // Switch active slide (next slide)
-            if (active_slide) // SLIDE1 active
-                active_slide = 0;
-            else // SLIDE0 active
-                active_slide = 1;
-            videoSetActiveSlideBuffer(active_slide);
+            if (slide_number < EDITOR_END_SLIDE)
+            {
+                // Switch active slide (next slide)
+                if (active_slide) // SLIDE1 active
+                    active_slide = 0;
+                else // SLIDE0 active
+                    active_slide = 1;
+                videoSetActiveSlideBuffer(active_slide);
 
-            // Move current slide (SLIDE0/1) to previous slide (SLIDE2)
-            lcopy(active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE2_SCREEN_RAM, SLIDE_SIZE);
-            lcopy(active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE2_COLOUR_RAM, SLIDE_SIZE);
+                // Move current slide (SLIDE0/1) to previous slide (SLIDE2)
+                lcopy(active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE2_SCREEN_RAM, SLIDE_SIZE);
+                lcopy(active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE2_COLOUR_RAM, SLIDE_SIZE);
 
-            // XXX - Get next slide
+                editor_save_slide();
+                ++slide_number;
+                // editor_get_line_info();
+                editor_load_slide();
+            } //else TOGGLE_BACK();
         } break;
         case 0x91:
         case 0x9D: { // previous slide
-            // Move previous slide (SLIDE2) to next slide (SLIDE1/0)
-            lcopy(SLIDE2_SCREEN_RAM, active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE_SIZE);
-            lcopy(SLIDE2_COLOUR_RAM, active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE_SIZE);
+            if (slide_number)
+            {
+                // Move previous slide (SLIDE2) to next slide (SLIDE1/0)
+                lcopy(SLIDE2_SCREEN_RAM, active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE_SIZE);
+                lcopy(SLIDE2_COLOUR_RAM, active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE_SIZE);
 
-            // Switch active slide (now previous slide)
-            if (active_slide) // SLIDE1 active
-                active_slide = 0;
-            else // SLIDE0 active
-                active_slide = 1;
-            videoSetActiveSlideBuffer(active_slide);
+                // Switch active slide (now previous slide)
+                if (active_slide) // SLIDE1 active
+                    active_slide = 0;
+                else // SLIDE0 active
+                    active_slide = 1;
+                videoSetActiveSlideBuffer(active_slide);
 
-            // XXX - Get next previous slide
+                editor_save_slide();
+                --slide_number;
+                // editor_get_line_info();
+                editor_load_slide();
+            } //else TOGGLE_BACK();
         } break;
         case 0x03:
         case 0xF5: {
@@ -454,8 +586,13 @@ void editor_process_special_key(uint8_t key)
 
 void editor_poll_keyboard(void)
 {
+    #ifndef __MEGA65__
     while (key != KEY_ESC)
+    #else
+    for (;;)
+    #endif
     {
+        TOGGLE_BACK();
         mod = READ_MOD();
         key = READ_KEY();
         if (key)
