@@ -37,6 +37,9 @@ void megamain()
 {
     m65_io_enable();
 
+    // Turn off write protection so we can use more RAM
+    toggle_write_protection();
+
     videoSetSlideMode();
     videoSetActiveSlideBuffer(0);
 
