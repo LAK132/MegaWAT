@@ -77,6 +77,9 @@ void clearRenderBuffer(void)
     if (!active_rbuffer)
         return;
 
+    // Fill colour RAM with 0x00, so that it is blank.
+    // lfill(active_rbuffer->colour_ram, 0, screen_size);
+
     // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
     lcopy((ptr_t)&clear_pattern, active_rbuffer->screen_ram, sizeof(clear_pattern));
     // Fill out to whole line

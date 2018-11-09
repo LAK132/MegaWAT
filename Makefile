@@ -35,6 +35,7 @@ SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/fast_memory.s \
 			$(SRCDIR)/f65.c \
 			$(SRCDIR)/globals.c \
+			$(SRCDIR)/serial.c \
 			$(SRCDIR)/charset.s \
 			$(SRCDIR)/romprotection.s
 
@@ -46,6 +47,7 @@ ASSFILES=	$(OBJDIR)/main.s \
 			$(OBJDIR)/fast_memory.s \
 			$(OBJDIR)/f65.s \
 			$(OBJDIR)/globals.s \
+			$(OBJDIR)/serial.s \
 			$(OBJDIR)/charset.s \
 			$(OBJDIR)/romprotection.s
 
@@ -57,6 +59,7 @@ HEADERS=	Makefile \
 			$(SRCDIR)/memory.h \
 			$(SRCDIR)/f65.h \
 			$(SRCDIR)/megaint.h \
+			$(SRCDIR)/serial.h \
 			$(SRCDIR)/ascii.h
 
 DATAFILES=	ascii8x8.bin

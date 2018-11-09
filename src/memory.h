@@ -1,4 +1,4 @@
-
+#include "globals.h"
 #include "megaint.h"
 
 void m65_io_enable(void);
@@ -18,12 +18,15 @@ uint8_t lpeek(ptr_t address);
 void lpoke(ptr_t address, uint8_t value);
 
 #ifdef FAST_LPOKE
-lpoke_asm();
-lpeek_asm();
+void lpoke_asm();
+uint8_t lpeek_asm();
 // // Macros to wrap the fast implementations of lpoke and lpeek
 // #define lpoke(A, V) { fast_memory_address = A; fast_memory_value = V; lpoke_asm(); }
 // #define lpeek(A) lpeek_fast(A)
 #endif // FAST_LPOKE
+
+extern uint32_t copy_trigger_start;
+extern uint32_t copy_trigger_end;
 
 void lcopy(ptr_t source_address, ptr_t destination_address, uint16_t count);
 void lcopy_safe(ptr_t src, ptr_t dst, uint16_t count);

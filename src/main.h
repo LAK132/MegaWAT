@@ -9,6 +9,7 @@
 #include "screen.h"
 #include "videomodes.h"
 #include "editor.h"
+#include "serial.h"
 
 #ifdef __MEGA65__
 #include "ascii.h"

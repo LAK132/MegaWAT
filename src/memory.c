@@ -6,7 +6,7 @@
 */
 
 #include "memory.h"
-
+#include "serial.h"
 
 struct dmagic_dmalist {
   // Enhanced DMA options
@@ -116,43 +116,74 @@ void lpoke(uint32_t address, uint8_t value)
 }
 #endif
 
-uint16_t ii, copy_size;
+// use uint32_t here to prevent integer overflow
+uint32_t ii, copy_size;
+uint32_t copy_trigger_start = 0, copy_trigger_end = 0;
+uint8_t bb;
 void lcopy_safe(uint32_t src, uint32_t dst, uint16_t count)
 {
-    if (src == dst || !count) return;
-    if (count < sizeof(copy_buffer))
+    console_write_astr("lcopy_safe(");
+    console_write_au32(src);
+    console_write_au32(dst);
+    console_write_au16(count);
+    console_write_astr(")[\r\n");
+    ++console_indent;
+
+    if (count)
     {
-        // count is smaller than buffer, so we can safely copy this in one hit
-        lcopy(src, (uint32_t)copy_buffer, count);
-        lcopy((uint32_t)copy_buffer, dst, count);
-    }
-    else if (src > dst)
-    {
-        // destination is lower than source, start from low side
-        for (ii = 0; ii < count; ii += sizeof(copy_buffer))
+        if (count < sizeof(copy_buffer))
         {
-            copy_size = count - ii;
-            if (copy_size > sizeof(copy_buffer))
-                copy_size = sizeof(copy_buffer);
-            lcopy(src + ii, (uint32_t)copy_buffer, copy_size);
-            lcopy((uint32_t)copy_buffer, dst + ii, copy_size);
+            // count is smaller than buffer, so we can safely copy this in one hit
+            lcopy(src, (uint32_t)copy_buffer, count);
+            lcopy((uint32_t)copy_buffer, dst, count);
+        }
+        else if (src > dst)
+        {
+            // destination is lower than source, start from low side
+            console_write_astr("src > dst\r\n");
+            // if difference is bigger than copy buffer, quicker to not use it
+            for (ii = 0; ii < count; ii += sizeof(copy_buffer))
+            {
+                copy_size = count - ii;
+                if (copy_size > sizeof(copy_buffer))
+                    copy_size = sizeof(copy_buffer);
+                lcopy(src + ii, (uint32_t)copy_buffer, copy_size);
+                lcopy((uint32_t)copy_buffer, dst + ii, copy_size);
+            }
+        }
+        else if (src < dst)
+        {
+            // destination is higher than source, start from high side
+            console_write_astr("src < dst\r\n");
+            // if difference is bigger than copy buffer, quicker to not use it
+            for (ii = count; ii > 0;)
+            {
+                copy_size = ii > sizeof(copy_buffer)
+                    ? sizeof(copy_buffer)
+                    : ii;
+                ii -= copy_size;
+                lcopy(src + ii, (uint32_t)copy_buffer, copy_size);
+                lcopy((uint32_t)copy_buffer, dst + ii, copy_size);
+            }
         }
     }
-    else
-    {
-        // destination is higher than source, start from high side
-        for (ii = count; ii > 0;)
-        {
-            copy_size = ii > sizeof(copy_buffer) ? sizeof(copy_buffer) : ii;
-            ii -= copy_size;
-            lcopy(src + ii, (uint32_t)copy_buffer, copy_size);
-            lcopy((uint32_t)copy_buffer, dst + ii, copy_size);
-        }
-    }
+
+    --console_indent;
+    console_write_astr("]\r\n");
 }
 
 void lcopy(uint32_t source_address, uint32_t destination_address, uint16_t count)
 {
+    if (source_address + count > copy_trigger_start && source_address < copy_trigger_end ||
+        destination_address + count > copy_trigger_start && destination_address < copy_trigger_end)
+    {
+        console_write_astr("lcopy(");
+        console_write_au32(source_address);
+        console_write_au32(destination_address);
+        console_write_au16(count);
+        console_write_astr(") [\r\n");
+        ++console_indent;
+    }
   if (!count) return;
 
   dmalist.option_0b=0x0b;
@@ -175,6 +206,12 @@ void lcopy(uint32_t source_address, uint32_t destination_address, uint16_t count
     dmalist.dest_bank|=0x80;
 
   do_dma();
+    if (source_address + count > copy_trigger_start && source_address < copy_trigger_end ||
+        destination_address + count > copy_trigger_start && destination_address < copy_trigger_end)
+    {
+        --console_indent;
+        console_write_astr("]\r\n");
+    }
   return;
 }
 
