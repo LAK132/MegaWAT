@@ -28,7 +28,7 @@ uint16_t editor_scratch[EDITOR_LINE_LEN];
 uint16_t editor_buffer[SLIDE_SIZE / sizeof(uint16_t)];
 uint32_t editor_buffer_size = sizeof(editor_buffer) / sizeof(uint16_t);
 
-#define EDITOR_END_SLIDE 10
+#define EDITOR_END_SLIDE 64
 #define EDITOR_MAX_SLIDES (EDITOR_END_SLIDE + 1)
 ptr_t slide_start[EDITOR_MAX_SLIDES];
 uint32_t slide_number = 0;
@@ -40,6 +40,8 @@ int16_t xx;
 uint8_t h;
 uint32_t sram, cram;
 uint16_t cursor_toggle = 0;
+
+void editor_show_slide_number(void);
 
 void editor_insert_line(uint8_t before)
 {
@@ -253,9 +255,9 @@ void editor_show_cursor(void)
     else
         POKE(0xD010U, 0);
     if (xx & 0x200)
-        POKE(0xD05FU, 0x01);
+      POKE(0xD05FU, PEEK(0xD05FU)|0x01);
     else
-        POKE(0xD05FU, 0);
+      POKE(0xD05FU, PEEK(0xD05FU)&0xfe);
 }
 
 void editor_update_cursor(void)
@@ -285,9 +287,9 @@ void editor_update_cursor(void)
     else
         POKE(0xD010U, 0);
     if (xx & 0x200)
-        POKE(0xD05FU, 0x01);
+      POKE(0xD05FU, PEEK(0xD05FU)|0x01);
     else
-        POKE(0xD05FU, 0);
+      POKE(0xD05FU, PEEK(0xD05FU)&0xfe);
 }
 
 void editor_insert_codepoint(uint16_t code_point)
@@ -411,6 +413,7 @@ void editor_process_special_key(uint8_t key)
                 lcopy(active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE2_COLOUR_RAM, SLIDE_SIZE);
 
                 ++slide_number;
+		editor_show_slide_number();
                 // Pre-render the next slide
                 if (slide_number + 1 < EDITOR_END_SLIDE)
                 {
@@ -422,6 +425,10 @@ void editor_process_special_key(uint8_t key)
                 // Change the render buffer address
                 videoSetActiveRenderBuffer(active_slide);
             } //else TOGGLE_BACK();
+	    else
+	      // At end of slides, so just show slide number again
+	      editor_show_slide_number();
+
         } break;
         case 0x91:
         case 0x9D: { // previous slide
@@ -444,7 +451,8 @@ void editor_process_special_key(uint8_t key)
                 // affecting the current slide
 
                 --slide_number;
-                // Pre-render the previous slide
+		editor_show_slide_number();
+		// Pre-render the previous slide
                 if (slide_number)
                 {
                     videoSetActiveRenderBuffer(2);
@@ -456,6 +464,9 @@ void editor_process_special_key(uint8_t key)
                 // Change the render buffer address
                 videoSetActiveRenderBuffer(active_slide);
             } //else TOGGLE_BACK();
+	    else
+	      // At end of slides, so just show slide number again
+	      editor_show_slide_number();
         } break;
         case 0x03:
         case 0xF5: {
@@ -463,6 +474,7 @@ void editor_process_special_key(uint8_t key)
             // XXX - Unhide cursor
             present_mode = 0;
             editor_load_slide();
+	    editor_show_slide_number();
             text_line = 0;
             editor_fetch_line();
         } break;
@@ -603,6 +615,7 @@ void editor_process_special_key(uint8_t key)
             copy_trigger_start = 0;
             copy_trigger_end = 0;
             present_mode = 1;
+	    editor_show_slide_number();
         } break;
         default: break;
     }
@@ -613,6 +626,71 @@ void editor_process_special_key(uint8_t key)
         if (text_colour != scratch_rbuffer.glyphs[cursor_col-1].colour_and_attributes)
             text_colour = scratch_rbuffer.glyphs[cursor_col-1].colour_and_attributes;
     }
+}
+
+uint8_t remainder,yy;
+uint8_t slide_num_message[8]={19+64,12,9,4,5,' ','0','0'}; // "Slide 00"
+uint8_t edit_mode_message[8]={5+64,4,9,20,9,14,7,'.'};
+uint8_t present_mode_message[8]={16+64,18,5,19,5,14,20,'.'};
+
+
+void editor_show_slide_number(void)
+{
+
+  // Clear sprite (8x21 bytes) and write
+  // info in it
+  lfill(0x0500,0x00,0x100);
+  
+  // Produce message to show on the sprite
+  slide_num_message[6]='0';
+  remainder=slide_number+1;
+  while(remainder>9) { remainder-=10; slide_num_message[6]++; }
+  slide_num_message[7]=0x30+remainder;
+  if (slide_num_message[6]=='0') {
+    slide_num_message[6]=slide_num_message[7];
+    slide_num_message[7]=' ';
+  }
+  for(remainder=0;remainder<8;remainder++)
+    for(yy=0;yy<8;yy++)
+      POKE(0x0500+remainder+yy*8,lpeek(0x2D800+(slide_num_message[remainder]*8)+yy));
+
+  if (present_mode) {
+    for(remainder=0;remainder<8;remainder++)
+      for(yy=0;yy<8;yy++)
+	POKE(0x0540+remainder+yy*8,lpeek(0x2D800+(present_mode_message[remainder]*8)+yy));
+  } else {
+    // Display editing in reverse text, so that it is more obvious
+    for(remainder=0;remainder<8;remainder++)
+      for(yy=0;yy<8;yy++)
+	POKE(0x0540+remainder+yy*8,lpeek(0x2DC00+(edit_mode_message[remainder]*8)+yy));
+  }
+
+  
+  // Set sprite data fetch area to $0500
+  POKE(2041,0x0500/0x40);
+  // Extended width (64 pixels wide)
+  POKE(0xD057U,0x02);
+
+  // Position sprite 2 near lower right corner
+  POKE(0xD003U,0xED); // 0xFD);
+  POKE(0xD002U,0xa0);
+  POKE(0xD010U,0x00);
+  POKE(0xD05FU,PEEK(0xD05FU)|0x02);
+
+  // Make sprite expanded in X any Y
+  // POKE(0xD017U,PEEK(0xD017U)|2);
+  POKE(0xD01DU,PEEK(0xD01DU)|2);
+
+  // Set sprite colour to light green
+  POKE(0xD028,0x0d);
+
+  // Make sprite 2 visible again
+  POKE(0xD015U,PEEK(0xD015U)|0x02);
+
+  // Start with message fully faded in
+  POKE(0xD074U,2);  // Make sprite alpha blended
+  POKE(0xD075U,0xFF); // Alpha blend set to fully visible
+  
 }
 
 void editor_poll_keyboard(void)
@@ -657,6 +735,15 @@ void editor_poll_keyboard(void)
             {
                 if (!(cursor_toggle += 0x10))
                     POKE(0xD015U, (PEEK(0xD015U) ^ 0x01) & 0x0f); // Toggle cursor on/off quickly
+	    }
+	    if (PEEK(0xD012U) == 0xE0)
+	    {
+		// Fade out slide indicator
+		if (PEEK(0xD075U)) POKE(0xD075U,PEEK(0xD075U)-1);
+		else {
+		  // Disable sprite after it has faded out
+		  POKE(0xD015U,PEEK(0xD015U)&0xFD);
+		}
             }
         }
     }
