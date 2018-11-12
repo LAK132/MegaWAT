@@ -70,10 +70,10 @@ void editor_initialise(void)
 
     active_slide = 0;
     videoSetActiveGraphicsBuffer(active_slide);
+    videoSetActiveRenderBuffer(active_slide);
+
     active_rbuffer = &screen_rbuffer;
     clearRenderBuffer();
-
-    videoSetActiveRenderBuffer(active_slide);
     active_rbuffer = &scratch_rbuffer;
     clearRenderBuffer();
 
