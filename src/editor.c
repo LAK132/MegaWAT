@@ -4,10 +4,6 @@ uint8_t active_slide = 0;
 uint8_t present_mode = 0;
 uint8_t text_colour = 1;
 uint8_t cursor_col = 0;
-// Physical rows on the slide (as compared to the lines of text that
-// produce them).
-uint8_t current_row = 0;
-uint8_t next_row = 0;
 // Which line of text we are on
 uint8_t text_line = 0;
 // Rows where each line of text is drawn
@@ -16,6 +12,13 @@ uint8_t text_line = 0;
 uint32_t text_line_start[EDITOR_MAX_LINES];
 uint32_t text_line_first_rows[EDITOR_END_LINE];
 uint8_t text_line_count = 1;
+// Physical rows on the slide (as compared to the lines of text that
+// produce them).
+// uint8_t current_row = 0;
+// uint8_t next_row = 0;
+#define CURRENT_ROW (text_line_first_rows[text_line])
+#define NEXT_ROW (text_line_first_rows[text_line + 1])
+#define CURRENT_ROW_HEIGHT (NEXT_ROW - CURRENT_ROW)
 
 // XXX For now, have a fixed 128x30 buffer for text
 // (We allow 128 instead of 100, so that we can have a number of font and attribute/colour changes
@@ -77,12 +80,12 @@ void editor_initialise(void)
         slide_start[y] = slide_start[y-1] + (EDITOR_END_LINE * 2);
 }
 
-void editor_stash_line(uint8_t line_num)
+void editor_stash_line(void)
 {
     // Stash the line encoded in scratch buffer into the specified line
 
     // Can't stash end line
-    if (line_num < EDITOR_END_LINE)
+    if (text_line < EDITOR_END_LINE)
     {
         // Setup default font and attributes, so that we can notice when
         // switching.
@@ -118,11 +121,11 @@ void editor_stash_line(uint8_t line_num)
         editor_scratch[y++] = 0; // y is now the length of scratch used
 
         // We use line_num + 1 lots, so just do the calculation once
-        c = line_num + 1;
+        c = text_line + 1;
 
         // Find how long this line is currently in the buffer
         // +1 is safe here because text_line_start is oversized by 1
-        z = text_line_start[c] - text_line_start[line_num];
+        z = text_line_start[c] - text_line_start[text_line];
 
         // make sure we have enough space to stash the current line
         if (z > y)
@@ -157,27 +160,53 @@ void editor_stash_line(uint8_t line_num)
 
         // copy scratch into main buffer
         // x2 because it's 16 bit
-        lcopy((ptr_t)&editor_scratch[0], (ptr_t)&editor_buffer[text_line_start[line_num]], y + y);
+        lcopy((ptr_t)&editor_scratch[0], (ptr_t)&editor_buffer[text_line_start[text_line]], y + y);
     }
 }
 
-void editor_fetch_line(uint8_t line_num)
+void editor_render_glyph(uint16_t code_point)
+{
+    active_rbuffer = &scratch_rbuffer;
+    renderGlyph(code_point, text_colour, ATTRIB_ALPHA_BLEND, cursor_col);
+
+    // Check if this code point grew the height of the line.
+    // If so, push everything else down before pasting
+    if (text_line < EDITOR_END_LINE)
+    {
+        // s = glyph height - row height (how much bigger the glyph is than the row)
+        s = (scratch_rbuffer.max_above + scratch_rbuffer.max_below) - CURRENT_ROW_HEIGHT;
+        if (s > 0)
+        {
+            // Yes, it grew.
+            // Adjust first row for all following lines
+            for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
+                text_line_first_rows[y] += s;
+
+            // Now shift everything down (on the SCREEN buffer)
+            l = text_line_first_rows[text_line] * screen_width;
+            sram = screen_rbuffer.screen_ram + l;
+            cram = screen_rbuffer.colour_ram + l;
+            lcopy_safe(sram, sram + screen_width, screen_rbuffer.screen_size - (l + screen_width));
+            lcopy_safe(cram, cram + screen_width, screen_rbuffer.screen_size - (l + screen_width));
+        }
+    }
+}
+
+void editor_fetch_line(void) //uint8_t line_num)
 {
     // Fetch the specified line, and pre-render it into scratch
-
-    current_row = text_line_first_rows[line_num];
 
     active_rbuffer = &scratch_rbuffer;
     clearRenderBuffer();
 
     // Get the start of the next line
-    k = text_line_start[line_num + 1];
+    k = text_line_start[text_line + 1];
     // Check if it's past the end of the buffer
     if (k > editor_buffer_size) k = editor_buffer_size;
 
     c = cursor_col;
     cursor_col = 0xFF;
-    for (m = text_line_start[line_num]; editor_buffer[m] && m < k; ++m)
+    for (m = text_line_start[text_line]; editor_buffer[m] && m < k; ++m)
     {
         // Reserved code points are used to record colour and other attribute changes
         switch (editor_buffer[m] & 0xFF00)
@@ -192,36 +221,12 @@ void editor_fetch_line(uint8_t line_num)
             default: {
                 // if this is actually a code point, render the relevant glyph
                 if ((editor_buffer[m] < 0xD800) || (editor_buffer[m] >= 0xF800))
-                {
-                    // editor_render_glyph(editor_buffer[m]);
-                    renderGlyph(editor_buffer[m], text_colour, ATTRIB_ALPHA_BLEND, 0xFF);
-                    // Check if this code point grew the height of the line.
-                    // If so, push everything else down before pasting
-                    if (text_line < EDITOR_END_LINE)
-                    {
-                        // s = glyph height - row height (how much bigger the glyph is than the row)
-                        s = (scratch_rbuffer.max_above + scratch_rbuffer.max_below)
-                            - (text_line_first_rows[text_line + 1] - text_line_first_rows[text_line]);
-                        if (s > 0)
-                        {
-                            // Yes, it grew.
-                            // Adjust first row for all following lines
-                            for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
-                                text_line_first_rows[y] += s;
-
-                            // // Now shift everything down (on the SCREEN buffer)
-                            // l = text_line_first_rows[text_line] * screen_width;
-                            // sram = screen_rbuffer.screen_ram + l;
-                            // cram = screen_rbuffer.colour_ram + l;
-                            // lcopy_safe(sram, sram + screen_width, screen_size - (l + screen_width));
-                            // lcopy_safe(cram, cram + screen_width, screen_size - (l + screen_width));
-                        }
-                    }
-                    // next_row = screen_rbuffer.rows_used;
-                }
+                    editor_render_glyph(editor_buffer[m]);
             } break;
         }
     }
+    screen_rbuffer.rows_used = CURRENT_ROW;
+    outputLineToRenderBuffer();
     cursor_col = c;
 }
 
@@ -274,52 +279,16 @@ void editor_update_cursor(void)
         POKE(0xD05FU, 0);
 }
 
-void editor_redraw_line(void)
-{
-    screen_rbuffer.rows_used = current_row;
-    // screen_rbuffer.rows_used = text_line_first_rows[text_line];
-    outputLineToRenderBuffer();
-}
-
 void editor_insert_codepoint(uint16_t code_point)
 {
     // Shift to fix ASCII vs PETSCII for the C64 font
     if (!font_id && code_point >= 0x60)
         code_point -= 0x60;
 
-    active_rbuffer = &scratch_rbuffer;
-    // Natural key -- insert here
     z = scratch_rbuffer.glyph_count;
-    renderGlyph(code_point, text_colour, ATTRIB_ALPHA_BLEND, cursor_col);
-
-    // Check if this code point grew the height of the line.
-    // If so, push everything else down before pasting
-    if (text_line < EDITOR_END_LINE)
-    {
-        // s = glyph height - row height (how much bigger the glyph is than the row)
-        s = (scratch_rbuffer.max_above + scratch_rbuffer.max_below)
-            - (text_line_first_rows[text_line + 1] - text_line_first_rows[text_line]);
-        if (s > 0)
-        {
-            // Yes, it grew.
-            // Adjust first row for all following lines
-            for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
-                text_line_first_rows[y] += s;
-
-            // Now shift everything down (on the SCREEN buffer)
-            l = text_line_first_rows[text_line] * screen_width;
-            sram = screen_rbuffer.screen_ram + l;
-            cram = screen_rbuffer.colour_ram + l;
-            lcopy_safe(sram, sram + screen_width, screen_rbuffer.screen_size - (l + screen_width));
-            lcopy_safe(cram, cram + screen_width, screen_rbuffer.screen_size - (l + screen_width));
-        }
-    }
-
-    // z = scratch_rbuffer.glyph_count;
-    // editor_render_glyph(code_point);
-    screen_rbuffer.rows_used = current_row;
+    editor_render_glyph(code_point);
+    screen_rbuffer.rows_used = CURRENT_ROW;
     outputLineToRenderBuffer();
-    next_row = screen_rbuffer.rows_used;
 
     // Only advance cursor if the glyph was actually rendered
     if (scratch_rbuffer.glyph_count > z)
@@ -393,13 +362,14 @@ void editor_load_slide(void)
 
     // Update line starts for new buffer
     editor_get_line_info();
-    for (w = 0; w < EDITOR_MAX_LINES; ++w)
+    w = text_line;
+    for (text_line = 0; text_line < EDITOR_MAX_LINES; ++text_line)
     {
-        editor_fetch_line(w);
-        editor_redraw_line();
-        editor_update_cursor();
-        editor_stash_line(w);
+        editor_fetch_line();
+        editor_stash_line();
     }
+    text_line = w;
+    editor_update_cursor();
 }
 
 void editor_process_special_key(uint8_t key)
@@ -470,7 +440,7 @@ void editor_process_special_key(uint8_t key)
             // XXX - Reload editor buffer for current slide
             // XXX - Unhide cursor
             text_line = 0;
-            editor_fetch_line(text_line);
+            editor_fetch_line();
             cursor_col = 0;
             editor_update_cursor();
             present_mode = 0;
@@ -515,42 +485,44 @@ void editor_process_special_key(uint8_t key)
                 active_rbuffer = &scratch_rbuffer;
                 --cursor_col;
                 deleteGlyph(cursor_col);
-                screen_rbuffer.rows_used = current_row;
+                screen_rbuffer.rows_used = NEXT_ROW;
 
                 // XXX - This is a hack to prevent in-line tearing
                 // XXX - Figure out what is actually causing the issue
-                editor_stash_line(text_line);
-                editor_fetch_line(text_line);
+                editor_stash_line();
+                editor_fetch_line();
                 editor_update_cursor();
+                screen_rbuffer.rows_used = CURRENT_ROW;
+                outputLineToRenderBuffer();
 
-                editor_redraw_line();
-                if (screen_rbuffer.rows_used < next_row)
+                if (screen_rbuffer.rows_used < NEXT_ROW)
                 {
                     // Deleting a character reduced the row height,
                     // So shuffle up the rows below, and fill in the
                     // bottom of the screen.
 
                     // Copy rows up
-                    lcopy(screen_rbuffer.screen_ram + next_row * screen_width,
+                    lcopy(screen_rbuffer.screen_ram + NEXT_ROW * screen_width,
                         screen_rbuffer.screen_ram + (screen_rbuffer.rows_used * screen_width),
-                        screen_rbuffer.screen_size - (screen_width * (60 - next_row))
+                        screen_rbuffer.screen_size - (screen_width * (60 - NEXT_ROW))
                     );
-                    lcopy(screen_rbuffer.colour_ram + next_row * screen_width,
+                    lcopy(screen_rbuffer.colour_ram + NEXT_ROW * screen_width,
                         screen_rbuffer.colour_ram + (screen_rbuffer.rows_used * screen_width),
-                        screen_rbuffer.screen_size - (screen_width * (60 - next_row))
+                        screen_rbuffer.screen_size - (screen_width * (60 - NEXT_ROW))
                     );
 
                     // XXX Fill in bottom of screen
 
                     // Adjust starting rows for following lines
-                    x = next_row - screen_rbuffer.rows_used;
+                    x = NEXT_ROW - screen_rbuffer.rows_used;
                     for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
                         text_line_first_rows[y] -= x;
                 }
-                next_row = screen_rbuffer.rows_used;
+                // next_row = screen_rbuffer.rows_used;
                 k = 1;
             }
-            else if (current_row && text_line)
+            // else if (current_row && text_line)
+            else if (text_line)
             {
                 // Backspace from start of line
                 // XXX - Should combine remainder of line with previous line (if it will fit)
@@ -558,11 +530,11 @@ void editor_process_special_key(uint8_t key)
                 // XXX - Select the previous line
                 // XXX - Re-render the previous line
                 //       (And shuffle everything down in the process if this line grew taller)
-                editor_stash_line(text_line);
-                editor_fetch_line(--text_line);
+                editor_stash_line();
+                --text_line;
+                editor_fetch_line();
                 cursor_col = scratch_rbuffer.glyph_count;
                 editor_update_cursor();
-                editor_redraw_line();
                 k = 1;
             }
         } break;
@@ -582,20 +554,20 @@ void editor_process_special_key(uint8_t key)
         case 0x11: { // Cursor down
             if (text_line < EDITOR_MAX_LINES)
             {
-                editor_stash_line(text_line);
-                editor_fetch_line(++text_line);
+                editor_stash_line();
+                ++text_line;
+                editor_fetch_line();
                 editor_update_cursor();
-                editor_redraw_line();
                 k = 1;
             }
         } break;
         case 0x91: { // Cursor up
             if (text_line)
             {
-                editor_stash_line(text_line);
-                editor_fetch_line(--text_line);
+                editor_stash_line();
+                --text_line;
+                editor_fetch_line();
                 editor_update_cursor();
-                editor_redraw_line();
                 k = 1;
             }
         } break;
@@ -605,7 +577,7 @@ void editor_process_special_key(uint8_t key)
             // XXX - Render next and previous slides
             copy_trigger_start = slide_start[slide_number];
             copy_trigger_end = slide_start[slide_number+3];
-            editor_stash_line(text_line);
+            editor_stash_line();
             editor_save_slide();
             copy_trigger_start = 0;
             copy_trigger_end = 0;
