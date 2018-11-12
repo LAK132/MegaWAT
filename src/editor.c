@@ -614,6 +614,15 @@ void editor_process_special_key(uint8_t key)
                 --cursor_col;
                 deleteGlyph(cursor_col);
                 screen_rbuffer.rows_used = current_row;
+
+                // XXX - This is a hack to prevent in-line tearing
+                // XXX - Figure out what is actually causing the issue
+                w = cursor_col;
+                editor_stash_line(text_line);
+                editor_fetch_line(text_line);
+                cursor_col = w;
+                editor_update_cursor();
+
                 editor_redraw_line();
                 if (screen_rbuffer.rows_used < next_row)
                 {
