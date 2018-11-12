@@ -52,8 +52,6 @@ extern uint8_t cursor_attrib[2];
 extern int8_t char_size;
 extern uint8_t char_attrib[2];
 
-extern uint32_t screen_address;
-extern uint32_t colour_address;
 extern uint32_t screen_width;
 extern uint32_t screen_size;
 
@@ -62,13 +60,3 @@ extern uint8_t c, x, y, z, w;
 extern uint32_t i, j, k, l, m;
 
 void toggle_write_protection(void);
-
-// extern uint32_t full_screen_buffer;
-// extern uint32_t full_screen_buffer_size;
-// extern uint32_t full_colour_buffer;
-// extern uint32_t full_colour_buffer_size;
-
-// extern uint32_t small_screen_buffer;
-// extern uint32_t small_screen_buffer_size;
-// extern uint32_t small_colour_buffer;
-// extern uint32_t small_colour_buffer_size;

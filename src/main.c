@@ -72,13 +72,6 @@ void megamain()
     patchFonts();
     setFont(0);
 
-    // Create a render buffer that points to the default active screen
-    screen_rbuffer.screen_ram = SLIDE0_SCREEN_RAM;
-    screen_rbuffer.colour_ram = SLIDE0_COLOUR_RAM;
-
-    scratch_rbuffer.screen_ram = SCRATCH_SCREEN_RAM;
-    scratch_rbuffer.colour_ram = SCRATCH_COLOUR_RAM;
-
     // Make sure they are clear
     active_rbuffer = &screen_rbuffer;
     clearRenderBuffer();

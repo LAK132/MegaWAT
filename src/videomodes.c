@@ -11,9 +11,9 @@ void videoSetSlideMode(void)
      16 bit text mode with 100 character virtual line length.
     */
 
-  // 60Hz video mode
-  POKE(0xD06fU,0x80);
-  
+    // 60Hz video mode
+    POKE(0xD06fU,0x80);
+
     // 16-bit text mode, 640H sprites, alpha blender, 50MHz CPU, full-colour for chars >$FF
     POKE(0xd054U,0xD5);
 
@@ -65,18 +65,24 @@ void videoSetSlideMode(void)
     lfill(SLIDE0_COLOUR_RAM, 1, SLIDE_SIZE);
     lfill(SLIDE1_COLOUR_RAM, 1, SLIDE_SIZE);
 
-    screen_address = SLIDE0_SCREEN_RAM;
-    colour_address = SLIDE0_COLOUR_RAM;
     char_size = sizeof(uint16_t);
     // screen_height = 60;
     screen_width = 100 * char_size;     // 200
     screen_size = 60 * screen_width;    // 12000
+
+    screen_rbuffer.screen_ram = SLIDE0_SCREEN_RAM;
+    screen_rbuffer.colour_ram = SLIDE0_COLOUR_RAM;
+    screen_rbuffer.screen_size = screen_size;
+
+    scratch_rbuffer.screen_ram = SCRATCH_SCREEN_RAM;
+    scratch_rbuffer.colour_ram = SCRATCH_COLOUR_RAM;
+    scratch_rbuffer.screen_size = SCRATCH_SIZE;
 }
 
 void videoSetActiveSlideBuffer(uint8_t bufferId)
 {
-    screen_address=SLIDE0_SCREEN_RAM;
-    colour_address=SLIDE0_COLOUR_RAM;
+    screen_rbuffer.screen_ram = SLIDE0_SCREEN_RAM;
+    screen_rbuffer.colour_ram = SLIDE0_COLOUR_RAM;
 
     // Reject invalid slide buffer numbers
     //   if (bufferId>2) return;    SEE BELOW
@@ -87,16 +93,16 @@ void videoSetActiveSlideBuffer(uint8_t bufferId)
     if (bufferId>1) return;
 
     if (bufferId==1) {
-        screen_address=SLIDE1_SCREEN_RAM;
-        colour_address=SLIDE1_COLOUR_RAM;
+        screen_rbuffer.screen_ram = SLIDE1_SCREEN_RAM;
+        screen_rbuffer.colour_ram = SLIDE1_COLOUR_RAM;
     }
 
-    lpoke(0xffd3060U,(screen_address>>0U)&0xff);
-    lpoke(0xffd3061U,(screen_address>>8U)&0xff);
-    lpoke(0xffd3062U,(screen_address>>16U)&0xff);
+    lpoke(0xffd3060U,((longptr_t)screen_rbuffer.screen_ram>>0U)&0xff);
+    lpoke(0xffd3061U,((longptr_t)screen_rbuffer.screen_ram>>8U)&0xff);
+    lpoke(0xffd3062U,((longptr_t)screen_rbuffer.screen_ram>>16U)&0xff);
 
-    lpoke(0xffd3064U,(colour_address>>0U)&0xff);
-    lpoke(0xffd3065U,(colour_address>>8U)&0xff);
+    lpoke(0xffd3064U,((longptr_t)screen_rbuffer.colour_ram>>0U)&0xff);
+    lpoke(0xffd3065U,((longptr_t)screen_rbuffer.colour_ram>>8U)&0xff);
 
     return;
 }

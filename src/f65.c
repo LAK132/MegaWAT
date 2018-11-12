@@ -78,7 +78,7 @@ void clearRenderBuffer(void)
         return;
 
     // Fill colour RAM with 0x00, so that it is blank.
-    // lfill(active_rbuffer->colour_ram, 0, screen_size);
+    lfill(active_rbuffer->colour_ram, 0, active_rbuffer->screen_size);
 
     // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
     lcopy((ptr_t)&clear_pattern, active_rbuffer->screen_ram, sizeof(clear_pattern));
@@ -87,7 +87,7 @@ void clearRenderBuffer(void)
     // Then put end of line marker to stop displaying tiles from next line
     lcopy((ptr_t)&end_of_line_pattern, active_rbuffer->screen_ram + (screen_width - sizeof(end_of_line_pattern)), sizeof(end_of_line_pattern));
     // Then copy it down over the next 59 rows.
-    lcopy(active_rbuffer->screen_ram, active_rbuffer->screen_ram + screen_width, screen_size - screen_width);
+    lcopy(active_rbuffer->screen_ram, active_rbuffer->screen_ram + screen_width, active_rbuffer->screen_size - screen_width);
 
     active_rbuffer->columns_used = 0;
     active_rbuffer->max_above = 0;

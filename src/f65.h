@@ -28,6 +28,8 @@ typedef struct render_buffer
     ptr_t screen_ram;
     // Address of colour RAM 100x60x(2 bytes) buffer
     ptr_t colour_ram;
+    // actual size of the screen (may be smaller for scratch buffers)
+    uint16_t screen_size;
     uint8_t columns_used; // only used when building a line of output
     uint8_t rows_used;    // only for when pasting lines from another buffer
     uint8_t max_above;

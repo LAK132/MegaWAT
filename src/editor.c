@@ -163,11 +163,11 @@ void editor_stash_line(uint8_t line_num)
 
 void editor_fetch_line(uint8_t line_num)
 {
+    // Fetch the specified line, and pre-render it into scratch
+
     current_row = text_line_first_rows[line_num];
 
     active_rbuffer = &scratch_rbuffer;
-
-    // Fetch the specified line, and pre-render it into scratch
     clearRenderBuffer();
 
     // Get the start of the next line
@@ -277,6 +277,7 @@ void editor_update_cursor(void)
 void editor_redraw_line(void)
 {
     screen_rbuffer.rows_used = current_row;
+    // screen_rbuffer.rows_used = text_line_first_rows[text_line];
     outputLineToRenderBuffer();
 }
 
@@ -309,8 +310,8 @@ void editor_insert_codepoint(uint16_t code_point)
             l = text_line_first_rows[text_line] * screen_width;
             sram = screen_rbuffer.screen_ram + l;
             cram = screen_rbuffer.colour_ram + l;
-            lcopy_safe(sram, sram + screen_width, screen_size - (l + screen_width));
-            lcopy_safe(cram, cram + screen_width, screen_size - (l + screen_width));
+            lcopy_safe(sram, sram + screen_width, screen_rbuffer.screen_size - (l + screen_width));
+            lcopy_safe(cram, cram + screen_width, screen_rbuffer.screen_size - (l + screen_width));
         }
     }
 
@@ -532,11 +533,11 @@ void editor_process_special_key(uint8_t key)
                     // Copy rows up
                     lcopy(screen_rbuffer.screen_ram + next_row * screen_width,
                         screen_rbuffer.screen_ram + (screen_rbuffer.rows_used * screen_width),
-                        screen_size - (screen_width * (60 - next_row))
+                        screen_rbuffer.screen_size - (screen_width * (60 - next_row))
                     );
                     lcopy(screen_rbuffer.colour_ram + next_row * screen_width,
                         screen_rbuffer.colour_ram + (screen_rbuffer.rows_used * screen_width),
-                        screen_size - (screen_width * (60 - next_row))
+                        screen_rbuffer.screen_size - (screen_width * (60 - next_row))
                     );
 
                     // XXX Fill in bottom of screen
