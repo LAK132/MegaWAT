@@ -35,34 +35,14 @@ void main(void)
 void megamain()
 #endif
 {
-    m65_io_enable();
+  m65_io_enable();
 
     // Turn off write protection so we can use more RAM
-    toggle_write_protection();
+  toggle_write_protection();
 
-#if 0
-    // Draw alpha gradient for testing
-    for (x = 0; x < 255; ++x)
-        for (y = 0; y < 8; ++y)
-            POKE(0xE000U + (x & 7) + ((x / 8) * 64U) + (y * 8), x);
-
-    for (x = 0; x < 100; ++x)
-    {
-        lpoke(SLIDE0_SCREEN_RAM + 220U + x * 2, (0xe000U / 0x40 + x) & 0xff);
-        lpoke(SLIDE0_SCREEN_RAM + 220U + x * 2 + 1, (0xe000U / 0x40 + x) >> 8);
-        lpoke(SLIDE0_COLOUR_RAM + 220U + x * 2, 0x20); // 0x20 for alpha
-        lpoke(SLIDE0_COLOUR_RAM + 220U + x * 2 + 1, 0x2);
-    }
-
-    x = 90;
-    lpoke(SLIDE0_SCREEN_RAM + 200U + x * 2, 0xff);
-    lpoke(SLIDE0_SCREEN_RAM + 200U + x * 2 + 1, 0xff);
-    lpoke(SLIDE0_SCREEN_RAM + 0U + x * 2, 0xff);
-    lpoke(SLIDE0_SCREEN_RAM + 0U + x * 2 + 1, 0xff);
-
-    while (1)
-        POKE(0xd020U, PEEK(0xd012U));
-#endif
+  //    while (1)
+  //      POKE(0xd020U, PEEK(0xd020U)+1);
+    
     editor_initialise();
 
     // Then patch the pointers in the font(s) to be correct
