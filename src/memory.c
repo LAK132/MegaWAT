@@ -122,13 +122,6 @@ uint32_t copy_trigger_start = 0, copy_trigger_end = 0;
 uint8_t bb;
 void lcopy_safe(uint32_t src, uint32_t dst, uint16_t count)
 {
-    console_write_astr("lcopy_safe(");
-    console_write_au32(src);
-    console_write_au32(dst);
-    console_write_au16(count);
-    console_write_astr(")[\r\n");
-    ++console_indent;
-
     if (count)
     {
         if (count < sizeof(copy_buffer))
@@ -140,8 +133,6 @@ void lcopy_safe(uint32_t src, uint32_t dst, uint16_t count)
         else if (src > dst)
         {
             // destination is lower than source, start from low side
-            console_write_astr("src > dst\r\n");
-            // if difference is bigger than copy buffer, quicker to not use it
             for (ii = 0; ii < count; ii += sizeof(copy_buffer))
             {
                 copy_size = count - ii;
@@ -154,8 +145,6 @@ void lcopy_safe(uint32_t src, uint32_t dst, uint16_t count)
         else if (src < dst)
         {
             // destination is higher than source, start from high side
-            console_write_astr("src < dst\r\n");
-            // if difference is bigger than copy buffer, quicker to not use it
             for (ii = count; ii > 0;)
             {
                 copy_size = ii > sizeof(copy_buffer)
@@ -167,23 +156,10 @@ void lcopy_safe(uint32_t src, uint32_t dst, uint16_t count)
             }
         }
     }
-
-    --console_indent;
-    console_write_astr("]\r\n");
 }
 
 void lcopy(uint32_t source_address, uint32_t destination_address, uint16_t count)
 {
-    if (source_address + count > copy_trigger_start && source_address < copy_trigger_end ||
-        destination_address + count > copy_trigger_start && destination_address < copy_trigger_end)
-    {
-        console_write_astr("lcopy(");
-        console_write_au32(source_address);
-        console_write_au32(destination_address);
-        console_write_au16(count);
-        console_write_astr(") [\r\n");
-        ++console_indent;
-    }
   if (!count) return;
 
   dmalist.option_0b=0x0b;
@@ -206,12 +182,6 @@ void lcopy(uint32_t source_address, uint32_t destination_address, uint16_t count
     dmalist.dest_bank|=0x80;
 
   do_dma();
-    if (source_address + count > copy_trigger_start && source_address < copy_trigger_end ||
-        destination_address + count > copy_trigger_start && destination_address < copy_trigger_end)
-    {
-        --console_indent;
-        console_write_astr("]\r\n");
-    }
   return;
 }
 
