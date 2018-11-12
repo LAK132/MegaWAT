@@ -59,7 +59,6 @@ void videoSetSlideMode(void)
     // Place character generator adjacent to freshly moved top border
     POKE(0xd04E,0x52);
 
-
     lfill(SLIDE0_SCREEN_RAM, 0, SLIDE_SIZE);
     lfill(SLIDE1_SCREEN_RAM, 0, SLIDE_SIZE);
     lfill(SLIDE0_COLOUR_RAM, 1, SLIDE_SIZE);
@@ -79,30 +78,48 @@ void videoSetSlideMode(void)
     scratch_rbuffer.screen_size = SCRATCH_SIZE;
 }
 
-void videoSetActiveSlideBuffer(uint8_t bufferId)
+void videoSetActiveRenderBuffer(uint8_t bufferId)
 {
-    screen_rbuffer.screen_ram = SLIDE0_SCREEN_RAM;
-    screen_rbuffer.colour_ram = SLIDE0_COLOUR_RAM;
-
-    // Reject invalid slide buffer numbers
-    //   if (bufferId>2) return;    SEE BELOW
-
-    // Actually, SLIDE2_COLOUR_RAM is not in colour RAM,
-    // so it cannot be set active, so only buffers 0 and 1
-    // are displayable.
-    if (bufferId>1) return;
-
-    if (bufferId==1) {
+    // Only buffers 0 and 1 are displayable,
+    // but allow buffer 2 to be used for
+    // double buffering (which will copy it later)
+    if (bufferId == 1)
+    {
         screen_rbuffer.screen_ram = SLIDE1_SCREEN_RAM;
         screen_rbuffer.colour_ram = SLIDE1_COLOUR_RAM;
     }
+    else if (bufferId == 2)
+    {
+        screen_rbuffer.screen_ram = SLIDE2_SCREEN_RAM;
+        screen_rbuffer.colour_ram = SLIDE2_COLOUR_RAM;
+    }
+    else
+    {
+        screen_rbuffer.screen_ram = SLIDE0_SCREEN_RAM;
+        screen_rbuffer.colour_ram = SLIDE0_COLOUR_RAM;
+    }
+}
 
-    lpoke(0xffd3060U,((longptr_t)screen_rbuffer.screen_ram>>0U)&0xff);
-    lpoke(0xffd3061U,((longptr_t)screen_rbuffer.screen_ram>>8U)&0xff);
-    lpoke(0xffd3062U,((longptr_t)screen_rbuffer.screen_ram>>16U)&0xff);
-
-    lpoke(0xffd3064U,((longptr_t)screen_rbuffer.colour_ram>>0U)&0xff);
-    lpoke(0xffd3065U,((longptr_t)screen_rbuffer.colour_ram>>8U)&0xff);
-
-    return;
+void videoSetActiveGraphicsBuffer(uint8_t bufferId)
+{
+    if (bufferId == 1)
+    {
+        // Change the screen address pointer
+        lpoke(0xffd3060U,(SLIDE1_SCREEN_RAM>>0U)&0xff);
+        lpoke(0xffd3061U,(SLIDE1_SCREEN_RAM>>8U)&0xff);
+        lpoke(0xffd3062U,(SLIDE1_SCREEN_RAM>>16U)&0xff);
+        // change the colour addresss pointer
+        lpoke(0xffd3064U,(SLIDE1_COLOUR_RAM>>0U)&0xff);
+        lpoke(0xffd3065U,(SLIDE1_COLOUR_RAM>>8U)&0xff);
+    }
+    else
+    {
+        // Change the screen address pointer
+        lpoke(0xffd3060U,(SLIDE0_SCREEN_RAM>>0U)&0xff);
+        lpoke(0xffd3061U,(SLIDE0_SCREEN_RAM>>8U)&0xff);
+        lpoke(0xffd3062U,(SLIDE0_SCREEN_RAM>>16U)&0xff);
+        // change the colour addresss pointer
+        lpoke(0xffd3064U,(SLIDE0_COLOUR_RAM>>0U)&0xff);
+        lpoke(0xffd3065U,(SLIDE0_COLOUR_RAM>>8U)&0xff);
+    }
 }

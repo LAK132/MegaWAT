@@ -4,4 +4,5 @@
 #include "f65.h"
 
 void videoSetSlideMode(void);
-void videoSetActiveSlideBuffer(uint8_t bufferId);
+void videoSetActiveRenderBuffer(uint8_t bufferId);
+void videoSetActiveGraphicsBuffer(uint8_t bufferId);

@@ -1,6 +1,6 @@
 #include "editor.h"
 
-uint8_t active_slide = 0;
+uint8_t active_slide;
 uint8_t present_mode = 0;
 uint8_t text_colour = 1;
 uint8_t cursor_col = 0;
@@ -66,6 +66,17 @@ void editor_load_slide(void);
 
 void editor_initialise(void)
 {
+    videoSetSlideMode();
+
+    active_slide = 0;
+    videoSetActiveGraphicsBuffer(active_slide);
+    active_rbuffer = &screen_rbuffer;
+    clearRenderBuffer();
+
+    videoSetActiveRenderBuffer(active_slide);
+    active_rbuffer = &scratch_rbuffer;
+    clearRenderBuffer();
+
     // Fill the rest of the buffer with zeros
     lfill((ptr_t)&editor_buffer[0], 0x00,
         sizeof(editor_buffer));
@@ -383,67 +394,92 @@ void editor_process_special_key(uint8_t key)
         case 0x1D: { // next slide
             if (slide_number + 1 < EDITOR_END_SLIDE)
             {
-                // // Switch active slide (next slide)
-                // if (active_slide) // SLIDE1 active
-                //     active_slide = 0;
-                // else // SLIDE0 active
-                //     active_slide = 1;
-                // videoSetActiveSlideBuffer(active_slide);
+                // Switch active slide (next slide)
+                if (active_slide) // SLIDE1 active
+                    active_slide = 0;
+                else // SLIDE0 active
+                    active_slide = 1;
 
-                // // Move current slide (SLIDE0/1) to previous slide (SLIDE2)
-                // lcopy(active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE2_SCREEN_RAM, SLIDE_SIZE);
-                // lcopy(active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE2_COLOUR_RAM, SLIDE_SIZE);
+                // Change the screen address
+                videoSetActiveGraphicsBuffer(active_slide);
+                // Don't change the render buffer address yet
+                // so we can pre-render the next slide without
+                // affecting the current slide
 
-                // for (READ_KEY() = 0; READ_KEY() != KEY_RETURN;) TOGGLE_BACK();
+                // Move current slide (SLIDE0/1) to previous slide (SLIDE2)
+                lcopy(active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE2_SCREEN_RAM, SLIDE_SIZE);
+                lcopy(active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE2_COLOUR_RAM, SLIDE_SIZE);
+
+                // for (READ_KEY() = 0; READ_KEY() != KEY_TAB;) TOGGLE_BACK();
 
                 // for (y = 0; y < EDITOR_MAX_LINES; ++y)
                 //     console_write_au32(text_line_start[y]);
 
-                // copy_trigger_start = slide_start[slide_number];
-                // copy_trigger_end = slide_start[slide_number+3];
-                // editor_save_slide();
-                // editor_get_line_info();
                 ++slide_number;
-                editor_load_slide();
+                // Pre-render the next slide
+                if (slide_number + 1 < EDITOR_END_SLIDE)
+                {
+                    ++slide_number;
+                    editor_load_slide();
+                    --slide_number;
+                }
+
+                // Change the render buffer address
+                videoSetActiveRenderBuffer(active_slide);
             } //else TOGGLE_BACK();
         } break;
         case 0x91:
         case 0x9D: { // previous slide
             if (slide_number)
             {
-                // // Move previous slide (SLIDE2) to next slide (SLIDE1/0)
-                // lcopy(SLIDE2_SCREEN_RAM, active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE_SIZE);
-                // lcopy(SLIDE2_COLOUR_RAM, active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE_SIZE);
+                // Move previous slide (SLIDE2) to next slide (SLIDE1/0)
+                lcopy(SLIDE2_SCREEN_RAM, active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE_SIZE);
+                lcopy(SLIDE2_COLOUR_RAM, active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE_SIZE);
 
-                // // Switch active slide (now previous slide)
-                // if (active_slide) // SLIDE1 active
-                //     active_slide = 0;
-                // else // SLIDE0 active
-                //     active_slide = 1;
-                // videoSetActiveSlideBuffer(active_slide);
+                // Switch active slide (now previous slide)
+                if (active_slide) // SLIDE1 active
+                    active_slide = 0;
+                else // SLIDE0 active
+                    active_slide = 1;
 
-                // for (READ_KEY() = 0; READ_KEY() != KEY_RETURN;) TOGGLE_BACK();
+                // Change the screen address
+                videoSetActiveGraphicsBuffer(active_slide);
+                // Don't change the render buffer address yet
+                // so we can pre-render the previous slide without
+                // affecting the current slide
+
+                // for (READ_KEY() = 0; READ_KEY() != KEY_TAB;) TOGGLE_BACK();
 
                 // for (y = 0; y < EDITOR_MAX_LINES; ++y)
                 //     console_write_au32(text_line_start[y]);
 
-                // copy_trigger_start = slide_start[slide_number];
-                // copy_trigger_end = slide_start[slide_number+3];
-                // editor_save_slide();
-                // editor_get_line_info();
                 --slide_number;
-                editor_load_slide();
+                // Pre-render the previous slide
+                if (slide_number)
+                {
+                    videoSetActiveRenderBuffer(2);
+                    --slide_number;
+                    editor_load_slide();
+                    ++slide_number;
+                }
+
+                // Change the render buffer address
+                videoSetActiveRenderBuffer(active_slide);
             } //else TOGGLE_BACK();
         } break;
         case 0x03:
         case 0xF5: {
             // XXX - Reload editor buffer for current slide
             // XXX - Unhide cursor
+            // text_line = 0;
+            // // editor_fetch_line();
+            // cursor_col = 0;
+            // editor_update_cursor();
+            // present_mode = 0;
+            present_mode = 0;
+            editor_load_slide();
             text_line = 0;
             editor_fetch_line();
-            cursor_col = 0;
-            editor_update_cursor();
-            present_mode = 0;
         } break;
         default: break;
     }

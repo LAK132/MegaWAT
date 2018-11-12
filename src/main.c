@@ -40,9 +40,6 @@ void megamain()
     // Turn off write protection so we can use more RAM
     toggle_write_protection();
 
-    videoSetSlideMode();
-    videoSetActiveSlideBuffer(0);
-
 #if 0
     // Draw alpha gradient for testing
     for (x = 0; x < 255; ++x)
@@ -66,19 +63,13 @@ void megamain()
     while (1)
         POKE(0xd020U, PEEK(0xd012U));
 #endif
+    editor_initialise();
 
     // Then patch the pointers in the font(s) to be correct
     current_font = ASSET_RAM;
     patchFonts();
     setFont(0);
 
-    // Make sure they are clear
-    active_rbuffer = &screen_rbuffer;
-    clearRenderBuffer();
-    active_rbuffer = &scratch_rbuffer;
-    clearRenderBuffer();
-
-    editor_initialise();
     editor_show_cursor();
 
     #ifdef __MEGA65__
