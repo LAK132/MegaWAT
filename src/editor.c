@@ -175,7 +175,7 @@ void editor_fetch_line(uint8_t line_num)
     // Check if it's past the end of the buffer
     if (k > editor_buffer_size) k = editor_buffer_size;
 
-    w = cursor_col;
+    c = cursor_col;
     cursor_col = 0xFF;
     for (m = text_line_start[line_num]; editor_buffer[m] && m < k; ++m)
     {
@@ -222,7 +222,7 @@ void editor_fetch_line(uint8_t line_num)
             } break;
         }
     }
-    cursor_col = w;
+    cursor_col = c;
 }
 
 void editor_show_cursor(void)
