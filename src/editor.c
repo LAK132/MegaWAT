@@ -410,11 +410,6 @@ void editor_process_special_key(uint8_t key)
                 lcopy(active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE2_SCREEN_RAM, SLIDE_SIZE);
                 lcopy(active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE2_COLOUR_RAM, SLIDE_SIZE);
 
-                // for (READ_KEY() = 0; READ_KEY() != KEY_TAB;) TOGGLE_BACK();
-
-                // for (y = 0; y < EDITOR_MAX_LINES; ++y)
-                //     console_write_au32(text_line_start[y]);
-
                 ++slide_number;
                 // Pre-render the next slide
                 if (slide_number + 1 < EDITOR_END_SLIDE)
@@ -448,11 +443,6 @@ void editor_process_special_key(uint8_t key)
                 // so we can pre-render the previous slide without
                 // affecting the current slide
 
-                // for (READ_KEY() = 0; READ_KEY() != KEY_TAB;) TOGGLE_BACK();
-
-                // for (y = 0; y < EDITOR_MAX_LINES; ++y)
-                //     console_write_au32(text_line_start[y]);
-
                 --slide_number;
                 // Pre-render the previous slide
                 if (slide_number)
@@ -471,11 +461,6 @@ void editor_process_special_key(uint8_t key)
         case 0xF5: {
             // XXX - Reload editor buffer for current slide
             // XXX - Unhide cursor
-            // text_line = 0;
-            // // editor_fetch_line();
-            // cursor_col = 0;
-            // editor_update_cursor();
-            // present_mode = 0;
             present_mode = 0;
             editor_load_slide();
             text_line = 0;
@@ -662,8 +647,17 @@ void editor_poll_keyboard(void)
             for (l = 0; l < 25000; ++l)
                 continue;
         }
-        else if (PEEK(0xD012U) > 0xF8)
-            if (!(cursor_toggle += 0x10))
-                POKE(0xD015U, (PEEK(0xD015U) ^ 0x01) & 0x0f); // Toggle cursor on/off quickly
+        else
+        {
+            if (present_mode)
+            {
+                POKE(0xD015, PEEK(0xD015U) & 0xFE);
+            }
+            else if (PEEK(0xD012U) > 0xF8)
+            {
+                if (!(cursor_toggle += 0x10))
+                    POKE(0xD015U, (PEEK(0xD015U) ^ 0x01) & 0x0f); // Toggle cursor on/off quickly
+            }
+        }
     }
 }
