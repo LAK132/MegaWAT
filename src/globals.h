@@ -35,7 +35,7 @@
 #define ATTRIB_ALT_PALETTE (ATTRIB_BOLD | ATTRIB_REVERSE)
 
 // 16 bit colour ram attributes
-#define ATTRIB_TRIM_TOP    0x8
+#define ATTRIB_4BIT        0x08
 #define ATTRIB_GOTO        0x10
 #define ATTRIB_ALPHA_BLEND 0x20
 #define ATTRIB_HORI_FLIP   0x40
