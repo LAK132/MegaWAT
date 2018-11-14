@@ -32,6 +32,7 @@ uint32_t editor_buffer_size = sizeof(editor_buffer) / sizeof(uint16_t);
 #define EDITOR_MAX_SLIDES (EDITOR_END_SLIDE + 1)
 ptr_t slide_start[EDITOR_MAX_SLIDES];
 uint32_t slide_number = 0;
+uint8_t slide_colour[EDITOR_MAX_LINES];
 
 int8_t maxlen = 80;
 uint8_t key = 0;
@@ -92,6 +93,9 @@ void editor_initialise(void)
     slide_start[0] = SLIDE_DATA;
     for (y = 1; y < EDITOR_MAX_SLIDES; ++y)
         slide_start[y] = slide_start[y-1] + (EDITOR_END_LINE * 2);
+
+    // default slide colours to 0x6
+    lfill((ptr_t)&slide_colour[0], 0x6, sizeof(slide_colour));
 }
 
 void editor_stash_line(void)
@@ -417,7 +421,12 @@ void editor_next_slide(void)
 
         // Change the render buffer address
         videoSetActiveRenderBuffer(active_slide);
-    } //else TOGGLE_BACK();
+
+        // Set the border colour
+        POKE(0xD020, slide_colour[slide_number]);
+        // Set the background colour
+        POKE(0xD021, slide_colour[slide_number]);
+    }
 }
 
 void editor_previous_slide(void)
@@ -452,7 +461,12 @@ void editor_previous_slide(void)
 
         // Change the render buffer address
         videoSetActiveRenderBuffer(active_slide);
-    } //else TOGGLE_BACK();
+
+        // Set the border colour
+        POKE(0xD020, slide_colour[slide_number]);
+        // Set the background colour
+        POKE(0xD021, slide_colour[slide_number]);
+    }
 }
 
 void editor_process_special_key(uint8_t key)
@@ -512,6 +526,25 @@ void editor_process_special_key(uint8_t key)
         case 0x12: text_colour ^= ATTRIB_REVERSE; break;
         // CONTROL-b for blink
         case 0x02: text_colour ^= ATTRIB_BLINK; break;
+
+        // Background colour
+        case 0xF1: {
+            slide_colour[slide_number] = 0xF & (slide_colour[slide_number] + 1);
+            // Set the border colour
+            POKE(0xD020, slide_colour[slide_number]);
+            // Set the background colour
+            POKE(0xD021, slide_colour[slide_number]);
+        } break;
+        case 0xF2: {
+            if (0xF & slide_colour[slide_number])
+                slide_colour[slide_number] = 0xF & (slide_colour[slide_number] - 1);
+            else
+                slide_colour[slide_number] = 0x0F;
+            // Set the border colour
+            POKE(0xD020, slide_colour[slide_number]);
+            // Set the background colour
+            POKE(0xD021, slide_colour[slide_number]);
+        } break;
 
         // Backspace (with CONTROL for DEL?)
         case 0x14: {
@@ -753,12 +786,15 @@ void editor_poll_keyboard(void)
                 editor_process_special_key(key);
 
             editor_update_cursor();
+
+            // Make sure cursor is on when typing
+            POKE(0xD015U, PEEK(0xD015U) | 0x01);
         }
         else
         {
             if (present_mode)
             {
-                POKE(0xD015, PEEK(0xD015U) & 0xFE);
+                POKE(0xD015U, PEEK(0xD015U) & 0xFE);
             }
             else if (PEEK(0xD012U) > 0xF8)
             {
