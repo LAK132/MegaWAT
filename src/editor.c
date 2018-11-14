@@ -809,6 +809,8 @@ void editor_poll_keyboard(void)
                 else
                     // Disable sprite after it has faded out
                     POKE(0xD015U,PEEK(0xD015U)&0xFD);
+		// Take a little time so it doesn't get retriggered so fast
+		for(key=0;key<16;++key) continue;
             }
         }
     }
