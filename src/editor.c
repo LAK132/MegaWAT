@@ -42,6 +42,7 @@ uint32_t sram, cram;
 uint16_t cursor_toggle = 0;
 
 void editor_show_slide_number(void);
+void editor_hide_slide_number(void);
 
 void editor_insert_line(uint8_t before)
 {
@@ -255,9 +256,9 @@ void editor_show_cursor(void)
     else
         POKE(0xD010U, 0);
     if (xx & 0x200)
-      POKE(0xD05FU, PEEK(0xD05FU)|0x01);
+        POKE(0xD05FU, PEEK(0xD05FU)|0x01);
     else
-      POKE(0xD05FU, PEEK(0xD05FU)&0xfe);
+        POKE(0xD05FU, PEEK(0xD05FU)&0xfe);
 }
 
 void editor_update_cursor(void)
@@ -287,9 +288,9 @@ void editor_update_cursor(void)
     else
         POKE(0xD010U, 0);
     if (xx & 0x200)
-      POKE(0xD05FU, PEEK(0xD05FU)|0x01);
+        POKE(0xD05FU, PEEK(0xD05FU)|0x01);
     else
-      POKE(0xD05FU, PEEK(0xD05FU)&0xfe);
+        POKE(0xD05FU, PEEK(0xD05FU)&0xfe);
 }
 
 void editor_insert_codepoint(uint16_t code_point)
@@ -385,6 +386,75 @@ void editor_load_slide(void)
     editor_update_cursor();
 }
 
+void editor_next_slide(void)
+{
+    if (slide_number + 1 < EDITOR_END_SLIDE)
+    {
+        // Switch active slide (next slide)
+        if (active_slide) // SLIDE1 active
+            active_slide = 0;
+        else // SLIDE0 active
+            active_slide = 1;
+
+        // Change the screen address
+        videoSetActiveGraphicsBuffer(active_slide);
+        // Don't change the render buffer address yet
+        // so we can pre-render the next slide without
+        // affecting the current slide
+
+        // Move current slide (SLIDE0/1) to previous slide (SLIDE2)
+        lcopy(active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE2_SCREEN_RAM, SLIDE_SIZE);
+        lcopy(active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE2_COLOUR_RAM, SLIDE_SIZE);
+
+        ++slide_number;
+        // Pre-render the next slide
+        if (slide_number + 1 < EDITOR_END_SLIDE)
+        {
+            ++slide_number;
+            editor_load_slide();
+            --slide_number;
+        }
+
+        // Change the render buffer address
+        videoSetActiveRenderBuffer(active_slide);
+    } //else TOGGLE_BACK();
+}
+
+void editor_previous_slide(void)
+{
+    if (slide_number)
+    {
+        // Move previous slide (SLIDE2) to next slide (SLIDE1/0)
+        lcopy(SLIDE2_SCREEN_RAM, active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE_SIZE);
+        lcopy(SLIDE2_COLOUR_RAM, active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE_SIZE);
+
+        // Switch active slide (now previous slide)
+        if (active_slide) // SLIDE1 active
+            active_slide = 0;
+        else // SLIDE0 active
+            active_slide = 1;
+
+        // Change the screen address
+        videoSetActiveGraphicsBuffer(active_slide);
+        // Don't change the render buffer address yet
+        // so we can pre-render the previous slide without
+        // affecting the current slide
+
+        --slide_number;
+        // Pre-render the previous slide
+        if (slide_number)
+        {
+            videoSetActiveRenderBuffer(2);
+            --slide_number;
+            editor_load_slide();
+            ++slide_number;
+        }
+
+        // Change the render buffer address
+        videoSetActiveRenderBuffer(active_slide);
+    } //else TOGGLE_BACK();
+}
+
 void editor_process_special_key(uint8_t key)
 {
     k = 0; // if the cursor was moved
@@ -394,79 +464,11 @@ void editor_process_special_key(uint8_t key)
         case 0x20:
         case 0x11:
         case 0x1D: { // next slide
-            if (slide_number + 1 < EDITOR_END_SLIDE)
-            {
-                // Switch active slide (next slide)
-                if (active_slide) // SLIDE1 active
-                    active_slide = 0;
-                else // SLIDE0 active
-                    active_slide = 1;
-
-                // Change the screen address
-                videoSetActiveGraphicsBuffer(active_slide);
-                // Don't change the render buffer address yet
-                // so we can pre-render the next slide without
-                // affecting the current slide
-
-                // Move current slide (SLIDE0/1) to previous slide (SLIDE2)
-                lcopy(active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE2_SCREEN_RAM, SLIDE_SIZE);
-                lcopy(active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE2_COLOUR_RAM, SLIDE_SIZE);
-
-                ++slide_number;
-		editor_show_slide_number();
-                // Pre-render the next slide
-                if (slide_number + 1 < EDITOR_END_SLIDE)
-                {
-                    ++slide_number;
-                    editor_load_slide();
-                    --slide_number;
-                }
-
-                // Change the render buffer address
-                videoSetActiveRenderBuffer(active_slide);
-            } //else TOGGLE_BACK();
-	    else
-	      // At end of slides, so just show slide number again
-	      editor_show_slide_number();
-
+            editor_next_slide();
         } break;
         case 0x91:
         case 0x9D: { // previous slide
-            if (slide_number)
-            {
-                // Move previous slide (SLIDE2) to next slide (SLIDE1/0)
-                lcopy(SLIDE2_SCREEN_RAM, active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE_SIZE);
-                lcopy(SLIDE2_COLOUR_RAM, active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE_SIZE);
-
-                // Switch active slide (now previous slide)
-                if (active_slide) // SLIDE1 active
-                    active_slide = 0;
-                else // SLIDE0 active
-                    active_slide = 1;
-
-                // Change the screen address
-                videoSetActiveGraphicsBuffer(active_slide);
-                // Don't change the render buffer address yet
-                // so we can pre-render the previous slide without
-                // affecting the current slide
-
-                --slide_number;
-		editor_show_slide_number();
-		// Pre-render the previous slide
-                if (slide_number)
-                {
-                    videoSetActiveRenderBuffer(2);
-                    --slide_number;
-                    editor_load_slide();
-                    ++slide_number;
-                }
-
-                // Change the render buffer address
-                videoSetActiveRenderBuffer(active_slide);
-            } //else TOGGLE_BACK();
-	    else
-	      // At end of slides, so just show slide number again
-	      editor_show_slide_number();
+            editor_previous_slide();
         } break;
         case 0x03:
         case 0xF5: {
@@ -474,9 +476,9 @@ void editor_process_special_key(uint8_t key)
             // XXX - Unhide cursor
             present_mode = 0;
             editor_load_slide();
-	    editor_show_slide_number();
             text_line = 0;
             editor_fetch_line();
+            editor_show_slide_number();
         } break;
         default: break;
     }
@@ -604,18 +606,28 @@ void editor_process_special_key(uint8_t key)
                 k = 1;
             }
         } break;
+        case 0xC2:
+        case 0xCE:
+        case 0xED:
+        case 0xEE: { // change slide
+            editor_stash_line();
+            editor_save_slide();
+            if (key == 0xC2 || ((key == 0xED || key == 0xEE) && (mod & MOD_SHIFT)))
+                editor_previous_slide();
+            else
+                editor_next_slide();
+            editor_load_slide();
+            editor_fetch_line();
+            editor_show_slide_number();
+        } break;
         case 0xF5: {
             // XXX - Hide cursor
             // XXX - Backup editor buffer
             // XXX - Render next and previous slides
-            copy_trigger_start = slide_start[slide_number];
-            copy_trigger_end = slide_start[slide_number+3];
             editor_stash_line();
             editor_save_slide();
-            copy_trigger_start = 0;
-            copy_trigger_end = 0;
             present_mode = 1;
-	    editor_show_slide_number();
+            editor_hide_slide_number();
         } break;
         default: break;
     }
@@ -640,7 +652,7 @@ void editor_show_slide_number(void)
   // Clear sprite (8x21 bytes) and write
   // info in it
   lfill(0x0500,0x00,0x100);
-  
+
   // Produce message to show on the sprite
   slide_num_message[6]='0';
   remainder=slide_number+1;
@@ -657,15 +669,15 @@ void editor_show_slide_number(void)
   if (present_mode) {
     for(remainder=0;remainder<8;remainder++)
       for(yy=0;yy<8;yy++)
-	POKE(0x0540+remainder+yy*8,lpeek(0x2D800+(present_mode_message[remainder]*8)+yy));
+    POKE(0x0540+remainder+yy*8,lpeek(0x2D800+(present_mode_message[remainder]*8)+yy));
   } else {
     // Display editing in reverse text, so that it is more obvious
     for(remainder=0;remainder<8;remainder++)
       for(yy=0;yy<8;yy++)
-	POKE(0x0540+remainder+yy*8,lpeek(0x2DC00+(edit_mode_message[remainder]*8)+yy));
+    POKE(0x0540+remainder+yy*8,lpeek(0x2DC00+(edit_mode_message[remainder]*8)+yy));
   }
 
-  
+
   // Set sprite data fetch area to $0500
   POKE(2041,0x0500/0x40);
   // Extended width (64 pixels wide)
@@ -690,11 +702,25 @@ void editor_show_slide_number(void)
   // Start with message fully faded in
   POKE(0xD074U,2);  // Make sprite alpha blended
   POKE(0xD075U,0xFF); // Alpha blend set to fully visible
-  
+
+}
+
+void editor_hide_slide_number(void)
+{
+    lfill(0x0500,0x00,0x100);
 }
 
 void editor_poll_keyboard(void)
 {
+    // make sure slide 2 is preloaded correctly
+    editor_save_slide();
+    editor_next_slide();
+    editor_load_slide();
+    editor_save_slide();
+    editor_previous_slide();
+    editor_load_slide();
+
+    editor_show_slide_number();
     #ifndef __MEGA65__
     while (key != KEY_ESC)
     #else
@@ -702,14 +728,20 @@ void editor_poll_keyboard(void)
     #endif
     {
         // TOGGLE_BACK();
-        mod = READ_MOD();
         key = READ_KEY();
         if (key)
         {
+            // Allow enough time for modifier flags to get asserted
+            mod = READ_MOD();
+            for (m = 0; m < 3000; ++m)
+                mod |= READ_MOD();
+
             while (READ_KEY())
             {
-                READ_KEY() = 1;
+                // read modifier before clearing the key
                 mod |= READ_MOD();
+                // clear the key
+                READ_KEY() = 1;
             }
 
             // Control+SHIFT <0-9> = select font
@@ -721,9 +753,6 @@ void editor_poll_keyboard(void)
                 editor_process_special_key(key);
 
             editor_update_cursor();
-
-            for (l = 0; l < 25000; ++l)
-                continue;
         }
         else
         {
@@ -735,15 +764,15 @@ void editor_poll_keyboard(void)
             {
                 if (!(cursor_toggle += 0x10))
                     POKE(0xD015U, (PEEK(0xD015U) ^ 0x01) & 0x0f); // Toggle cursor on/off quickly
-	    }
-	    if (PEEK(0xD012U) == 0xE0)
-	    {
-		// Fade out slide indicator
-		if (PEEK(0xD075U)) POKE(0xD075U,PEEK(0xD075U)-1);
-		else {
-		  // Disable sprite after it has faded out
-		  POKE(0xD015U,PEEK(0xD015U)&0xFD);
-		}
+            }
+            if (PEEK(0xD012U) == 0xE0)
+            {
+                // Fade out slide indicator
+                if (PEEK(0xD075U))
+                    POKE(0xD075U,PEEK(0xD075U)-1);
+                else
+                    // Disable sprite after it has faded out
+                    POKE(0xD015U,PEEK(0xD015U)&0xFD);
             }
         }
     }
