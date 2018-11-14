@@ -47,6 +47,9 @@ extern render_buffer_t screen_rbuffer;
 extern render_buffer_t scratch_rbuffer;
 extern render_buffer_t *active_rbuffer;
 
+extern uint8_t clear_pattern[4];
+extern uint8_t end_of_line_pattern[2];
+
 void deleteGlyph(uint8_t glyph_num);
 void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alpha_and_extras, uint8_t position);
 void setFont(uint8_t id);

@@ -18,6 +18,7 @@ uint8_t text_line_count = 1;
 // uint8_t next_row = 0;
 #define CURRENT_ROW (text_line_first_rows[text_line])
 #define NEXT_ROW (text_line_first_rows[text_line + 1])
+#define END_ROW (text_line_first_rows[EDITOR_END_LINE])
 #define CURRENT_ROW_HEIGHT (NEXT_ROW - CURRENT_ROW)
 
 // XXX For now, have a fixed 128x30 buffer for text
@@ -182,9 +183,12 @@ void editor_stash_line(void)
     }
 }
 
+uint8_t above, below;
 void editor_render_glyph(uint16_t code_point)
 {
     active_rbuffer = &scratch_rbuffer;
+    above = scratch_rbuffer.max_above;
+    below = scratch_rbuffer.max_below;
     renderGlyph(code_point, text_colour, ATTRIB_ALPHA_BLEND, cursor_col);
 
     // Check if this code point grew the height of the line.
@@ -196,16 +200,79 @@ void editor_render_glyph(uint16_t code_point)
         if (s > 0)
         {
             // Yes, it grew.
-            // Adjust first row for all following lines
-            for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
-                text_line_first_rows[y] += s;
-
             // Now shift everything down (on the SCREEN buffer)
-            l = text_line_first_rows[text_line] * screen_width;
+            l = NEXT_ROW * screen_width;
             sram = screen_rbuffer.screen_ram + l;
             cram = screen_rbuffer.colour_ram + l;
             lcopy_safe(sram, sram + screen_width, screen_rbuffer.screen_size - (l + screen_width));
             lcopy_safe(cram, cram + screen_width, screen_rbuffer.screen_size - (l + screen_width));
+
+            POKE(0xD021U,0);
+            for (i = 0; i < 1000; ++i) w = i * i;
+            for (READ_KEY() = 0; READ_KEY() != KEY_TAB;);// TOGGLE_BACK();
+            while (READ_KEY() == KEY_TAB) READ_KEY() = 1;
+
+            l = CURRENT_ROW * screen_width;
+            sram = screen_rbuffer.screen_ram + l;
+            cram = screen_rbuffer.colour_ram + l;
+
+            if (scratch_rbuffer.max_above > above)
+            {
+                lcopy_safe(sram, sram + screen_width, CURRENT_ROW_HEIGHT * screen_width);
+                lcopy_safe(cram, cram + screen_width, CURRENT_ROW_HEIGHT * screen_width);
+                console_write_astr("moves");
+            }
+            POKE(0xD021U,2);
+
+            for (i = 0; i < 1000; ++i) w = i * i;
+            for (READ_KEY() = 0; READ_KEY() != KEY_RETURN;);// TOGGLE_BACK();
+            while (READ_KEY() == KEY_RETURN) READ_KEY() = 1;
+
+            POKE(0xD021U,3);
+
+            if (scratch_rbuffer.max_below > below)
+            {
+                console_write_astr("max_below > below");
+                console_write_au32(scratch_rbuffer.max_below);
+                console_write_au32(below);
+                console_write_au32(scratch_rbuffer.max_above);
+                // Line hangs lower than before
+                // Copy some colour and kerning data from base row
+
+                sram = screen_rbuffer.screen_ram + (((CURRENT_ROW + scratch_rbuffer.max_above + below) - 1) * screen_width);
+                cram = screen_rbuffer.colour_ram + (((CURRENT_ROW + scratch_rbuffer.max_above + below) - 1) * screen_width);
+                for (i = 0; i < screen_width; i += 2)
+                {
+                    lpoke(sram + screen_width + i, 0xE0 & lpeek(sram + i));
+                    lpoke(cram + screen_width + i, 0x7F & lpeek(cram + i));
+                    lpoke(cram + screen_width + i + 1, lpeek(cram + i + 1));
+                }
+
+                for (i = 0; i < 1000; ++i) w = i * i;
+                for (READ_KEY() = 0; READ_KEY() != KEY_TAB;) TOGGLE_BACK();
+                while (READ_KEY() == KEY_TAB) READ_KEY() = 1;
+
+                console_write_newline();
+                console_write_au32(sram);
+                console_write_au32(sram+screen_width);
+                console_write_newline();
+                console_write_au32(cram);
+                console_write_au32(cram+screen_width);
+                x = scratch_rbuffer.max_below - (below + 1);
+                console_write_au8(x);
+                sram += screen_width;
+                cram += screen_width;
+                lcopy_safe(sram + screen_width, sram, x);
+                lcopy_safe(cram + screen_width, cram, x);
+                console_write_newline();
+            for (i = 0; i < 1000; ++i) w = i * i;
+            for (READ_KEY() = 0; READ_KEY() != KEY_RETURN;) TOGGLE_BACK();
+            while (READ_KEY() == KEY_RETURN) READ_KEY() = 1;
+            }
+
+            // Adjust first row for all following lines
+            for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
+                text_line_first_rows[y] += s;
         }
     }
 }
@@ -553,12 +620,12 @@ void editor_process_special_key(uint8_t key)
                 active_rbuffer = &scratch_rbuffer;
                 --cursor_col;
                 deleteGlyph(cursor_col);
-                screen_rbuffer.rows_used = NEXT_ROW;
+                // screen_rbuffer.rows_used = NEXT_ROW;
 
                 // XXX - This is a hack to prevent in-line tearing
                 // XXX - Figure out what is actually causing the issue
-                editor_stash_line();
-                editor_fetch_line();
+                // editor_stash_line();
+                // editor_fetch_line();
                 editor_update_cursor();
                 screen_rbuffer.rows_used = CURRENT_ROW;
                 outputLineToRenderBuffer();
@@ -569,20 +636,45 @@ void editor_process_special_key(uint8_t key)
                     // So shuffle up the rows below, and fill in the
                     // bottom of the screen.
 
+                    x = NEXT_ROW - screen_rbuffer.rows_used;
+
                     // Copy rows up
-                    lcopy(screen_rbuffer.screen_ram + NEXT_ROW * screen_width,
+                    lcopy(screen_rbuffer.screen_ram + (NEXT_ROW * screen_width),
                         screen_rbuffer.screen_ram + (screen_rbuffer.rows_used * screen_width),
-                        screen_rbuffer.screen_size - (screen_width * (60 - NEXT_ROW))
+                        screen_rbuffer.screen_size - ((END_ROW - NEXT_ROW) * screen_width)
                     );
-                    lcopy(screen_rbuffer.colour_ram + NEXT_ROW * screen_width,
+                    lcopy(screen_rbuffer.colour_ram + (NEXT_ROW * screen_width),
                         screen_rbuffer.colour_ram + (screen_rbuffer.rows_used * screen_width),
-                        screen_rbuffer.screen_size - (screen_width * (60 - NEXT_ROW))
+                        screen_rbuffer.screen_size - ((END_ROW - NEXT_ROW) * screen_width)
                     );
+
+                    m = END_ROW * screen_width;
+                    // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
+                    lcopy((ptr_t)&clear_pattern[0],
+                        screen_rbuffer.screen_ram + m,
+                        sizeof(clear_pattern)
+                    );
+                    // Fill out to whole line
+                    lcopy(screen_rbuffer.screen_ram + m,
+                        screen_rbuffer.screen_ram + m + sizeof(clear_pattern),
+                        (screen_width - sizeof(clear_pattern))
+                    );
+                    // Then put end of line marker to stop displaying tiles from next line
+                    lcopy((ptr_t)&end_of_line_pattern[0],
+                        screen_rbuffer.screen_ram + m + (screen_width - sizeof(end_of_line_pattern)),
+                        sizeof(end_of_line_pattern)
+                    );
+                    // Then copy it down over the next 59 rows.
+                    lcopy(screen_rbuffer.screen_ram + m,
+                        screen_rbuffer.screen_ram + m + screen_width,
+                        EDITOR_END_LINE - END_ROW
+                    );
+                    // Fill the rest of the colour ram with 0x00
+                    lfill(screen_rbuffer.colour_ram + m, 0x00, EDITOR_END_LINE - END_ROW);
 
                     // XXX Fill in bottom of screen
 
                     // Adjust starting rows for following lines
-                    x = NEXT_ROW - screen_rbuffer.rows_used;
                     for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
                         text_line_first_rows[y] -= x;
                 }

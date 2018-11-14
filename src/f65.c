@@ -81,11 +81,11 @@ void clearRenderBuffer(void)
     lfill(active_rbuffer->colour_ram, 0, active_rbuffer->screen_size);
 
     // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
-    lcopy((ptr_t)&clear_pattern, active_rbuffer->screen_ram, sizeof(clear_pattern));
+    lcopy((ptr_t)&clear_pattern[0], active_rbuffer->screen_ram, sizeof(clear_pattern));
     // Fill out to whole line
     lcopy(active_rbuffer->screen_ram, active_rbuffer->screen_ram + sizeof(clear_pattern), (screen_width - sizeof(clear_pattern)));
     // Then put end of line marker to stop displaying tiles from next line
-    lcopy((ptr_t)&end_of_line_pattern, active_rbuffer->screen_ram + (screen_width - sizeof(end_of_line_pattern)), sizeof(end_of_line_pattern));
+    lcopy((ptr_t)&end_of_line_pattern[0], active_rbuffer->screen_ram + (screen_width - sizeof(end_of_line_pattern)), sizeof(end_of_line_pattern));
     // Then copy it down over the next 59 rows.
     lcopy(active_rbuffer->screen_ram, active_rbuffer->screen_ram + screen_width, active_rbuffer->screen_size - screen_width);
 
@@ -161,21 +161,17 @@ void deleteGlyph(uint8_t glyph_num)
     rows_below = active_rbuffer->max_below;
 
     // Get start address for the first row we have to copy.
-    screen = active_rbuffer->screen_ram;
-    colour = active_rbuffer->colour_ram;
-    for (y = rows_above; y < active_rbuffer->baseline_row; ++y)
-    {
-        screen += screen_width;
-        colour += screen_width;
-    }
-    // then advance to the first unused column
-    screen += active_rbuffer->glyphs[glyph_num].first_column * char_size;
-    colour += active_rbuffer->glyphs[glyph_num].first_column * char_size;
+    m = ((active_rbuffer->baseline_row - rows_above) * screen_width) +
+        (active_rbuffer->glyphs[glyph_num].first_column * char_size);
+    screen = active_rbuffer->screen_ram + m;
+    colour = active_rbuffer->colour_ram + m;
+
     x = active_rbuffer->glyphs[glyph_num].columns * char_size;
-    bytes_per_row = (active_rbuffer->columns_used - active_rbuffer->glyphs[glyph_num].first_column) * char_size;
+    bytes_per_row = (active_rbuffer->columns_used -
+        (active_rbuffer->glyphs[glyph_num].first_column + active_rbuffer->glyphs[glyph_num].columns)) * char_size;
 
     // Copy remaining glyphs on the line
-    if ((glyph_num + 1) != active_rbuffer->glyph_count)
+    if ((glyph_num + 1) < active_rbuffer->glyph_count)
     {
         for (y = 0; y < (rows_above + rows_below); ++y)
         {
@@ -191,7 +187,7 @@ void deleteGlyph(uint8_t glyph_num)
 
     // Note if we need to recalculate rows above and rows below
     x = (active_rbuffer->glyphs[glyph_num].rows_above == rows_above) ||
-                (active_rbuffer->glyphs[glyph_num].rows_below == rows_below)
+        (active_rbuffer->glyphs[glyph_num].rows_below == rows_below)
             ? 1
             : 0;
 
@@ -199,20 +195,24 @@ void deleteGlyph(uint8_t glyph_num)
     active_rbuffer->columns_used -= active_rbuffer->glyphs[glyph_num].columns;
 
     // Now erase the tail of each line
-    screen = active_rbuffer->screen_ram + active_rbuffer->columns_used * char_size;
-    colour = active_rbuffer->colour_ram + active_rbuffer->columns_used * char_size;
-    bytes_per_row = active_rbuffer->glyphs[glyph_num].columns * char_size;
+    m = ((active_rbuffer->baseline_row - rows_above) * screen_width) +
+        (active_rbuffer->columns_used * char_size);
+    screen = active_rbuffer->screen_ram + m;
+    colour = active_rbuffer->colour_ram + m;
 
-    for (y = rows_above; y < active_rbuffer->baseline_row; ++y)
-    {
-        screen += screen_width;
-        colour += screen_width;
-    }
+    bytes_per_row = active_rbuffer->glyphs[glyph_num].columns * char_size;
 
     for (y = 0; y < (rows_above + rows_below); ++y)
     {
         // Clear screen data
-        lfill(screen, 0x20, bytes_per_row);
+        // lfill(screen, 0x20, bytes_per_row);
+
+        // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
+        lcopy((ptr_t)&clear_pattern[0], screen, sizeof(clear_pattern) < bytes_per_row ? sizeof(clear_pattern) : bytes_per_row);
+        // Fill out to whole line
+        if (bytes_per_row > sizeof(clear_pattern))
+            lcopy(screen, screen + sizeof(clear_pattern), (bytes_per_row - sizeof(clear_pattern)));
+
         // Clear colour data
         lfill(colour, 0x00, bytes_per_row);
 
@@ -451,6 +451,7 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
         active_rbuffer->max_above = rows_above;
     if (rows_below > active_rbuffer->max_below)
         active_rbuffer->max_below = rows_below;
+    // active_rbuffer->buffer_height = active_rbuffer->max_above + active_rbuffer->max_below;
 
     // then apply trim to entire column
     trim_pixels = trim_pixels << 5;

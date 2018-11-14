@@ -1,5 +1,7 @@
 # Editor mode
-F1: Toggle low-res/high-res mode (per slide)
+F1: Next background colour
+F2: Previous background colour
+F3: Toggle low-res/high-res mode (per slide)
 F5: Enter presentation mode
 Home: Go to top left of slide
 Help (F15): Help
@@ -20,6 +22,7 @@ MEGA+Left/Up: Previous slide
 CTRL+U: Toggle underline
 CTRL+R: Toggle reverse
 CTRL+B: Toggle blink
+
 
 CTRL+<1-8>: Colour selection
 MEGA+<1-8>: Colour selection
