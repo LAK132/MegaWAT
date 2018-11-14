@@ -35,14 +35,18 @@ void main(void)
 void megamain()
 #endif
 {
-  m65_io_enable();
+    m65_io_enable();
+    // disable keyboard interupt
+    // POKE(0x0314, 0x81);
+    // disable all maskable interupt
+    __asm__("sei");
 
     // Turn off write protection so we can use more RAM
-  toggle_write_protection();
+    toggle_write_protection();
 
-  //    while (1)
-  //      POKE(0xd020U, PEEK(0xd020U)+1);
-    
+    // while (1)
+    //     POKE(0xd020U, PEEK(0xd020U)+1);
+
     editor_initialise();
 
     // Then patch the pointers in the font(s) to be correct
