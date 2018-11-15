@@ -253,7 +253,7 @@ void deleteGlyph(uint8_t glyph_num)
 void replaceGlyph(uint8_t glyph_num, uint16_t code_point);
 void insertGlyph(uint8_t glyph_num, uint16_t code_point);
 
-uint8_t v1, v2, v3, v4;
+uint8_t v1, v2, v3, v4, v5;
 void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alpha_and_extras, uint8_t position)
 {
     if (!active_rbuffer)
@@ -440,6 +440,24 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
             colour -= screen_width;
         }
     }
+    else
+    {
+        // Buffer is taller than the inserted glyph, make sure the top still has kerning info
+        l = (active_rbuffer->baseline_row - rows_above) * screen_width;
+        colour = active_rbuffer->colour_ram + l;
+        screen = active_rbuffer->screen_ram + l;
+        // Only mess with screen data once we're out of character range
+        for (v5 = rows_above; v5 < active_rbuffer->max_above; ++v5)
+        {
+            for (y = v1; y < v2; y += 2)
+            {
+                lpoke((screen - screen_width) + y, 0x20);
+                lpoke((screen - screen_width) + y + 1, 0xE0 & lpeek(screen + y + 1));
+            }
+            screen -= screen_width;
+            colour -= screen_width;
+        }
+    }
 
     if (rows_below > active_rbuffer->max_below)
     {
@@ -464,6 +482,24 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
                     lpoke(screen + screen_width + y, 0x20);
                     lpoke(screen + screen_width + y + 1, 0xE0 & lpeek(screen + y + 1));
                 }
+            }
+            screen += screen_width;
+            colour += screen_width;
+        }
+    }
+    else
+    {
+        // Buffer hangs lower than the character, make sure kerning information goes all the way down
+        l = ((active_rbuffer->baseline_row + rows_below) - 1) * screen_width;
+        colour = active_rbuffer->colour_ram + l;
+        screen = active_rbuffer->screen_ram + l;
+        // Only mess with screen data once we're out of character range
+        for (v5 = rows_below; v5 < active_rbuffer->max_below; ++v5)
+        {
+            for (y = v1; y < v2; y += 2)
+            {
+                lpoke(screen + screen_width + y, 0x20);
+                lpoke(screen + screen_width + y + 1, 0xE0 & lpeek(screen + y + 1));
             }
             screen += screen_width;
             colour += screen_width;
