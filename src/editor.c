@@ -200,75 +200,12 @@ void editor_render_glyph(uint16_t code_point)
         if (s > 0)
         {
             // Yes, it grew.
-            // Now shift everything down (on the SCREEN buffer)
+            // Now shift everything below this line down (on the SCREEN buffer)
             l = NEXT_ROW * screen_width;
             sram = screen_rbuffer.screen_ram + l;
             cram = screen_rbuffer.colour_ram + l;
-            lcopy_safe(sram, sram + screen_width, screen_rbuffer.screen_size - (l + screen_width));
-            lcopy_safe(cram, cram + screen_width, screen_rbuffer.screen_size - (l + screen_width));
-
-            POKE(0xD021U,0);
-            for (i = 0; i < 1000; ++i) w = i * i;
-            for (READ_KEY() = 0; READ_KEY() != KEY_TAB;);// TOGGLE_BACK();
-            while (READ_KEY() == KEY_TAB) READ_KEY() = 1;
-
-            l = CURRENT_ROW * screen_width;
-            sram = screen_rbuffer.screen_ram + l;
-            cram = screen_rbuffer.colour_ram + l;
-
-            if (scratch_rbuffer.max_above > above)
-            {
-                lcopy_safe(sram, sram + screen_width, CURRENT_ROW_HEIGHT * screen_width);
-                lcopy_safe(cram, cram + screen_width, CURRENT_ROW_HEIGHT * screen_width);
-                console_write_astr("moves");
-            }
-            POKE(0xD021U,2);
-
-            for (i = 0; i < 1000; ++i) w = i * i;
-            for (READ_KEY() = 0; READ_KEY() != KEY_RETURN;);// TOGGLE_BACK();
-            while (READ_KEY() == KEY_RETURN) READ_KEY() = 1;
-
-            POKE(0xD021U,3);
-
-            if (scratch_rbuffer.max_below > below)
-            {
-                console_write_astr("max_below > below");
-                console_write_au32(scratch_rbuffer.max_below);
-                console_write_au32(below);
-                console_write_au32(scratch_rbuffer.max_above);
-                // Line hangs lower than before
-                // Copy some colour and kerning data from base row
-
-                sram = screen_rbuffer.screen_ram + (((CURRENT_ROW + scratch_rbuffer.max_above + below) - 1) * screen_width);
-                cram = screen_rbuffer.colour_ram + (((CURRENT_ROW + scratch_rbuffer.max_above + below) - 1) * screen_width);
-                for (i = 0; i < screen_width; i += 2)
-                {
-                    lpoke(sram + screen_width + i, 0xE0 & lpeek(sram + i));
-                    lpoke(cram + screen_width + i, 0x7F & lpeek(cram + i));
-                    lpoke(cram + screen_width + i + 1, lpeek(cram + i + 1));
-                }
-
-                for (i = 0; i < 1000; ++i) w = i * i;
-                for (READ_KEY() = 0; READ_KEY() != KEY_TAB;) TOGGLE_BACK();
-                while (READ_KEY() == KEY_TAB) READ_KEY() = 1;
-
-                console_write_newline();
-                console_write_au32(sram);
-                console_write_au32(sram+screen_width);
-                console_write_newline();
-                console_write_au32(cram);
-                console_write_au32(cram+screen_width);
-                x = scratch_rbuffer.max_below - (below + 1);
-                console_write_au8(x);
-                sram += screen_width;
-                cram += screen_width;
-                lcopy_safe(sram + screen_width, sram, x);
-                lcopy_safe(cram + screen_width, cram, x);
-                console_write_newline();
-            for (i = 0; i < 1000; ++i) w = i * i;
-            for (READ_KEY() = 0; READ_KEY() != KEY_RETURN;) TOGGLE_BACK();
-            while (READ_KEY() == KEY_RETURN) READ_KEY() = 1;
-            }
+            lcopy_safe(sram, sram + (s * screen_width), screen_rbuffer.screen_size - (l + screen_width));
+            lcopy_safe(cram, cram + (s * screen_width), screen_rbuffer.screen_size - (l + screen_width));
 
             // Adjust first row for all following lines
             for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
@@ -637,6 +574,12 @@ void editor_process_special_key(uint8_t key)
                     // bottom of the screen.
 
                     x = NEXT_ROW - screen_rbuffer.rows_used;
+                    // Make sure the line is left at least 1 row high
+                    if (CURRENT_ROW_HEIGHT < x)
+                    {
+                        --x;
+                        ++screen_rbuffer.rows_used;
+                    }
 
                     // Copy rows up
                     lcopy(screen_rbuffer.screen_ram + (NEXT_ROW * screen_width),

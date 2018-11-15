@@ -253,6 +253,7 @@ void deleteGlyph(uint8_t glyph_num)
 void replaceGlyph(uint8_t glyph_num, uint16_t code_point);
 void insertGlyph(uint8_t glyph_num, uint16_t code_point);
 
+uint8_t v1, v2, v3, v4;
 void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alpha_and_extras, uint8_t position)
 {
     if (!active_rbuffer)
@@ -383,29 +384,98 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
 
     // Work out first address of screen and colour RAM
 
+    l = (active_rbuffer->baseline_row - rows_above) * screen_width;
     // First, work out the address of the start row and column
-    screen = active_rbuffer->screen_ram + start_column * char_size;
-    colour = active_rbuffer->colour_ram + start_column * char_size;
-    for (y = rows_above; y < active_rbuffer->baseline_row; ++y)
-    {
-        screen += screen_width;
-        colour += screen_width;
-    }
+    screen = active_rbuffer->screen_ram + (start_column * char_size) + l;
+    colour = active_rbuffer->colour_ram + (start_column * char_size) + l;
 
     // Now we need to copy each row of data to the screen RAM and colour RAM buffers
     for (y = 0; y < (rows_above + rows_below); ++y)
     {
         // Copy screen data
         if (font_id)
-            lcopy((ptr_t)map_pos, (ptr_t)screen, bytes_per_row);
+            lcopy(map_pos, screen, bytes_per_row);
         else
         {
             // C64 character ROM, so just write code point in low byte, and empty high byte
-            lpoke(screen,code_point);
-            lpoke(screen+1,0x00);
+            lpoke(screen, code_point);
+            lpoke(screen + 1, 0x00);
         }
+        map_pos += bytes_per_row;
+        screen += screen_width;
+        colour += screen_width;
+    }
 
+    active_rbuffer->columns_used += (bytes_per_row >> 1);
+    v3 = active_rbuffer->columns_used << 1;
+    v1 = active_rbuffer->glyphs[position].first_column << 1;
+    if (position < active_rbuffer->glyph_count)
+        v2 = active_rbuffer->glyphs[position + 1].first_column << 1;
+    else v2 = v3;
 
+    if (rows_above > active_rbuffer->max_above)
+    {
+        // Buffer became taller, we need to copy colour and trim details to new rows
+        l = (active_rbuffer->baseline_row - active_rbuffer->max_above) * screen_width;
+        colour = active_rbuffer->colour_ram + l;
+        screen = active_rbuffer->screen_ram + l;
+        for (; active_rbuffer->max_above < rows_above; ++(active_rbuffer->max_above))
+        {
+            for (y = 0; y < v3; y += 2)
+            {
+                lpoke((colour - screen_width) + y, lpeek(colour + y));
+                v4 = lpeek(colour + y + 1);
+                lpoke((colour - screen_width) + y + 1, v4 & ATTRIB_REVERSE
+                        ? v4 & ~ATTRIB_UNDERLINE
+                        : v4 & ATTRIB_UNDERLINE
+                            ? (v4 & ~(ATTRIB_BLINK | ATTRIB_UNDERLINE)) : v4);
+                // Only mess with screen data once we're out of character range
+                if (y < v1 || y >= v2)
+                {
+                    lpoke((screen - screen_width) + y, 0x20);
+                    lpoke((screen - screen_width) + y + 1, 0xE0 & lpeek(screen + y + 1));
+                }
+            }
+            screen -= screen_width;
+            colour -= screen_width;
+        }
+    }
+
+    if (rows_below > active_rbuffer->max_below)
+    {
+        // Buffer became taller, we need to copy colour and trim details to new rows
+        l = ((active_rbuffer->baseline_row + active_rbuffer->max_below) - 1) * screen_width;
+        colour = active_rbuffer->colour_ram + l;
+        screen = active_rbuffer->screen_ram + l;
+        for (; active_rbuffer->max_below < rows_below; ++(active_rbuffer->max_below))
+        {
+            for (y = 0; y < v3; y += 2)
+            {
+                lpoke(colour + screen_width + y, lpeek(colour + y));
+                v4 = lpeek(colour + y + 1);
+                lpoke(colour + screen_width + y + 1, v4 & ATTRIB_REVERSE
+                    ? v4 & ~ATTRIB_UNDERLINE
+                    : v4 & ATTRIB_UNDERLINE
+                        ? (v4 & ~(ATTRIB_BLINK | ATTRIB_UNDERLINE)) : v4);
+
+                // Only mess with screen data once we're out of character range
+                if (y < v1 || y >= v2)
+                {
+                    lpoke(screen + screen_width + y, 0x20);
+                    lpoke(screen + screen_width + y + 1, 0xE0 & lpeek(screen + y + 1));
+                }
+            }
+            screen += screen_width;
+            colour += screen_width;
+        }
+    }
+
+    // Copy the colour data to the full height of the buffer
+    l = (active_rbuffer->baseline_row - active_rbuffer->max_above) * screen_width;
+    screen = active_rbuffer->screen_ram + (start_column * char_size) + l;
+    colour = active_rbuffer->colour_ram + (start_column * char_size) + l;
+    for (y = 0; y < (active_rbuffer->max_above + active_rbuffer->max_below); ++y)
+    {
         // Fill colour RAM.
         // Bit 5 of low byte is alpha blending flag. This is true for font glyphs, and false
         // for graphics tiles.
@@ -413,7 +483,7 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
         // attributes (blink, underline etc)
         // This requires 0x20 for the first byte, to enable alpha blending
         lpoke(colour, alpha_and_extras);
-        if (y == rows_above - 1)
+        if (y == active_rbuffer->max_above - 1)
             lpoke(colour + 1, colour_and_attributes);
         else
             lpoke(colour + 1, colour_and_attributes & ATTRIB_REVERSE
@@ -424,7 +494,7 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
         if (bytes_per_row > 2)
         {
             lpoke(colour + 2, alpha_and_extras);
-            if (y == rows_above - 1)
+            if (y == active_rbuffer->max_above - 1)
                 lpoke(colour + 3, colour_and_attributes);
             else
             lpoke(colour + 3, colour_and_attributes & ATTRIB_REVERSE
@@ -439,19 +509,11 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
         if (bytes_per_row > 4)
             lcopy((ptr_t)colour, (ptr_t)colour + 2, bytes_per_row - 2);
 
-        map_pos += bytes_per_row;
-
         screen += screen_width;
         colour += screen_width;
     }
 
     active_rbuffer->glyph_count++;
-    active_rbuffer->columns_used += (bytes_per_row >> 1);
-    if (rows_above > active_rbuffer->max_above)
-        active_rbuffer->max_above = rows_above;
-    if (rows_below > active_rbuffer->max_below)
-        active_rbuffer->max_below = rows_below;
-    // active_rbuffer->buffer_height = active_rbuffer->max_above + active_rbuffer->max_below;
 
     // then apply trim to entire column
     trim_pixels = trim_pixels << 5;
