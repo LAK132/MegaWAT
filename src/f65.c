@@ -360,13 +360,9 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
         // Char is not on the end, so make space
 
         // First, work out the address of the start row and column
-        screen = active_rbuffer->screen_ram + start_column * char_size;
-        colour = active_rbuffer->colour_ram + start_column * char_size;
-        for (y = active_rbuffer->max_above; y < active_rbuffer->baseline_row; ++y)
-        {
-            screen += screen_width;
-            colour += screen_width;
-        }
+        l = (active_rbuffer->baseline_row - active_rbuffer->max_above) * screen_width;
+        screen = active_rbuffer->screen_ram + (start_column * char_size) + l;
+        colour = active_rbuffer->colour_ram + (start_column * char_size) + l;
 
         // Now we need to copy each row of data to the screen RAM and colour RAM buffers
         for (y = 0; y < (active_rbuffer->max_above + active_rbuffer->max_below); ++y)
@@ -420,18 +416,22 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
         if (y == rows_above - 1)
             lpoke(colour + 1, colour_and_attributes);
         else
-            lpoke(colour + 1, colour_and_attributes & ATTRIB_UNDERLINE
-                ? (colour_and_attributes & ~(ATTRIB_BLINK | ATTRIB_UNDERLINE))
-                : colour_and_attributes);
+            lpoke(colour + 1, colour_and_attributes & ATTRIB_REVERSE
+                ? colour_and_attributes & ~ATTRIB_UNDERLINE
+                : colour_and_attributes & ATTRIB_UNDERLINE
+                    ? (colour_and_attributes & ~(ATTRIB_BLINK | ATTRIB_UNDERLINE))
+                    : colour_and_attributes);
         if (bytes_per_row > 2)
         {
             lpoke(colour + 2, alpha_and_extras);
             if (y == rows_above - 1)
                 lpoke(colour + 3, colour_and_attributes);
             else
-            lpoke(colour + 3, colour_and_attributes & ATTRIB_UNDERLINE
-                ? (colour_and_attributes & ~(ATTRIB_BLINK | ATTRIB_UNDERLINE))
-                : colour_and_attributes);
+            lpoke(colour + 3, colour_and_attributes & ATTRIB_REVERSE
+                ? colour_and_attributes & ~ATTRIB_UNDERLINE
+                : colour_and_attributes & ATTRIB_UNDERLINE
+                    ? (colour_and_attributes & ~(ATTRIB_BLINK | ATTRIB_UNDERLINE))
+                    : colour_and_attributes);
         }
         // Then use DMA to copy the pair of bytes out
         // (DMA timing is a bit funny, hence we need to have the two copies setup above
