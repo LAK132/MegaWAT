@@ -46,7 +46,6 @@ uint8_t trim_pixels;
 uint16_t the_code_point = 0U;
 
 uint8_t clear_pattern[4] = {0x20, 0x00, 0x20, 0x00};
-uint8_t end_of_line_pattern[2] = {0xff, 0xff};
 
 render_buffer_t screen_rbuffer;
 render_buffer_t scratch_rbuffer;
@@ -84,8 +83,6 @@ void clearRenderBuffer(void)
     lcopy((ptr_t)&clear_pattern[0], active_rbuffer->screen_ram, sizeof(clear_pattern));
     // Fill out to whole line
     lcopy(active_rbuffer->screen_ram, active_rbuffer->screen_ram + sizeof(clear_pattern), (screen_width - sizeof(clear_pattern)));
-    // Then put end of line marker to stop displaying tiles from next line
-    lcopy((ptr_t)&end_of_line_pattern[0], active_rbuffer->screen_ram + (screen_width - sizeof(end_of_line_pattern)), sizeof(end_of_line_pattern));
     // Then copy it down over the next 59 rows.
     lcopy(active_rbuffer->screen_ram, active_rbuffer->screen_ram + screen_width, active_rbuffer->screen_size - screen_width);
 

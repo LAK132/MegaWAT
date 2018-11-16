@@ -50,6 +50,8 @@ void videoSetSlideMode(void)
     // 100 characters per line x2 bytes = 200 bytes per row
     POKE(0xd058U,200);
     POKE(0xd059U,0);
+    // And make sure we render 100 characters per line
+    POKE(0xd05EU,100);
 
     // Adjust top and bottom borders
     POKE(0xd048,0x52);
