@@ -3,8 +3,8 @@ CPPVER = c++17
 NASM = nasm -felf64
 
 APP = megawat			#bat megawat.exe
-OUTDIR = out
 BINDIR = bin
+OBJDIR = obj
 LIBDIR = lib
 LIBS =					#bat SDL2main.lib SDL2.lib
 
@@ -54,29 +54,29 @@ $(info $(foreach obj,$(ALL_OBJ),$(obj)))
 .PHONY: all
 all: release
 
-debug: $(foreach obj,$(ALL_DBG),$(BINDIR)/$(obj)) | $(BINDIR) $(OUTDIR)
-	$(CXX) -std=$(CPPVER) $^ $(foreach libdir,$(LIBDIR),-L$(libdir)) $(foreach lib,$(LIBS),-l$(lib)) $(COMPOPT) $(LINKOPT) $(DBGLINKOPT) -o $(OUTDIR)/$(APP)
+debug: $(foreach obj,$(ALL_DBG),$(OBJDIR)/$(obj)) | $(OBJDIR) $(BINDIR)
+	$(CXX) -std=$(CPPVER) $^ $(foreach libdir,$(LIBDIR),-L$(libdir)) $(foreach lib,$(LIBS),-l$(lib)) $(COMPOPT) $(LINKOPT) $(DBGLINKOPT) -o $(BINDIR)/$(APP)
 
-release: $(foreach obj,$(ALL_REL),$(BINDIR)/$(obj)) | $(BINDIR) $(OUTDIR)
-	$(CXX) -std=$(CPPVER) $^ $(foreach libdir,$(LIBDIR),-L$(libdir)) $(foreach lib,$(LIBS),-l$(lib)) $(COMPOPT) $(LINKOPT) $(RELLINKOPT) -o $(OUTDIR)/$(APP)
+release: $(foreach obj,$(ALL_REL),$(OBJDIR)/$(obj)) | $(OBJDIR) $(BINDIR)
+	$(CXX) -std=$(CPPVER) $^ $(foreach libdir,$(LIBDIR),-L$(libdir)) $(foreach lib,$(LIBS),-l$(lib)) $(COMPOPT) $(LINKOPT) $(RELLINKOPT) -o $(BINDIR)/$(APP)
 
-clean: | $(BINDIR)
-	cd $(BINDIR) && rm -f *.o
+clean: | $(OBJDIR)
+	cd $(OBJDIR) && rm -f *.o
 
-$(OUTDIR):
-	if [ ! -d $@ ]; then mkdir $@; fi
 $(BINDIR):
+	if [ ! -d $@ ]; then mkdir $@; fi
+$(OBJDIR):
 	if [ ! -d $@ ]; then mkdir $@; fi
 
 .DEFAULT:
 	$(error Cannot find target $@)
 
 define COMPILE_TEMPLATE =
-$(BINDIR)/nasm$(1)$(3).o: $(2)/$(3) $(4)
+$(OBJDIR)/nasm$(1)$(3).o: $(2)/$(3) $(4) | $(OBJDIR)
 	$(NASM) -o $$@ $$<
-$(BINDIR)/dbg$(1)$(3).o: $(2)/$(3) $(4)
+$(OBJDIR)/dbg$(1)$(3).o: $(2)/$(3) $(4) | $(OBJDIR)
 	$(CXX) -std=$(CPPVER) -c $(5) $(DBGCOMPOPT) $(COMPOPT) -o $$@ $$<
-$(BINDIR)/rel$(1)$(3).o: $(2)/$(3) $(4)
+$(OBJDIR)/rel$(1)$(3).o: $(2)/$(3) $(4) | $(OBJDIR)
 	$(CXX) -std=$(CPPVER) -c $(5) $(RELCOMPOPT) $(COMPOPT) -o $$@ $$<
 endef
 
