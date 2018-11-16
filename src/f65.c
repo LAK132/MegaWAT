@@ -231,7 +231,7 @@ void deleteGlyph(uint8_t glyph_num)
     lcopy((ptr_t)&active_rbuffer->glyphs[glyph_num + 1], (ptr_t)&active_rbuffer->glyphs[glyph_num], 99 - glyph_num);
 
     // Reduce number of remaining glyphs
-    active_rbuffer->glyph_count--;
+    --(active_rbuffer->glyph_count);
 
     // Update rows_above and rows_below if require
     if (x)

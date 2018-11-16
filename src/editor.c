@@ -215,6 +215,7 @@ void editor_delete_glyph()
 {
     active_rbuffer = &scratch_rbuffer;
     deleteGlyph(cursor_col);
+
     if (text_line < EDITOR_END_LINE)
     {
         // Check if this code point grew the height of the line.
@@ -223,7 +224,23 @@ void editor_delete_glyph()
         s = (scratch_rbuffer.max_above + scratch_rbuffer.max_below) - CURRENT_ROW_HEIGHT;
         // Always make sure the row is atleast 1 line high
         if (scratch_rbuffer.max_above + scratch_rbuffer.max_below == 0)
+        {
+            // This row is now completely blank, so clear it as such
+            l = CURRENT_ROW * screen_width;
+            sram = screen_rbuffer.screen_ram + l;
+            cram = screen_rbuffer.colour_ram + l;
+            // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
+            lcopy((ptr_t)&clear_pattern[0], sram, sizeof(clear_pattern));
+
+            l = screen_width - sizeof(clear_pattern);
+            // Fill out to whole line
+            lcopy(sram, sram + sizeof(clear_pattern), l);
+            // Then put end of line marker to stop displaying tiles from next line
+            lcopy((ptr_t)&end_of_line_pattern[0], sram + l, sizeof(end_of_line_pattern));
+
+            // We don't want this line to actually be 0 tall, so increment
             ++s;
+        }
         if (s < 0)
         {
             // Yes, it shrunk.
@@ -263,7 +280,7 @@ void editor_delete_glyph()
     }
 }
 
-void editor_fetch_line(void) //uint8_t line_num)
+void editor_fetch_line(void)
 {
     // Fetch the specified line, and pre-render it into scratch
 
@@ -676,9 +693,6 @@ void editor_process_special_key(uint8_t key)
             editor_show_slide_number();
         } break;
         case 0xF5: {
-            // XXX - Hide cursor
-            // XXX - Backup editor buffer
-            // XXX - Render next and previous slides
             editor_stash_line();
             editor_save_slide();
             present_mode = 1;
