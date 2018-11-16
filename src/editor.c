@@ -235,8 +235,6 @@ void editor_delete_glyph()
             l = screen_width - sizeof(clear_pattern);
             // Fill out to whole line
             lcopy(sram, sram + sizeof(clear_pattern), l);
-            // Then put end of line marker to stop displaying tiles from next line
-            lcopy((ptr_t)&end_of_line_pattern[0], sram + l, sizeof(end_of_line_pattern));
 
             // We don't want this line to actually be 0 tall, so increment
             ++s;
