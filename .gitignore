@@ -1,6 +1,8 @@
 [Oo]bj/
 [Rr]om/
 [Bb]in/
+.vs/
+.vscode/
 *.f65
 c65.rom
 *~
