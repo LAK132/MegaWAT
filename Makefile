@@ -24,6 +24,7 @@ C65OPTS=	-t c64 -O -Or -Oi -Os --cpu 65c02 -I$(CC65DIR)/include
 L65OPTS=	-C c64-m65.cfg --asm-include-dir $(CC65DIR)/asminc --lib-path $(CC65DIR)/lib
 
 FILES=		$(PROGRAM) \
+		$(BINDIR)/loader.prg \
 			autoboot.c65 \
 			c64-m65.cfg
 
@@ -137,6 +138,9 @@ $(OBJDIR)/%.fpk:	Makefile assets/*.ttf assets/*.otf $(TTFTOF65) | assets $(OBJDI
 
 $(BINDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(BINDIR)
 	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(ASSFILES)
+
+$(BINDIR)/loader.prg:	src/fast_memory.s src/splash.s src/loader.c src/memory.c src/memory.h Makefile assets/megawat-splash.m65
+	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ src/splash.s src/loader.c src/memory.c src/fast_memory.s
 
 $(BINDIR)/megawat+fonts.prg:	Makefile $(OBJDIR)/fontpack.fpk $(BINDIR)/megawat.prg $(C65SYSROM)
 	#	Generate single binary with fonts and ROM in place
