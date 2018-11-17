@@ -33,9 +33,9 @@ void main(void)
     }     
 
     // Draw logo on the screen.
-    // 240 x 132 = 30 x 17 rows
+    // 240 x 128 = 30 x 16 rows
     for(x=0;x<30;x++)
-      for(y=0;y<17;y++) {
+      for(y=0;y<16;y++) {
 	glyph=(0x58000U/0x40)+x+y*30;
 	lpoke(0x57800U+0+(5*2)+(4*40*2)+x*2+y*(40*2),glyph&0xff);
 	lpoke(0x57800U+1+(5*2)+(4*40*2)+x*2+y*(40*2),glyph>>8);
