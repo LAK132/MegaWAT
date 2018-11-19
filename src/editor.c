@@ -673,6 +673,7 @@ void editor_goto_slide(uint8_t num)
             editor_next_slide();
 }
 
+FILE *file;
 uint32_t kk, cc;
 void editor_process_special_key(uint8_t key)
 {
@@ -841,6 +842,15 @@ void editor_process_special_key(uint8_t key)
             // Open
             editor_stash_line();
             editor_save_slide();
+            file = fopen("default.mwt", "r");
+            if (file)
+            {
+                // copy file into 0x24000-0x27FFF
+                fread(0x24000, 1, 0x4000, file);
+                fclose(file);
+            }
+            editor_initialise();
+
             // XXX - switch to blank slide
             // XXX - use slide to show SD card contents
             // XXX - use hardware reverse to show selection
@@ -862,15 +872,22 @@ void editor_process_special_key(uint8_t key)
                 editor_save_slide();
                 // XXX - switch to blank slide
                 // XXX - use scratch buffer for input
-                // XXX - if SHIFT held, force save as dialog
                 // XXX - on RETURN: save
                 // XXX - on ESC: cancel
+                file = fopen("default.mwt", "w");
+                if (file)
+                {
+                    lcopy("default.mwt", filename, 11);
+                    fwrite(0x24000, 1, 0x4000, file);
+                    fclose(file);
+                }
                 editor_load_slide();
                 editor_fetch_line();
             }
         } break;
         case 0xCE: { // MEGA N
             // New
+            HIDE_CURSOR();
             editor_stash_line();
             editor_save_slide();
             kk = text_line;
@@ -896,10 +913,10 @@ void editor_process_special_key(uint8_t key)
             screen_rbuffer.rows_used = CURRENT_ROW;
             outputLineToRenderBuffer();
 
-            text_line = 3;
+            text_line = 4;
             editor_fetch_line();
             editor_clear_line();
-            editor_render_string("no: ESC");
+            editor_render_string("no:  ESC");
             screen_rbuffer.rows_used = CURRENT_ROW;
             outputLineToRenderBuffer();
 
@@ -1063,7 +1080,7 @@ void editor_poll_keyboard(void)
                     // Disable sprite after it has faded out
                     HIDE_SPRITE(1);
                 // Take a little time so it doesn't get retriggered so fast
-                for(key=0;key<16;++key) continue;
+                for(key = 0; key < 16; ++key) continue;
             }
         }
     }
