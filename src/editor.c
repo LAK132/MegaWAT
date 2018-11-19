@@ -38,6 +38,14 @@ uint8_t slide_colour[EDITOR_MAX_LINES];
 #define FILENAME_MAX_LEN 16
 uint8_t filename[FILENAME_MAX_LEN];
 
+#define HIDE_SPRITE(sprite) POKE(0xD015U, PEEK(0xD015U) & ~(1<<sprite))
+#define SHOW_SPRITE(sprite) POKE(0xD015U, PEEK(0xD015U) | (1<<sprite))
+#define TOGGLE_SPRITE(sprite) POKE(0xD015U, PEEK(0xD015U) ^ (1<<sprite))
+
+#define HIDE_CURSOR() HIDE_SPRITE(0)
+#define SHOW_CURSOR() SHOW_SPRITE(0)
+#define TOGGLE_CURSOR() TOGGLE_SPRITE(0)
+
 int8_t maxlen = 80;
 uint8_t key = 0;
 uint8_t mod = 0;
@@ -94,6 +102,8 @@ void editor_initialise(void)
     editor_get_line_info();
 
     text_line_count = 0;
+    text_line = 0;
+    cursor_col = 0;
 
     lfill(SLIDE_DATA, 0, SLIDE_DATA_SIZE);
     slide_start[0] = SLIDE_DATA;
@@ -201,6 +211,35 @@ void editor_stash_line(void)
     }
 }
 
+void editor_render_string(const uint8_t *str)
+{
+    active_rbuffer = &scratch_rbuffer;
+    for (; *str != 0; ++str)
+        renderGlyph(*str, text_colour, ATTRIB_ALPHA_BLEND, cursor_col++);
+
+    if (text_line < EDITOR_END_LINE)
+    {
+        // Check if this code point grew the height of the line.
+        // If so, push everything else down before pasting
+        // s = glyph height - row height (how much bigger the glyph is than the row)
+        s = (scratch_rbuffer.max_above + scratch_rbuffer.max_below) - CURRENT_ROW_HEIGHT;
+        if (s > 0)
+        {
+            // Yes, it grew.
+            // Now shift everything below this line down (on the SCREEN buffer)
+            l = NEXT_ROW * screen_width;
+            sram = screen_rbuffer.screen_ram + l;
+            cram = screen_rbuffer.colour_ram + l;
+            lcopy_safe(sram, sram + (s * screen_width), screen_rbuffer.screen_size - (l + screen_width));
+            lcopy_safe(cram, cram + (s * screen_width), screen_rbuffer.screen_size - (l + screen_width));
+
+            // Adjust first row for all following lines
+            for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
+                text_line_first_rows[y] += s;
+        }
+    }
+}
+
 void editor_render_glyph(uint16_t code_point)
 {
     active_rbuffer = &scratch_rbuffer;
@@ -229,7 +268,75 @@ void editor_render_glyph(uint16_t code_point)
     }
 }
 
-void editor_delete_glyph()
+void editor_clear_line(void)
+{
+    active_rbuffer = &scratch_rbuffer;
+    cursor_col = scratch_rbuffer.glyph_count + 1;
+    while(cursor_col)
+        deleteGlyph(cursor_col--);
+    deleteGlyph(cursor_col);
+
+    if (text_line < EDITOR_END_LINE)
+    {
+        // Check if this code point grew the height of the line.
+        // If so, push everything else down before pasting
+        // s = glyph height - row height (how much bigger the glyph is than the row)
+        s = (scratch_rbuffer.max_above + scratch_rbuffer.max_below) - CURRENT_ROW_HEIGHT;
+        // Always make sure the row is atleast 1 line high
+        if (scratch_rbuffer.max_above + scratch_rbuffer.max_below == 0)
+        {
+            // This row is now completely blank, so clear it as such
+            l = CURRENT_ROW * screen_width;
+            sram = screen_rbuffer.screen_ram + l;
+            cram = screen_rbuffer.colour_ram + l;
+            // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
+            lcopy((ptr_t)&clear_pattern[0], sram, sizeof(clear_pattern));
+
+            l = screen_width - sizeof(clear_pattern);
+            // Fill out to whole line
+            lcopy(sram, sram + sizeof(clear_pattern), l);
+
+            // We don't want this line to actually be 0 tall, so increment
+            ++s;
+        }
+        if (s < 0)
+        {
+            // Yes, it shrunk.
+            // Now shift everything below this line up (on the SCREEN buffer)
+            l = NEXT_ROW * screen_width;
+            sram = screen_rbuffer.screen_ram + l;
+            cram = screen_rbuffer.colour_ram + l;
+            lcopy_safe(sram, sram + (s * (int32_t)screen_width), screen_rbuffer.screen_size - (l + screen_width));
+            lcopy_safe(cram, cram + (s * (int32_t)screen_width), screen_rbuffer.screen_size - (l + screen_width));
+
+            // Adjust first row for all following lines
+            for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
+                text_line_first_rows[y] += s;
+
+            if (END_ROW < EDITOR_MAX_LINES)
+            {
+                // There is now space at the end of the screen, blank it out
+                l = END_ROW * screen_width;
+                sram = screen_rbuffer.screen_ram + l;
+                cram = screen_rbuffer.colour_ram + l;
+                // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
+                lcopy((ptr_t)&clear_pattern[0], sram, sizeof(clear_pattern));
+
+                l = screen_width - sizeof(clear_pattern);
+                // Fill out to whole line
+                lcopy(sram, sram + sizeof(clear_pattern), l);
+
+                l = (EDITOR_END_LINE - END_ROW) * screen_width;
+                // Then copy it down over the next remaining rows.
+                lcopy(sram, sram + screen_width, l - screen_width);
+                // Fill the rest of the colour ram with 0x00
+                lfill(cram, 0x00, l);
+            }
+        }
+    }
+}
+
+void editor_delete_glyph(void)
 {
     active_rbuffer = &scratch_rbuffer;
     deleteGlyph(cursor_col);
@@ -553,9 +660,23 @@ void editor_previous_slide(void)
     }
 }
 
+void editor_goto_slide(uint8_t num)
+{
+    if (slide_number == num)
+        return;
+
+    if (slide_number > num)
+        while (slide_number > num)
+            editor_previous_slide();
+    else
+        while(slide_number < num)
+            editor_next_slide();
+}
+
+uint32_t kk, cc;
 void editor_process_special_key(uint8_t key)
 {
-    k = 0; // if the cursor was moved
+    kk = 0; // if the cursor was moved
     if (present_mode) switch (key)
     {
         case 0x0D:
@@ -640,7 +761,7 @@ void editor_process_special_key(uint8_t key)
                 editor_update_cursor();
                 screen_rbuffer.rows_used = CURRENT_ROW;
                 outputLineToRenderBuffer();
-                k = 1;
+                kk = 1;
             }
             // else if (current_row && text_line)
             else if (text_line)
@@ -656,13 +777,13 @@ void editor_process_special_key(uint8_t key)
                 editor_fetch_line();
                 cursor_col = scratch_rbuffer.glyph_count;
                 editor_update_cursor();
-                k = 1;
+                kk = 1;
             }
         } break;
 
         // Cursor navigation within a line
-        case 0x9d: if (cursor_col) --cursor_col; k = 1; break;
-        case 0x1d: if (cursor_col < scratch_rbuffer.glyph_count) ++cursor_col; k = 1; break;
+        case 0x9d: if (cursor_col) --cursor_col; kk = 1; break;
+        case 0x1d: if (cursor_col < scratch_rbuffer.glyph_count) ++cursor_col; kk = 1; break;
 
         // Cursor navigation between lines
         // Here we adjust which line we are editing,
@@ -679,7 +800,7 @@ void editor_process_special_key(uint8_t key)
                 ++text_line;
                 editor_fetch_line();
                 editor_update_cursor();
-                k = 1;
+                kk = 1;
             }
         } break;
         case 0x91: { // Cursor up
@@ -689,7 +810,7 @@ void editor_process_special_key(uint8_t key)
                 --text_line;
                 editor_fetch_line();
                 editor_update_cursor();
-                k = 1;
+                kk = 1;
             }
         } break;
         case 0xED:
@@ -718,6 +839,7 @@ void editor_process_special_key(uint8_t key)
         } break;
         case 0xCF: { // MEGA O
             // Open
+            editor_stash_line();
             editor_save_slide();
             // XXX - switch to blank slide
             // XXX - use slide to show SD card contents
@@ -725,33 +847,82 @@ void editor_process_special_key(uint8_t key)
             // XXX - on RETURN: load presentation
             // XXX - on ESC: return to editing previous presentation
             editor_load_slide();
+            editor_fetch_line();
         } break;
         case 0xD3: { // MEGA S
-            // Save [As]
-            // XXX - if previously saved and SHIFT not held, save silently
-
-            // XXX - switch to blank slide
-            // XXX - use scratch buffer for input
-            // XXX - if SHIFT held, force save as dialog
-            // XXX - on RETURN: save
-            // XXX - on ESC: cancel
-
-            // XXX - return to editor
+            // if previously saved and SHIFT not held, save silently
+            if (filename[0] != 0 && mod != MOD_SHIFT)
+            {
+                // Save
+            }
+            else
+            {
+                // Save As
+                editor_stash_line();
+                editor_save_slide();
+                // XXX - switch to blank slide
+                // XXX - use scratch buffer for input
+                // XXX - if SHIFT held, force save as dialog
+                // XXX - on RETURN: save
+                // XXX - on ESC: cancel
+                editor_load_slide();
+                editor_fetch_line();
+            }
         } break;
         case 0xCE: { // MEGA N
             // New
+            editor_stash_line();
+            editor_save_slide();
+            kk = text_line;
+            cc = cursor_col;
             // XXX - "Are you sure?" prompt
+
+            active_rbuffer = &screen_rbuffer;
+            clearRenderBuffer();
+            active_rbuffer = &scratch_rbuffer;
+            clearRenderBuffer();
+
+            text_line = 0;
+            editor_fetch_line();
+            editor_clear_line();
+            editor_render_string("start a new presentation? unsaved changes will be lost");
+            screen_rbuffer.rows_used = CURRENT_ROW;
+            outputLineToRenderBuffer();
+
+            text_line = 2;
+            editor_fetch_line();
+            editor_clear_line();
+            editor_render_string("yes: RETURN");
+            screen_rbuffer.rows_used = CURRENT_ROW;
+            outputLineToRenderBuffer();
+
+            text_line = 3;
+            editor_fetch_line();
+            editor_clear_line();
+            editor_render_string("no: ESC");
+            screen_rbuffer.rows_used = CURRENT_ROW;
+            outputLineToRenderBuffer();
+
             while (READ_KEY() != KEY_ESC && READ_KEY() != KEY_RETURN) continue;
             if (READ_KEY() == KEY_RETURN)
             {
-                // Clear and reinitalise
+                // reinitalise
+                editor_goto_slide(0);
+                editor_initialise();
             }
-            // else return to normal editing
-            // XXX - clear prompt
+            else
+            {
+                // return to normal editing
+                text_line = kk;
+                cursor_col = cc;
+            }
+            editor_load_slide();
+            editor_fetch_line();
+            kk = 0;
         } break;
         default: break;
     }
-    if (k && cursor_col > 0 && cursor_col <= scratch_rbuffer.glyph_count)
+    if (kk && cursor_col > 0 && cursor_col <= scratch_rbuffer.glyph_count)
     {
         if (font_id != scratch_rbuffer.glyphs[cursor_col-1].font_id)
             setFont(scratch_rbuffer.glyphs[cursor_col-1].font_id);
@@ -866,7 +1037,7 @@ void editor_poll_keyboard(void)
             editor_update_cursor();
 
             // Make sure cursor is on when typing
-            POKE(0xD015U, PEEK(0xD015U) | 0x01);
+            SHOW_CURSOR();
 
             // If key is still set it might be triggering too fast, so manually wait some time
             if (READ_KEY() == key)
@@ -876,12 +1047,12 @@ void editor_poll_keyboard(void)
         {
             if (present_mode)
             {
-                POKE(0xD015U, PEEK(0xD015U) & 0xFE);
+                HIDE_CURSOR();
             }
             else if (PEEK(0xD012U) > 0xF8)
             {
                 if (!(cursor_toggle += 0x10))
-                    POKE(0xD015U, (PEEK(0xD015U) ^ 0x01) & 0x0f); // Toggle cursor on/off quickly
+                    TOGGLE_CURSOR(); // Toggle cursor on/off quickly
             }
             if (PEEK(0xD012U) == 0xE0)
             {
@@ -890,7 +1061,7 @@ void editor_poll_keyboard(void)
                     POKE(0xD075U,PEEK(0xD075U)-1);
                 else
                     // Disable sprite after it has faded out
-                    POKE(0xD015U,PEEK(0xD015U)&0xFD);
+                    HIDE_SPRITE(1);
                 // Take a little time so it doesn't get retriggered so fast
                 for(key=0;key<16;++key) continue;
             }
