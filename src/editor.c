@@ -35,6 +35,9 @@ ptr_t slide_start[EDITOR_MAX_SLIDES];
 uint32_t slide_number = 0;
 uint8_t slide_colour[EDITOR_MAX_LINES];
 
+#define FILENAME_MAX_LEN 16
+uint8_t filename[FILENAME_MAX_LEN];
+
 int8_t maxlen = 80;
 uint8_t key = 0;
 uint8_t mod = 0;
@@ -67,7 +70,9 @@ void editor_get_line_info(void)
 }
 
 void editor_save_slide(void);
+void editor_next_slide(void);
 void editor_load_slide(void);
+void editor_previous_slide(void);
 
 void editor_initialise(void)
 {
@@ -97,6 +102,19 @@ void editor_initialise(void)
 
     // default slide colours to 0x6
     lfill((ptr_t)&slide_colour[0], 0x6, sizeof(slide_colour));
+
+    // default to no filename
+    lfill((ptr_t)&filename[0], 0, sizeof(filename));
+
+    // make sure slide 2 is preloaded correctly
+    editor_save_slide();
+    editor_next_slide();
+    editor_load_slide();
+    editor_save_slide();
+    editor_previous_slide();
+    editor_load_slide();
+
+    editor_show_slide_number();
 }
 
 void editor_stash_line(void)
@@ -786,15 +804,6 @@ void editor_hide_slide_number(void)
 
 void editor_poll_keyboard(void)
 {
-    // make sure slide 2 is preloaded correctly
-    editor_save_slide();
-    editor_next_slide();
-    editor_load_slide();
-    editor_save_slide();
-    editor_previous_slide();
-    editor_load_slide();
-
-    editor_show_slide_number();
     #ifndef __MEGA65__
     while (key != KEY_ESC)
     #else

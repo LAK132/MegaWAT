@@ -23,12 +23,12 @@ void megamain()
     // while (1)
     //     POKE(0xd020U, PEEK(0xd020U)+1);
 
-    editor_initialise();
-
     // Then patch the pointers in the font(s) to be correct
     current_font = ASSET_RAM;
     patchFonts();
     setFont(0);
+
+    editor_initialise();
 
     editor_show_cursor();
 
