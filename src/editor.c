@@ -692,8 +692,6 @@ void editor_process_special_key(uint8_t key)
                 k = 1;
             }
         } break;
-        case 0xC2:
-        case 0xCE:
         case 0xED:
         case 0xEE: { // change slide
             editor_stash_line();
@@ -718,8 +716,38 @@ void editor_process_special_key(uint8_t key)
             editor_insert_codepoint(0x20);
             editor_insert_codepoint(0x20);
         } break;
-        case 0x0F: { // SHIFT TAB
+        case 0xCF: { // MEGA O
+            // Open
+            editor_save_slide();
+            // XXX - switch to blank slide
+            // XXX - use slide to show SD card contents
+            // XXX - use hardware reverse to show selection
+            // XXX - on RETURN: load presentation
+            // XXX - on ESC: return to editing previous presentation
+            editor_load_slide();
+        } break;
+        case 0xD3: { // MEGA S
+            // Save [As]
+            // XXX - if previously saved and SHIFT not held, save silently
 
+            // XXX - switch to blank slide
+            // XXX - use scratch buffer for input
+            // XXX - if SHIFT held, force save as dialog
+            // XXX - on RETURN: save
+            // XXX - on ESC: cancel
+
+            // XXX - return to editor
+        } break;
+        case 0xCE: { // MEGA N
+            // New
+            // XXX - "Are you sure?" prompt
+            while (READ_KEY() != KEY_ESC && READ_KEY() != KEY_RETURN) continue;
+            if (READ_KEY() == KEY_RETURN)
+            {
+                // Clear and reinitalise
+            }
+            // else return to normal editing
+            // XXX - clear prompt
         } break;
         default: break;
     }

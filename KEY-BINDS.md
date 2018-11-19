@@ -8,13 +8,14 @@ Help (F15): Help
 
 SHIFT+Left/Right/Up/Down: Highlighting
 
-MEGA+A: Select all
-MEGA+C: Copy
-MEGA+X: Cut
-MEGA+V: Paste
-MEGA+S: Save
-MEGA+O: Open/Load
-MEGA+N: New
+MEGA+A:         Select all
+MEGA+C:         Copy
+MEGA+X:         Cut
+MEGA+V:         Paste
+MEGA+S:         Save
+MEGA+SHIFT+S:   Save As
+MEGA+O:         Open/Load
+MEGA+N:         New
 
 MEGA+Right/Down: Next slide
 MEGA+Left/Up: Previous slide
