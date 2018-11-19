@@ -694,6 +694,15 @@ void editor_process_special_key(uint8_t key)
             present_mode = 1;
             editor_hide_slide_number();
         } break;
+        case 0x09: { // TAB
+            editor_insert_codepoint(0x20);
+            editor_insert_codepoint(0x20);
+            editor_insert_codepoint(0x20);
+            editor_insert_codepoint(0x20);
+        } break;
+        case 0x0F: { // SHIFT TAB
+
+        } break;
         default: break;
     }
     if (k && cursor_col > 0 && cursor_col <= scratch_rbuffer.glyph_count)
@@ -821,6 +830,10 @@ void editor_poll_keyboard(void)
 
             // Make sure cursor is on when typing
             POKE(0xD015U, PEEK(0xD015U) | 0x01);
+
+            // If key is still set it might be triggering too fast, so manually wait some time
+            if (READ_KEY() == key)
+                for (l = 0; l < 35000; l++) READ_KEY() = 1;
         }
         else
         {
@@ -841,8 +854,8 @@ void editor_poll_keyboard(void)
                 else
                     // Disable sprite after it has faded out
                     POKE(0xD015U,PEEK(0xD015U)&0xFD);
-		// Take a little time so it doesn't get retriggered so fast
-		for(key=0;key<16;++key) continue;
+                // Take a little time so it doesn't get retriggered so fast
+                for(key=0;key<16;++key) continue;
             }
         }
     }
