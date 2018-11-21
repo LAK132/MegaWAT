@@ -938,11 +938,16 @@ void editor_process_special_key(uint8_t key)
             if (READ_KEY() == KEY_RETURN)
             {
                 lcopy((ptr_t)"default.mwt", (ptr_t)file_name, sizeof("default.mwt"));
-                if (fileio_create_pres())
+                if (!fileio_create_pres())
                 {
                     // reinitalise
                     editor_goto_slide(0);
                     editor_initialise();
+                }
+                else
+                {
+                    console_write_au32(errno);
+                    console_write_astr(strerror(errno));
                 }
             }
             else
