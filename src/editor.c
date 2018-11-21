@@ -901,59 +901,59 @@ void editor_process_special_key(uint8_t key)
         } break;
         case 0xCE: { // MEGA N
             // New
-            lcopy((ptr_t)"default.mwt", (ptr_t)file_name, sizeof("default.mwt"));
-            if (fileio_create_pres())
+            HIDE_CURSOR();
+            editor_stash_line();
+            editor_save_slide();
+            kk = text_line;
+            cc = cursor_col;
+            // XXX - "Are you sure?" prompt
+
+            active_rbuffer = &screen_rbuffer;
+            clearRenderBuffer();
+            active_rbuffer = &scratch_rbuffer;
+            clearRenderBuffer();
+
+            text_line = 0;
+            editor_fetch_line();
+            editor_clear_line();
+            editor_render_string("start a new presentation? unsaved changes will be lost");
+            screen_rbuffer.rows_used = CURRENT_ROW;
+            outputLineToRenderBuffer();
+
+            text_line = 2;
+            editor_fetch_line();
+            editor_clear_line();
+            editor_render_string("yes: RETURN");
+            screen_rbuffer.rows_used = CURRENT_ROW;
+            outputLineToRenderBuffer();
+
+            text_line = 4;
+            editor_fetch_line();
+            editor_clear_line();
+            editor_render_string("no:  ESC");
+            screen_rbuffer.rows_used = CURRENT_ROW;
+            outputLineToRenderBuffer();
+
+            while (READ_KEY() != KEY_ESC && READ_KEY() != KEY_RETURN) continue;
+            if (READ_KEY() == KEY_RETURN)
             {
-                HIDE_CURSOR();
-                editor_stash_line();
-                editor_save_slide();
-                kk = text_line;
-                cc = cursor_col;
-                // XXX - "Are you sure?" prompt
-
-                active_rbuffer = &screen_rbuffer;
-                clearRenderBuffer();
-                active_rbuffer = &scratch_rbuffer;
-                clearRenderBuffer();
-
-                text_line = 0;
-                editor_fetch_line();
-                editor_clear_line();
-                editor_render_string("start a new presentation? unsaved changes will be lost");
-                screen_rbuffer.rows_used = CURRENT_ROW;
-                outputLineToRenderBuffer();
-
-                text_line = 2;
-                editor_fetch_line();
-                editor_clear_line();
-                editor_render_string("yes: RETURN");
-                screen_rbuffer.rows_used = CURRENT_ROW;
-                outputLineToRenderBuffer();
-
-                text_line = 4;
-                editor_fetch_line();
-                editor_clear_line();
-                editor_render_string("no:  ESC");
-                screen_rbuffer.rows_used = CURRENT_ROW;
-                outputLineToRenderBuffer();
-
-                while (READ_KEY() != KEY_ESC && READ_KEY() != KEY_RETURN) continue;
-                if (READ_KEY() == KEY_RETURN)
+                lcopy((ptr_t)"default.mwt", (ptr_t)file_name, sizeof("default.mwt"));
+                if (fileio_create_pres())
                 {
                     // reinitalise
                     editor_goto_slide(0);
                     editor_initialise();
                 }
-                else
-                {
-                    // return to normal editing
-                    text_line = kk;
-                    cursor_col = cc;
-                }
-                editor_load_slide();
-                editor_fetch_line();
-                kk = 0;
             }
+            else
+            {
+                // return to normal editing
+                text_line = kk;
+                cursor_col = cc;
+            }
+            editor_load_slide();
+            editor_fetch_line();
+            kk = 0;
         } break;
         default: break;
     }
