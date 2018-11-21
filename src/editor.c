@@ -93,8 +93,7 @@ void editor_initialise(void)
     clearRenderBuffer();
 
     // Fill the rest of the buffer with zeros
-    lfill((ptr_t)&editor_buffer[0], 0x00,
-        sizeof(editor_buffer));
+    lfill((ptr_t)editor_buffer, 0x00, sizeof(editor_buffer));
 
     editor_get_line_info();
 
@@ -108,7 +107,7 @@ void editor_initialise(void)
         slide_start[y] = slide_start[y-1] + (EDITOR_END_LINE * 2);
 
     // default slide colours to 0x6
-    lfill((ptr_t)&slide_colour[0], 0x6, sizeof(slide_colour));
+    lfill((ptr_t)slide_colour, 0x6, sizeof(slide_colour));
 
     // default to no file_name
     lfill((ptr_t)file_name, 0, sizeof(file_name));
@@ -204,7 +203,7 @@ void editor_stash_line(void)
 
         // copy scratch into main buffer
         // x2 because it's 16 bit
-        lcopy((ptr_t)&editor_scratch[0], (ptr_t)&editor_buffer[text_line_start[text_line]], y + y);
+        lcopy((ptr_t)editor_scratch, (ptr_t)&editor_buffer[text_line_start[text_line]], y + y);
     }
 }
 
@@ -287,7 +286,7 @@ void editor_clear_line(void)
             sram = screen_rbuffer.screen_ram + l;
             cram = screen_rbuffer.colour_ram + l;
             // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
-            lcopy((ptr_t)&clear_pattern[0], sram, sizeof(clear_pattern));
+            lcopy((ptr_t)clear_pattern, sram, sizeof(clear_pattern));
 
             l = screen_width - sizeof(clear_pattern);
             // Fill out to whole line
@@ -317,7 +316,7 @@ void editor_clear_line(void)
                 sram = screen_rbuffer.screen_ram + l;
                 cram = screen_rbuffer.colour_ram + l;
                 // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
-                lcopy((ptr_t)&clear_pattern[0], sram, sizeof(clear_pattern));
+                lcopy((ptr_t)clear_pattern, sram, sizeof(clear_pattern));
 
                 l = screen_width - sizeof(clear_pattern);
                 // Fill out to whole line
@@ -352,7 +351,7 @@ void editor_delete_glyph(void)
             sram = screen_rbuffer.screen_ram + l;
             cram = screen_rbuffer.colour_ram + l;
             // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
-            lcopy((ptr_t)&clear_pattern[0], sram, sizeof(clear_pattern));
+            lcopy((ptr_t)clear_pattern, sram, sizeof(clear_pattern));
 
             l = screen_width - sizeof(clear_pattern);
             // Fill out to whole line
@@ -382,7 +381,7 @@ void editor_delete_glyph(void)
                 sram = screen_rbuffer.screen_ram + l;
                 cram = screen_rbuffer.colour_ram + l;
                 // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
-                lcopy((ptr_t)&clear_pattern[0], sram, sizeof(clear_pattern));
+                lcopy((ptr_t)clear_pattern, sram, sizeof(clear_pattern));
 
                 l = screen_width - sizeof(clear_pattern);
                 // Fill out to whole line
@@ -547,7 +546,7 @@ void editor_save_slide(void)
     }
     // copy scratch into main buffer
     // x2 because it's 16 bit
-    lcopy((ptr_t)&editor_buffer[0], slide_start[slide_number], l);
+    lcopy((ptr_t)editor_buffer, slide_start[slide_number], l);
 }
 
 void editor_load_slide(void)
@@ -557,14 +556,14 @@ void editor_load_slide(void)
     active_rbuffer = &screen_rbuffer;
     clearRenderBuffer();
 
-    lfill((ptr_t)&editor_buffer[0], 0x00, sizeof(editor_buffer));
+    lfill((ptr_t)editor_buffer, 0x00, sizeof(editor_buffer));
 
     // Copy the next slides buffer into editor buffer
     j = slide_start[slide_number + 1] - slide_start[slide_number];
     if (j > sizeof(editor_buffer))
         j = sizeof(editor_buffer);
 
-    lcopy(slide_start[slide_number], (ptr_t)&editor_buffer[0], j);
+    lcopy(slide_start[slide_number], (ptr_t)editor_buffer, j);
 
     // Update line starts for new buffer
     editor_get_line_info();
