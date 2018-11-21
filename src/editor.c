@@ -35,9 +35,6 @@ ptr_t slide_start[EDITOR_MAX_SLIDES];
 uint32_t slide_number = 0;
 uint8_t slide_colour[EDITOR_MAX_LINES];
 
-#define FILENAME_MAX_LEN 16
-uint8_t filename[FILENAME_MAX_LEN];
-
 #define HIDE_SPRITE(sprite) POKE(0xD015U, PEEK(0xD015U) & ~(1<<sprite))
 #define SHOW_SPRITE(sprite) POKE(0xD015U, PEEK(0xD015U) | (1<<sprite))
 #define TOGGLE_SPRITE(sprite) POKE(0xD015U, PEEK(0xD015U) ^ (1<<sprite))
@@ -113,8 +110,8 @@ void editor_initialise(void)
     // default slide colours to 0x6
     lfill((ptr_t)&slide_colour[0], 0x6, sizeof(slide_colour));
 
-    // default to no filename
-    lfill((ptr_t)&filename[0], 0, sizeof(filename));
+    // default to no file_name
+    lfill((ptr_t)file_name, 0, sizeof(file_name));
 
     // make sure slide 2 is preloaded correctly
     editor_save_slide();
@@ -842,14 +839,17 @@ void editor_process_special_key(uint8_t key)
             // Open
             editor_stash_line();
             editor_save_slide();
-            file = fopen("default.mwt", "r");
-            if (file)
+
+            lcopy((ptr_t)"default.mwt", (ptr_t)file_name, sizeof("default.mwt"));
+            if (fileio_load_pres())
             {
-                // copy file into 0x24000-0x27FFF
-                fread(0x24000, 1, 0x4000, file);
-                fclose(file);
+                console_write_au32(errno);
+                console_write_astr(strerror(errno));
             }
-            editor_initialise();
+            else
+            {
+                editor_initialise();
+            }
 
             // XXX - switch to blank slide
             // XXX - use slide to show SD card contents
@@ -861,9 +861,19 @@ void editor_process_special_key(uint8_t key)
         } break;
         case 0xD3: { // MEGA S
             // if previously saved and SHIFT not held, save silently
-            if (filename[0] != 0 && mod != MOD_SHIFT)
+            if (file_name[0] != 0 && mod != MOD_SHIFT)
             {
                 // Save
+                editor_stash_line();
+                editor_save_slide();
+                lcopy((ptr_t)"default.mwt", (ptr_t)file_name, sizeof("default.mwt"));
+                if (fileio_save_pres())
+                {
+                    console_write_au32(errno);
+                    console_write_astr(strerror(errno));
+                }
+                editor_load_slide();
+                editor_fetch_line();
             }
             else
             {
@@ -874,68 +884,77 @@ void editor_process_special_key(uint8_t key)
                 // XXX - use scratch buffer for input
                 // XXX - on RETURN: save
                 // XXX - on ESC: cancel
-                file = fopen("default.mwt", "w");
-                if (file)
+                lcopy((ptr_t)"default.mwt", (ptr_t)file_name, sizeof("default.mwt"));
+                if (fileio_create_pres())
                 {
-                    lcopy("default.mwt", filename, 11);
-                    fwrite(0x24000, 1, 0x4000, file);
-                    fclose(file);
+                    console_write_au32(errno);
+                    console_write_astr(strerror(errno));
                 }
+                if (fileio_save_pres())
+                {
+                    console_write_au32(errno);
+                    console_write_astr(strerror(errno));
+                }
+
                 editor_load_slide();
                 editor_fetch_line();
             }
         } break;
         case 0xCE: { // MEGA N
             // New
-            HIDE_CURSOR();
-            editor_stash_line();
-            editor_save_slide();
-            kk = text_line;
-            cc = cursor_col;
-            // XXX - "Are you sure?" prompt
-
-            active_rbuffer = &screen_rbuffer;
-            clearRenderBuffer();
-            active_rbuffer = &scratch_rbuffer;
-            clearRenderBuffer();
-
-            text_line = 0;
-            editor_fetch_line();
-            editor_clear_line();
-            editor_render_string("start a new presentation? unsaved changes will be lost");
-            screen_rbuffer.rows_used = CURRENT_ROW;
-            outputLineToRenderBuffer();
-
-            text_line = 2;
-            editor_fetch_line();
-            editor_clear_line();
-            editor_render_string("yes: RETURN");
-            screen_rbuffer.rows_used = CURRENT_ROW;
-            outputLineToRenderBuffer();
-
-            text_line = 4;
-            editor_fetch_line();
-            editor_clear_line();
-            editor_render_string("no:  ESC");
-            screen_rbuffer.rows_used = CURRENT_ROW;
-            outputLineToRenderBuffer();
-
-            while (READ_KEY() != KEY_ESC && READ_KEY() != KEY_RETURN) continue;
-            if (READ_KEY() == KEY_RETURN)
+            lcopy((ptr_t)"default.mwt", (ptr_t)file_name, sizeof("default.mwt"));
+            if (fileio_create_pres())
             {
-                // reinitalise
-                editor_goto_slide(0);
-                editor_initialise();
+                HIDE_CURSOR();
+                editor_stash_line();
+                editor_save_slide();
+                kk = text_line;
+                cc = cursor_col;
+                // XXX - "Are you sure?" prompt
+
+                active_rbuffer = &screen_rbuffer;
+                clearRenderBuffer();
+                active_rbuffer = &scratch_rbuffer;
+                clearRenderBuffer();
+
+                text_line = 0;
+                editor_fetch_line();
+                editor_clear_line();
+                editor_render_string("start a new presentation? unsaved changes will be lost");
+                screen_rbuffer.rows_used = CURRENT_ROW;
+                outputLineToRenderBuffer();
+
+                text_line = 2;
+                editor_fetch_line();
+                editor_clear_line();
+                editor_render_string("yes: RETURN");
+                screen_rbuffer.rows_used = CURRENT_ROW;
+                outputLineToRenderBuffer();
+
+                text_line = 4;
+                editor_fetch_line();
+                editor_clear_line();
+                editor_render_string("no:  ESC");
+                screen_rbuffer.rows_used = CURRENT_ROW;
+                outputLineToRenderBuffer();
+
+                while (READ_KEY() != KEY_ESC && READ_KEY() != KEY_RETURN) continue;
+                if (READ_KEY() == KEY_RETURN)
+                {
+                    // reinitalise
+                    editor_goto_slide(0);
+                    editor_initialise();
+                }
+                else
+                {
+                    // return to normal editing
+                    text_line = kk;
+                    cursor_col = cc;
+                }
+                editor_load_slide();
+                editor_fetch_line();
+                kk = 0;
             }
-            else
-            {
-                // return to normal editing
-                text_line = kk;
-                cursor_col = cc;
-            }
-            editor_load_slide();
-            editor_fetch_line();
-            kk = 0;
         } break;
         default: break;
     }
