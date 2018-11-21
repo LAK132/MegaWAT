@@ -24,7 +24,7 @@ C65OPTS=	-t c64 -O -Or -Oi -Os --cpu 65c02 -I$(CC65DIR)/include
 L65OPTS=	-C c64-m65.cfg --asm-include-dir $(CC65DIR)/asminc --lib-path $(CC65DIR)/lib
 
 FILES=		$(PROGRAM) \
-		$(BINDIR)/loader.prg \
+			$(BINDIR)/loader.prg \
 			autoboot.c65 \
 			c64-m65.cfg
 
@@ -37,6 +37,7 @@ SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/f65.c \
 			$(SRCDIR)/globals.c \
 			$(SRCDIR)/serial.c \
+			$(SRCDIR)/fileio.c \
 			$(SRCDIR)/charset.s \
 			$(SRCDIR)/romprotection.s
 
@@ -49,6 +50,7 @@ ASSFILES=	$(OBJDIR)/main.s \
 			$(OBJDIR)/f65.s \
 			$(OBJDIR)/globals.s \
 			$(OBJDIR)/serial.s \
+			$(OBJDIR)/fileio.s \
 			$(OBJDIR)/charset.s \
 			$(OBJDIR)/romprotection.s
 
@@ -61,6 +63,7 @@ HEADERS=	Makefile \
 			$(SRCDIR)/f65.h \
 			$(SRCDIR)/megaint.h \
 			$(SRCDIR)/serial.h \
+			$(SRCDIR)/fileio.h \
 			$(SRCDIR)/ascii.h
 
 DATAFILES=	ascii8x8.bin
@@ -85,7 +88,7 @@ endif
 
 MONLOAD=	$(COREDIR)/src/tools/monitor_load
 KICKUP=		$(COREDIR)/bin/KICKUP.M65
-BITSTRM=	$(COREDIR)/bin/nexys4ddr.bit
+BITSTRM=	$(COREDIR)/bin/nexys4ddr20181120.10.bit
 CHARROM=	$(COREDIR)/charrom.bin
 
 TTFTOF65=	$(FONTRSTDIR)/ttftof65
