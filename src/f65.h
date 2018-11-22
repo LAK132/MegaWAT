@@ -10,17 +10,29 @@ extern ptr_t current_font;
 extern uint32_t font_addresses[MAX_FONTS];
 extern uint8_t font_count;
 
-// Try to keep this structure 8 bytes = a power of two for efficiency
-typedef struct glyph_details {
-    uint16_t code_point;
-    uint8_t font_id;
+typedef struct glyph_size {
     uint8_t rows_above;
     uint8_t rows_below;
     uint8_t columns;
     uint8_t trim_pixels;
+} glyph_size_t;
+
+// Try to keep this structure 8 bytes = a power of two for efficiency
+typedef struct glyph_details {
+    uint16_t code_point;
+    uint8_t font_id;
+    ptr_t map_pos;
+    glyph_size_t size;
+    // uint8_t rows_above;
+    // uint8_t rows_below;
+    // uint8_t columns;
+    // uint8_t trim_pixels;
     uint8_t first_column;
     uint8_t colour_and_attributes;
 } glyph_details_t;
+
+extern glyph_details_t glyph_buffer;
+extern glyph_details_t *active_glyph;
 
 typedef struct render_buffer
 {
@@ -51,14 +63,16 @@ extern uint8_t clear_pattern[4];
 extern uint8_t end_of_line_pattern[2];
 
 void deleteGlyph(uint8_t glyph_num);
-void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alpha_and_extras, uint8_t position);
+void getGlyphDetails(uint16_t code_point, uint8_t colour_and_attributes, uint8_t first_column);
+void renderGlyphDetails(uint8_t alpha_and_extras, uint8_t position);
+// void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alpha_and_extras, uint8_t position);
 void setFont(uint8_t id);
 void findFontStructures(void);
 void patchFonts(void);
 void patchFont(void);
 void clearRenderBuffer(void);
 void outputLineToRenderBuffer(void);
-void renderTextUTF16(uint16_t *str, uint8_t colour_and_attributes, uint8_t alpha_and_extras);
-void renderTextASCII(uint8_t *str, uint8_t colour_and_attributes, uint8_t alpha_and_extras);
+// void renderTextUTF16(uint16_t *str, uint8_t colour_and_attributes, uint8_t alpha_and_extras);
+// void renderTextASCII(uint8_t *str, uint8_t colour_and_attributes, uint8_t alpha_and_extras);
 
 #endif // F65_H

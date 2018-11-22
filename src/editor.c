@@ -29,7 +29,7 @@ uint16_t editor_scratch[EDITOR_LINE_LEN];
 uint16_t editor_buffer[SLIDE_SIZE / sizeof(uint16_t)];
 uint32_t editor_buffer_size = sizeof(editor_buffer) / sizeof(uint16_t);
 
-#define EDITOR_END_SLIDE 64
+#define EDITOR_END_SLIDE 16
 #define EDITOR_MAX_SLIDES (EDITOR_END_SLIDE + 1)
 ptr_t slide_start[EDITOR_MAX_SLIDES];
 uint32_t slide_number = 0;
@@ -210,8 +210,13 @@ void editor_stash_line(void)
 void editor_render_string(const uint8_t *str)
 {
     active_rbuffer = &scratch_rbuffer;
+    active_glyph = &glyph_buffer;
     for (; *str != 0; ++str)
-        renderGlyph(*str, text_colour, ATTRIB_ALPHA_BLEND, cursor_col++);
+    {
+        getGlyphDetails(*str, text_colour, 0);
+        renderGlyphDetails(ATTRIB_ALPHA_BLEND, cursor_col);
+        // renderGlyph(*str, text_colour, ATTRIB_ALPHA_BLEND, cursor_col++);
+    }
 
     if (text_line < EDITOR_END_LINE)
     {
@@ -239,7 +244,10 @@ void editor_render_string(const uint8_t *str)
 void editor_render_glyph(uint16_t code_point)
 {
     active_rbuffer = &scratch_rbuffer;
-    renderGlyph(code_point, text_colour, ATTRIB_ALPHA_BLEND, cursor_col);
+    active_glyph = &glyph_buffer;
+    getGlyphDetails(code_point, text_colour, 0);
+    renderGlyphDetails(ATTRIB_ALPHA_BLEND, cursor_col);
+    // renderGlyph(code_point, text_colour, ATTRIB_ALPHA_BLEND, cursor_col);
 
     if (text_line < EDITOR_END_LINE)
     {
@@ -460,7 +468,7 @@ void editor_update_cursor(void)
     // Work out where cursor should be
     xx = 15; // Fudge factor
     for (x = 0; x < cursor_col; ++x)
-        xx += (scratch_rbuffer.glyphs[x].columns * 8) - scratch_rbuffer.glyphs[x].trim_pixels;
+        xx += (scratch_rbuffer.glyphs[x].size.columns * 8) - scratch_rbuffer.glyphs[x].size.trim_pixels;
     // Work out cursor height
     // Note: Sprites use V200 dimensions, thus 4 V200 pixels per 8 V400 pixels.
     h = 4 * (scratch_rbuffer.max_above + scratch_rbuffer.max_below);
