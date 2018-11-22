@@ -279,7 +279,16 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
         {
             lcopy(point_list_address + i, (ptr_t)&the_code_point, 2);
             if (the_code_point == code_point)
+            {
+                // We have the glyph, so dig out the information on it.
+                map_pos = 0;
+                lcopy(point_list_address + i + 2, (ptr_t)&map_pos, 3);
+                rows_above = lpeek(map_pos);
+                rows_below = lpeek(map_pos + 1);
+                bytes_per_row = lpeek(map_pos + 2);
+                trim_pixels = lpeek(map_pos + 3);
                 break;
+            }
         }
         // No such glyph
         if (the_code_point != code_point)
@@ -293,23 +302,12 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
         // Font ID 0 = C64 character ROM font
         // Valid only for 0x00 - 0xFF
         if (code_point > 0xFF) return;
-    }
 
-    // We have the glyph, so dig out the information on it.
-    if (font_id)
-    {
-        map_pos = 0;
-        lcopy(point_list_address + i + 2, (ptr_t)&map_pos, 3);
-
-        rows_above = lpeek(map_pos);
-        rows_below = lpeek(map_pos + 1);
-        bytes_per_row = lpeek(map_pos + 2);
-        trim_pixels = lpeek(map_pos + 3);
-    }
-    else
-    {
         // C64 character ROM, so always 1x1 bytes, no trim.
-        rows_above = 1; rows_below = 0; bytes_per_row = 1; trim_pixels = 0;
+        rows_above = 1;
+        rows_below = 0;
+        bytes_per_row = 1;
+        trim_pixels = 0;
     }
 
     // If glyph is 0 pixels wide, nothing to do.
