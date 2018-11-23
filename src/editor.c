@@ -54,10 +54,10 @@ uint16_t cursor_toggle = 0;
 void editor_show_slide_number(void);
 void editor_hide_slide_number(void);
 
-// void editor_insert_line(uint8_t before)
-// {
-//     // Insert a new blank line before line #before
-// }
+void editor_insert_line(uint8_t before)
+{
+    // Insert a new blank line before line #before
+}
 
 void editor_get_line_info(void)
 {
