@@ -83,7 +83,7 @@ F1_EXISTS=$(shell [ -e c65.rom ] && echo 1 || echo 0 )
 ifeq ($(F1_EXISTS), 1)
 C65SYSROM=	c65.rom
 else
-C65SYSROM=	$(ROMDIR)/910111-390488-01.bin.rom
+C65SYSROM=	$(ROMDIR)/911001.bin.rom
 endif
 
 MONLOAD=	$(COREDIR)/src/tools/monitor_load
