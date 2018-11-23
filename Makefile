@@ -117,13 +117,13 @@ test:		$(XC65) $(C65SYSROM) $(DISK)
 	$(XC65) -rom $(C65SYSROM) -8 $(DISK)
 
 run:		$(MONLOAD) $(C65SYSROM)
-	# $(MONLOAD) -b $(BITSTRM) -l $(SERIAL)
-	$(MONLOAD) -b $(BITSTRM) -R $(C65SYSROM) -k $(KICKUP) -C $(CHARROM) -l $(SERIAL)
+	$(MONLOAD) -b $(BITSTRM) -l $(SERIAL)
+	# $(MONLOAD) -b $(BITSTRM) -R $(C65SYSROM) -k $(KICKUP) -C $(CHARROM) -l $(SERIAL)
 
 # Load the program onto the MEGA65
 load:		$(MONLOAD) $(C65SYSROM) $(PROGRAM)
-	# $(MONLOAD) -b $(BITSTRM) -4 -r $(PROGRAM) -l $(SERIAL)
-	$(MONLOAD) -b $(BITSTRM) -R $(C65SYSROM) -k $(KICKUP) -C $(CHARROM) -4 -r $(PROGRAM) -l $(SERIAL)
+	$(MONLOAD) -b $(BITSTRM) -4 -r $(PROGRAM) -l $(SERIAL)
+	# $(MONLOAD) -b $(BITSTRM) -R $(C65SYSROM) -k $(KICKUP) -C $(CHARROM) -4 -r $(PROGRAM) -l $(SERIAL)
 
 # TEMPLATES
 

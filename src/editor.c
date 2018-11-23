@@ -54,10 +54,10 @@ uint16_t cursor_toggle = 0;
 void editor_show_slide_number(void);
 void editor_hide_slide_number(void);
 
-void editor_insert_line(uint8_t before)
-{
-    // Insert a new blank line before line #before
-}
+// void editor_insert_line(uint8_t before)
+// {
+//     // Insert a new blank line before line #before
+// }
 
 void editor_get_line_info(void)
 {
@@ -207,17 +207,8 @@ void editor_stash_line(void)
     }
 }
 
-void editor_render_string(const uint8_t *str)
+void editor_check_line_grew(void)
 {
-    active_rbuffer = &scratch_rbuffer;
-    active_glyph = &glyph_buffer;
-    for (; *str != 0; ++str)
-    {
-        getGlyphDetails(*str, text_colour, 0);
-        renderGlyphDetails(ATTRIB_ALPHA_BLEND, cursor_col);
-        // renderGlyph(*str, text_colour, ATTRIB_ALPHA_BLEND, cursor_col++);
-    }
-
     if (text_line < EDITOR_END_LINE)
     {
         // Check if this code point grew the height of the line.
@@ -239,6 +230,83 @@ void editor_render_string(const uint8_t *str)
                 text_line_first_rows[y] += s;
         }
     }
+}
+
+void editor_check_line_shrunk(void)
+{
+    if (text_line < EDITOR_END_LINE)
+    {
+        // Check if this code point grew the height of the line.
+        // If so, push everything else down before pasting
+        // s = glyph height - row height (how much bigger the glyph is than the row)
+        s = (scratch_rbuffer.max_above + scratch_rbuffer.max_below) - CURRENT_ROW_HEIGHT;
+        // Always make sure the row is atleast 1 line high
+        if (scratch_rbuffer.max_above + scratch_rbuffer.max_below == 0)
+        {
+            // This row is now completely blank, so clear it as such
+            l = CURRENT_ROW * screen_width;
+            sram = screen_rbuffer.screen_ram + l;
+            cram = screen_rbuffer.colour_ram + l;
+            // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
+            lcopy((ptr_t)clear_pattern, sram, sizeof(clear_pattern));
+
+            l = screen_width - sizeof(clear_pattern);
+            // Fill out to whole line
+            lcopy(sram, sram + sizeof(clear_pattern), l);
+
+            // We don't want this line to actually be 0 tall, so increment
+            ++s;
+        }
+        if (s < 0)
+        {
+            // Yes, it shrunk.
+            // Now shift everything below this line up (on the SCREEN buffer)
+            l = NEXT_ROW * screen_width;
+            sram = screen_rbuffer.screen_ram + l;
+            cram = screen_rbuffer.colour_ram + l;
+            lcopy_safe(sram, sram + (s * (int32_t)screen_width), screen_rbuffer.screen_size - (l + screen_width));
+            lcopy_safe(cram, cram + (s * (int32_t)screen_width), screen_rbuffer.screen_size - (l + screen_width));
+
+            // Adjust first row for all following lines
+            for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
+                text_line_first_rows[y] += s;
+
+            if (END_ROW < EDITOR_MAX_LINES)
+            {
+                // There is now space at the end of the screen, blank it out
+                l = END_ROW * screen_width;
+                sram = screen_rbuffer.screen_ram + l;
+                cram = screen_rbuffer.colour_ram + l;
+                // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
+                lcopy((ptr_t)clear_pattern, sram, sizeof(clear_pattern));
+
+                l = screen_width - sizeof(clear_pattern);
+                // Fill out to whole line
+                lcopy(sram, sram + sizeof(clear_pattern), l);
+
+                l = (EDITOR_END_LINE - END_ROW) * screen_width;
+                // Then copy it down over the next remaining rows.
+                lcopy(sram, sram + screen_width, l - screen_width);
+                // Fill the rest of the colour ram with 0x00
+                lfill(cram, 0x00, l);
+            }
+        }
+    }
+}
+
+uint8_t *string_buffer;
+void editor_render_string(void)
+{
+    active_rbuffer = &scratch_rbuffer;
+    active_glyph = &glyph_buffer;
+    for (; *string_buffer != 0; ++string_buffer)
+    {
+        getGlyphDetails(*string_buffer, text_colour, 0);
+        renderGlyphDetails(ATTRIB_ALPHA_BLEND, cursor_col);
+        // renderGlyph(*string_buffer, text_colour, ATTRIB_ALPHA_BLEND, cursor_col++);
+    }
+
+    editor_check_line_grew();
 }
 
 void editor_render_glyph(uint16_t code_point)
@@ -249,27 +317,7 @@ void editor_render_glyph(uint16_t code_point)
     renderGlyphDetails(ATTRIB_ALPHA_BLEND, cursor_col);
     // renderGlyph(code_point, text_colour, ATTRIB_ALPHA_BLEND, cursor_col);
 
-    if (text_line < EDITOR_END_LINE)
-    {
-        // Check if this code point grew the height of the line.
-        // If so, push everything else down before pasting
-        // s = glyph height - row height (how much bigger the glyph is than the row)
-        s = (scratch_rbuffer.max_above + scratch_rbuffer.max_below) - CURRENT_ROW_HEIGHT;
-        if (s > 0)
-        {
-            // Yes, it grew.
-            // Now shift everything below this line down (on the SCREEN buffer)
-            l = NEXT_ROW * screen_width;
-            sram = screen_rbuffer.screen_ram + l;
-            cram = screen_rbuffer.colour_ram + l;
-            lcopy_safe(sram, sram + (s * screen_width), screen_rbuffer.screen_size - (l + screen_width));
-            lcopy_safe(cram, cram + (s * screen_width), screen_rbuffer.screen_size - (l + screen_width));
-
-            // Adjust first row for all following lines
-            for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
-                text_line_first_rows[y] += s;
-        }
-    }
+    editor_check_line_grew();
 }
 
 void editor_clear_line(void)
@@ -280,64 +328,7 @@ void editor_clear_line(void)
         deleteGlyph(cursor_col--);
     deleteGlyph(cursor_col);
 
-    if (text_line < EDITOR_END_LINE)
-    {
-        // Check if this code point grew the height of the line.
-        // If so, push everything else down before pasting
-        // s = glyph height - row height (how much bigger the glyph is than the row)
-        s = (scratch_rbuffer.max_above + scratch_rbuffer.max_below) - CURRENT_ROW_HEIGHT;
-        // Always make sure the row is atleast 1 line high
-        if (scratch_rbuffer.max_above + scratch_rbuffer.max_below == 0)
-        {
-            // This row is now completely blank, so clear it as such
-            l = CURRENT_ROW * screen_width;
-            sram = screen_rbuffer.screen_ram + l;
-            cram = screen_rbuffer.colour_ram + l;
-            // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
-            lcopy((ptr_t)clear_pattern, sram, sizeof(clear_pattern));
-
-            l = screen_width - sizeof(clear_pattern);
-            // Fill out to whole line
-            lcopy(sram, sram + sizeof(clear_pattern), l);
-
-            // We don't want this line to actually be 0 tall, so increment
-            ++s;
-        }
-        if (s < 0)
-        {
-            // Yes, it shrunk.
-            // Now shift everything below this line up (on the SCREEN buffer)
-            l = NEXT_ROW * screen_width;
-            sram = screen_rbuffer.screen_ram + l;
-            cram = screen_rbuffer.colour_ram + l;
-            lcopy_safe(sram, sram + (s * (int32_t)screen_width), screen_rbuffer.screen_size - (l + screen_width));
-            lcopy_safe(cram, cram + (s * (int32_t)screen_width), screen_rbuffer.screen_size - (l + screen_width));
-
-            // Adjust first row for all following lines
-            for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
-                text_line_first_rows[y] += s;
-
-            if (END_ROW < EDITOR_MAX_LINES)
-            {
-                // There is now space at the end of the screen, blank it out
-                l = END_ROW * screen_width;
-                sram = screen_rbuffer.screen_ram + l;
-                cram = screen_rbuffer.colour_ram + l;
-                // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
-                lcopy((ptr_t)clear_pattern, sram, sizeof(clear_pattern));
-
-                l = screen_width - sizeof(clear_pattern);
-                // Fill out to whole line
-                lcopy(sram, sram + sizeof(clear_pattern), l);
-
-                l = (EDITOR_END_LINE - END_ROW) * screen_width;
-                // Then copy it down over the next remaining rows.
-                lcopy(sram, sram + screen_width, l - screen_width);
-                // Fill the rest of the colour ram with 0x00
-                lfill(cram, 0x00, l);
-            }
-        }
-    }
+    editor_check_line_shrunk();
 }
 
 void editor_delete_glyph(void)
@@ -345,64 +336,7 @@ void editor_delete_glyph(void)
     active_rbuffer = &scratch_rbuffer;
     deleteGlyph(cursor_col);
 
-    if (text_line < EDITOR_END_LINE)
-    {
-        // Check if this code point grew the height of the line.
-        // If so, push everything else down before pasting
-        // s = glyph height - row height (how much bigger the glyph is than the row)
-        s = (scratch_rbuffer.max_above + scratch_rbuffer.max_below) - CURRENT_ROW_HEIGHT;
-        // Always make sure the row is atleast 1 line high
-        if (scratch_rbuffer.max_above + scratch_rbuffer.max_below == 0)
-        {
-            // This row is now completely blank, so clear it as such
-            l = CURRENT_ROW * screen_width;
-            sram = screen_rbuffer.screen_ram + l;
-            cram = screen_rbuffer.colour_ram + l;
-            // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
-            lcopy((ptr_t)clear_pattern, sram, sizeof(clear_pattern));
-
-            l = screen_width - sizeof(clear_pattern);
-            // Fill out to whole line
-            lcopy(sram, sram + sizeof(clear_pattern), l);
-
-            // We don't want this line to actually be 0 tall, so increment
-            ++s;
-        }
-        if (s < 0)
-        {
-            // Yes, it shrunk.
-            // Now shift everything below this line up (on the SCREEN buffer)
-            l = NEXT_ROW * screen_width;
-            sram = screen_rbuffer.screen_ram + l;
-            cram = screen_rbuffer.colour_ram + l;
-            lcopy_safe(sram, sram + (s * (int32_t)screen_width), screen_rbuffer.screen_size - (l + screen_width));
-            lcopy_safe(cram, cram + (s * (int32_t)screen_width), screen_rbuffer.screen_size - (l + screen_width));
-
-            // Adjust first row for all following lines
-            for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
-                text_line_first_rows[y] += s;
-
-            if (END_ROW < EDITOR_MAX_LINES)
-            {
-                // There is now space at the end of the screen, blank it out
-                l = END_ROW * screen_width;
-                sram = screen_rbuffer.screen_ram + l;
-                cram = screen_rbuffer.colour_ram + l;
-                // Fill screen RAM with 0x20 0x00 pattern, so that it is blank.
-                lcopy((ptr_t)clear_pattern, sram, sizeof(clear_pattern));
-
-                l = screen_width - sizeof(clear_pattern);
-                // Fill out to whole line
-                lcopy(sram, sram + sizeof(clear_pattern), l);
-
-                l = (EDITOR_END_LINE - END_ROW) * screen_width;
-                // Then copy it down over the next remaining rows.
-                lcopy(sram, sram + screen_width, l - screen_width);
-                // Fill the rest of the colour ram with 0x00
-                lfill(cram, 0x00, l);
-            }
-        }
-    }
+    editor_check_line_shrunk();
 }
 
 void editor_fetch_line(void)
@@ -677,7 +611,6 @@ void editor_goto_slide(uint8_t num)
             editor_next_slide();
 }
 
-FILE *file;
 uint32_t kk, cc;
 void editor_process_special_key(uint8_t key)
 {
@@ -924,21 +857,24 @@ void editor_process_special_key(uint8_t key)
             text_line = 0;
             editor_fetch_line();
             editor_clear_line();
-            editor_render_string("start a new presentation? unsaved changes will be lost");
+            string_buffer = "start a new presentation? unsaved changes will be lost";
+            editor_render_string();
             screen_rbuffer.rows_used = CURRENT_ROW;
             outputLineToRenderBuffer();
 
             text_line = 2;
             editor_fetch_line();
             editor_clear_line();
-            editor_render_string("yes: RETURN");
+            string_buffer = "yes: RETURN";
+            editor_render_string();
             screen_rbuffer.rows_used = CURRENT_ROW;
             outputLineToRenderBuffer();
 
             text_line = 4;
             editor_fetch_line();
             editor_clear_line();
-            editor_render_string("no:  ESC");
+            string_buffer = "no:  ESC";
+            editor_render_string();
             screen_rbuffer.rows_used = CURRENT_ROW;
             outputLineToRenderBuffer();
 
