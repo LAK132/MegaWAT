@@ -5,10 +5,11 @@ SRCDIR=		src
 OBJDIR=		obj
 BINDIR=		bin
 ROMDIR=		rom
+ASTDIR=		assets
 MKDIRS=		$(SRCDIR) $(OBJDIR) $(BINDIR) $(ROMDIR)
 
 DISK=		$(BINDIR)/DISK.D81
-PROGRAM=	$(BINDIR)/megawat+fonts.prg
+PROGRAM=	$(BINDIR)/megawat.fprg
 SERIAL=		/dev/ttyUSB1
 
 WGET=		wget
@@ -148,14 +149,14 @@ $(BINDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(BINDIR)
 $(BINDIR)/loader.prg:	src/fast_memory.s src/splash.s src/loader.c src/memory.c src/memory.h Makefile $(ASTDIR)/megawat-splash.m65
 	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ src/splash.s src/loader.c src/memory.c src/fast_memory.s
 
-$(BINDIR)/%+fonts.prg:	Makefile $(OBJDIR)/fontpack.fpk $(BINDIR)/%.prg $(C65SYSROM)
+$(BINDIR)/%.fprg:	Makefile $(OBJDIR)/%.fpk $(BINDIR)/%.prg $(C65SYSROM)
 	#	Generate single binary with fonts and ROM in place
 	dd if=$(BINDIR)/$*.prg of=$@
 	dd if=/dev/zero bs=1024 count=12 of=$@ oflag=append conv=notrunc
 	dd if=$(ASTDIR)/dosram.bin bs=1024 count=8 of=$@ oflag=append conv=notrunc
 	dd if=/dev/zero bs=1024 count=56 of=$@ oflag=append conv=notrunc
 	dd if=$(C65SYSROM) bs=1024 count=128 of=$@ oflag=append conv=notrunc
-	dd if=$(OBJDIR)/fontpack.fpk bs=1024 count=128 of=$@ oflag=append conv=notrunc
+	dd if=$(OBJDIR)/$*.fpk bs=1024 count=128 of=$@ oflag=append conv=notrunc
 
 $(BINDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(BINDIR)
 	if [ -f $@ ]; then rm -f $@; fi
