@@ -31,7 +31,7 @@ set fontlist=( \
 set size=`ls -l $fontlist | cut -f5 -d" " | awk '{ n+=$1; } END { print n; }'`
 echo "This will take $size bytes"
 if ( $size > 131071 ) then
-  echo "ERROR: Fonts must be <128KB in total"
+  /bin/sh -c 'echo "ERROR: Fonts must be <128KB in total" 1>&2'
   exit 1
 endif
 

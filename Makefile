@@ -90,7 +90,7 @@ endif
 
 MONLOAD=	$(COREDIR)/src/tools/monitor_load
 KICKUP=		$(COREDIR)/bin/KICKUP.M65
-BITSTRM=	$(COREDIR)/bin/nexys4ddr20181120.10.bit
+BITSTRM=	$(COREDIR)/bin/nexys4ddr-widget-20181123.10-newpix-f8ddc75+DIRTY.bit
 CHARROM=	$(COREDIR)/charrom.bin
 
 TTFTOF65=	$(FONTRSTDIR)/ttftof65
@@ -141,7 +141,7 @@ $(ROMDIR)/%.rom:	| $(ROMDIR)
 	$(WGET) -O $@ http://www.zimmers.net/anonftp/pub/cbm/firmware/computers/c65/$* || { rm -f $@ ; false; }
 
 $(OBJDIR)/%.fpk:	Makefile $(ASTDIR)/*.ttf $(ASTDIR)/*.otf $(TTFTOF65) | $(ASTDIR) $(OBJDIR)
-	./makefonts.sh $@
+	./makefonts.sh $@ > /dev/null
 
 $(BINDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(BINDIR)
 	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(ASSFILES)
