@@ -294,30 +294,23 @@ void editor_check_line_shrunk(void)
     }
 }
 
-uint8_t *string_buffer;
-void editor_render_string(void)
-{
-    active_rbuffer = &scratch_rbuffer;
-    active_glyph = &glyph_buffer;
-    for (; *string_buffer != 0; ++string_buffer)
-    {
-        getGlyphDetails(*string_buffer, text_colour, 0);
-        renderGlyphDetails(ATTRIB_ALPHA_BLEND, cursor_col);
-        // renderGlyph(*string_buffer, text_colour, ATTRIB_ALPHA_BLEND, cursor_col++);
-    }
-
-    editor_check_line_grew();
-}
-
 void editor_render_glyph(uint16_t code_point)
 {
     active_rbuffer = &scratch_rbuffer;
     active_glyph = &glyph_buffer;
     getGlyphDetails(code_point, text_colour, 0);
     renderGlyphDetails(ATTRIB_ALPHA_BLEND, cursor_col);
-    // renderGlyph(code_point, text_colour, ATTRIB_ALPHA_BLEND, cursor_col);
-
     editor_check_line_grew();
+}
+
+uint8_t *string_buffer;
+void editor_render_string(void)
+{
+    for (; *string_buffer != 0; ++string_buffer)
+    {
+        editor_render_glyph(*string_buffer);
+        ++cursor_col;
+    }
 }
 
 void editor_clear_line(void)
