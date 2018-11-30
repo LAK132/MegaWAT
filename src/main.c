@@ -11,11 +11,13 @@ void main(void)
 void megamain()
 #endif
 {
+    // /*
     m65_io_enable();
     // disable keyboard interupt
     // POKE(0x0314, 0x81);
     // disable all maskable interupt
     __asm__("sei");
+    videoDisableVicIIHotReg();
 
     // Turn off write protection so we can use more RAM
     toggle_write_protection();
@@ -37,4 +39,5 @@ void megamain()
         // continue;
         editor_poll_keyboard();
     #endif
+    // */
 }

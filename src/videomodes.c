@@ -5,6 +5,11 @@
 #include "videomodes.h"
 #include "main.h"
 
+void videoDisableVicIIHotReg(void)
+{
+    POKE(0xD05D, PEEK(0xD05D) & 0x7f);
+}
+
 void videoSetSlideMode(void)
 {
     /* 800x600 with 800x480 active area.
