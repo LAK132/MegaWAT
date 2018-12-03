@@ -11,9 +11,9 @@
 #include "editor.h"
 #include "serial.h"
 
-// #ifdef __MEGA65__
-// #include "ascii.h"
-// #endif
+#ifdef __MEGA65__
+#include "ascii.h"
+#endif
 
 extern int16_t font_file;
 extern int16_t font_file_size;
