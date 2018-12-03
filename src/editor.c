@@ -796,7 +796,12 @@ void editor_process_special_key(uint8_t key)
             editor_stash_line();
             editor_save_slide();
 
-            lcopy((ptr_t)"default.mwt", (ptr_t)file_name, sizeof("default.mwt"));
+            // XXX - switch to blank slide
+            // XXX - use slide to show SD card contents
+            // XXX - use hardware reverse to show selection
+            // XXX - on RETURN: load presentation
+            // XXX - on ESC: return to editing previous presentation
+            // lcopy((ptr_t)"default.mwt,s,w", (ptr_t)file_name, sizeof("default.mwt"));
             if (fileio_load_pres())
             {
                 console_write_au32(errno);
@@ -807,54 +812,31 @@ void editor_process_special_key(uint8_t key)
                 editor_initialise();
             }
 
-            // XXX - switch to blank slide
-            // XXX - use slide to show SD card contents
-            // XXX - use hardware reverse to show selection
-            // XXX - on RETURN: load presentation
-            // XXX - on ESC: return to editing previous presentation
             editor_load_slide();
             editor_fetch_line();
         } break;
         case 0xD3: { // MEGA S
-            // if previously saved and SHIFT not held, save silently
-            if (file_name[0] != 0 && mod != MOD_SHIFT)
-            {
-                // Save
-                editor_stash_line();
-                editor_save_slide();
-                lcopy((ptr_t)"default.mwt", (ptr_t)file_name, sizeof("default.mwt"));
-                if (fileio_save_pres())
-                {
-                    console_write_au32(errno);
-                    console_write_astr(strerror(errno));
-                }
-                editor_load_slide();
-                editor_fetch_line();
-            }
-            else
+            editor_stash_line();
+            editor_save_slide();
+
+            // if not saved previously or SHIFT held, go to SAVE AS screen
+            if (file_name[0] == 0 || mod == MOD_SHIFT)
             {
                 // Save As
-                editor_stash_line();
-                editor_save_slide();
                 // XXX - switch to blank slide
                 // XXX - use scratch buffer for input
                 // XXX - on RETURN: save
                 // XXX - on ESC: cancel
-                lcopy((ptr_t)"default.mwt", (ptr_t)file_name, sizeof("default.mwt"));
-                if (fileio_create_pres())
-                {
-                    console_write_au32(errno);
-                    console_write_astr(strerror(errno));
-                }
-                if (fileio_save_pres())
-                {
-                    console_write_au32(errno);
-                    console_write_astr(strerror(errno));
-                }
-
-                editor_load_slide();
-                editor_fetch_line();
+                // lcopy((ptr_t)"default.mwt,s,w", (ptr_t)file_name, sizeof("default.mwt"));
             }
+            if (fileio_save_pres())
+            {
+                console_write_au32(errno);
+                console_write_astr(strerror(errno));
+            }
+
+            editor_load_slide();
+            editor_fetch_line();
         } break;
         case 0xCE: { // MEGA N
             // New
@@ -877,18 +859,8 @@ void editor_process_special_key(uint8_t key)
             while (READ_KEY() != KEY_ESC && READ_KEY() != KEY_RETURN) continue;
             if (READ_KEY() == KEY_RETURN)
             {
-                lcopy((ptr_t)"default.mwt", (ptr_t)file_name, sizeof("default.mwt"));
-                if (!fileio_create_pres())
-                {
-                    // reinitalise
-                    editor_goto_slide(0);
-                    editor_initialise();
-                }
-                else
-                {
-                    console_write_au32(errno);
-                    console_write_astr(strerror(errno));
-                }
+                // restart
+                editor_start();
             }
             else
             {
