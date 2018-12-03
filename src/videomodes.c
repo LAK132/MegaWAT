@@ -5,13 +5,11 @@
 #include "videomodes.h"
 #include "main.h"
 
-void videoDisableVicIIHotReg(void)
-{
-    POKE(0xD05D, PEEK(0xD05D) & 0x7f);
-}
-
 void videoSetSlideMode(void)
 {
+    // Enable VicII hot registers
+    POKE(0xD05DU, PEEK(0xD05DU) | 0x80);
+
     /* 800x600 with 800x480 active area.
      16 bit text mode with 100 character virtual line length.
     */
@@ -40,8 +38,8 @@ void videoSetSlideMode(void)
     POKE(0xD015U,0x01);
 
     // No side borders
-    POKE(0xd05cU,0);
-    POKE(0xd05dU,0);
+    POKE(0xD05CU, 0x00);
+    POKE(0xD05DU, PEEK(0xD05DU) & 0x80);
 
     // Set H640 and V400 and enable extended attributes and 8-bit colour values
     POKE(0xd031,0xa8);
@@ -65,6 +63,12 @@ void videoSetSlideMode(void)
 
     // Place character generator adjacent to freshly moved top border
     POKE(0xd04E,0x52);
+
+    // Disable VicII hot registers
+    POKE(0xD05DU, PEEK(0xD05DU) & ~0x80);
+
+    // Disable maskable interrupts (MEGA+SHIFT)
+    __asm__("sei");
 
     lfill(SLIDE0_SCREEN_RAM, 0, SLIDE_SIZE);
     lfill(SLIDE1_SCREEN_RAM, 0, SLIDE_SIZE);
