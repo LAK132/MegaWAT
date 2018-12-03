@@ -863,29 +863,9 @@ void editor_process_special_key(uint8_t key)
             active_rbuffer = &scratch_rbuffer;
             clearRenderBuffer();
 
-            text_line = 0;
-            editor_fetch_line();
-            editor_clear_line();
-            string_buffer = "start a new presentation? unsaved changes will be lost";
-            editor_render_string();
-            screen_rbuffer.rows_used = CURRENT_ROW;
-            outputLineToRenderBuffer();
-
-            text_line = 2;
-            editor_fetch_line();
-            editor_clear_line();
-            string_buffer = "yes: RETURN";
-            editor_render_string();
-            screen_rbuffer.rows_used = CURRENT_ROW;
-            outputLineToRenderBuffer();
-
-            text_line = 4;
-            editor_fetch_line();
-            editor_clear_line();
-            string_buffer = "no:  ESC";
-            editor_render_string();
-            screen_rbuffer.rows_used = CURRENT_ROW;
-            outputLineToRenderBuffer();
+            editor_show_message(0, "start a new presentation? unsaved changes will be lost");
+            editor_show_message(2, "RETURN: ok");
+            editor_show_message(4, "ESC: cancel");
 
             while (READ_KEY() != KEY_ESC && READ_KEY() != KEY_RETURN) continue;
             if (READ_KEY() == KEY_RETURN)
