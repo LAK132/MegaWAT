@@ -912,61 +912,62 @@ uint8_t present_mode_message[8]={16+64,18,5,19,5,14,20,'.'};
 
 void editor_show_slide_number(void)
 {
+    // Clear sprite (8x21 bytes) and write
+    // info in it
+    lfill(0x0500, 0x00, 0x100);
 
-  // Clear sprite (8x21 bytes) and write
-  // info in it
-  lfill(0x0500,0x00,0x100);
+    // Produce message to show on the sprite
+    slide_num_message[6] = '0';
+    remainder = slide_number + 1;
+    while (remainder > 9)
+    {
+        remainder -= 10;
+        ++(slide_num_message[6]);
+    }
+    slide_num_message[7] = 0x30 + remainder;
+    if (slide_num_message[6] == '0')
+    {
+        slide_num_message[6] = slide_num_message[7];
+        slide_num_message[7] = ' ';
+    }
+    for (remainder = 0; remainder < 8; ++remainder)
+        for (yy = 0; yy < 8; ++yy)
+            POKE(0x0500 + remainder + (yy * 8), lpeek(0x2D800 + (slide_num_message[remainder] * 8) + yy));
 
-  // Produce message to show on the sprite
-  slide_num_message[6]='0';
-  remainder=slide_number+1;
-  while(remainder>9) { remainder-=10; slide_num_message[6]++; }
-  slide_num_message[7]=0x30+remainder;
-  if (slide_num_message[6]=='0') {
-    slide_num_message[6]=slide_num_message[7];
-    slide_num_message[7]=' ';
-  }
-  for(remainder=0;remainder<8;remainder++)
-    for(yy=0;yy<8;yy++)
-      POKE(0x0500+remainder+yy*8,lpeek(0x2D800+(slide_num_message[remainder]*8)+yy));
-
-  if (present_mode) {
-    for(remainder=0;remainder<8;remainder++)
-      for(yy=0;yy<8;yy++)
-    POKE(0x0540+remainder+yy*8,lpeek(0x2D800+(present_mode_message[remainder]*8)+yy));
-  } else {
-    // Display editing in reverse text, so that it is more obvious
-    for(remainder=0;remainder<8;remainder++)
-      for(yy=0;yy<8;yy++)
-    POKE(0x0540+remainder+yy*8,lpeek(0x2DC00+(edit_mode_message[remainder]*8)+yy));
-  }
+    if (present_mode)
+        for (remainder = 0; remainder < 8; ++remainder)
+            for (yy = 0; yy < 8; ++yy)
+                POKE(0x0540 + remainder + (yy * 8), lpeek(0x2D800 + (present_mode_message[remainder] * 8) + yy));
+    else // Display editing in reverse text, so that it is more obvious
+        for(remainder = 0; remainder < 8; ++remainder)
+            for(yy = 0; yy < 8; ++yy)
+                POKE(0x0540 + remainder + (yy * 8), lpeek(0x2DC00 + (edit_mode_message[remainder] * 8) + yy));
 
 
-  // Set sprite data fetch area to $0500
-  POKE(2041,0x0500/0x40);
-  // Extended width (64 pixels wide)
-  POKE(0xD057U,0x02);
+    // Set sprite data fetch area to $0500
+    POKE(2041, 0x0500 / 0x40);
+    // Extended width (64 pixels wide)
+    POKE(0xD057U, 0x02);
 
-  // Position sprite 2 near lower right corner
-  POKE(0xD003U,0xF7);
-  POKE(0xD002U,0xa0);
-  POKE(0xD010U,0x00);
-  POKE(0xD05FU,PEEK(0xD05FU)|0x02);
+    // Position sprite 2 near lower right corner
+    POKE(0xD003U, 0xF7);
+    POKE(0xD002U, 0xa0);
+    POKE(0xD010U, 0x00);
+    POKE(0xD05FU, PEEK(0xD05FU) | 0x02);
 
-  // Make sprite expanded in X any Y
-  // POKE(0xD017U,PEEK(0xD017U)|2);
-  POKE(0xD01DU,PEEK(0xD01DU)|2);
+    // Make sprite expanded in X any Y
+    // POKE(0xD017U, PEEK(0xD017U) | 2);
+    POKE(0xD01DU, PEEK(0xD01DU) | 2);
 
-  // Set sprite colour to light green
-  POKE(0xD028,0x0d);
+    // Set sprite colour to light green
+    POKE(0xD028U, 0x0D);
 
-  // Make sprite 2 visible again
-  POKE(0xD015U,PEEK(0xD015U)|0x02);
+    // Make sprite 2 visible again
+    POKE(0xD015U, PEEK(0xD015U) | 0x02);
 
-  // Start with message fully faded in
-  POKE(0xD074U,2);  // Make sprite alpha blended
-  POKE(0xD075U,0xFF); // Alpha blend set to fully visible
-
+    // Start with message fully faded in
+    POKE(0xD074U, 0x02); // Make sprite alpha blended
+    POKE(0xD075U, 0xFF); // Alpha blend set to fully visible
 }
 
 void editor_hide_slide_number(void)
