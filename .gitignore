@@ -3,6 +3,8 @@
 [Bb]in/
 .vs/
 .vscode/
-*.f65
-c65.rom
+*.[Bb][Ii][Nn]
+*.[Ff]65
+*.[Rr][Oo][Mm]
+*.[Dd]81
 *~
