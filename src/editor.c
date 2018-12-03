@@ -723,6 +723,11 @@ void editor_process_special_key(uint8_t key)
             }
         } break;
 
+        // Home
+        case 0x13: cursor_col = 0x00; k = 1; break;
+        // End (SHIFT + Home)
+        case 0x93: cursor_col = 0xFF; k = 1; break;
+
         // Cursor navigation within a line
         case 0x9d: if (cursor_col) --cursor_col; kk = 1; break;
         case 0x1d: if (cursor_col < scratch_rbuffer.glyph_count) ++cursor_col; kk = 1; break;
