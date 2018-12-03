@@ -29,11 +29,9 @@ uint16_t editor_scratch[EDITOR_LINE_LEN];
 uint16_t editor_buffer[SLIDE_SIZE / sizeof(uint16_t)];
 uint32_t editor_buffer_size = sizeof(editor_buffer) / sizeof(uint16_t);
 
-#define EDITOR_END_SLIDE 16
-#define EDITOR_MAX_SLIDES (EDITOR_END_SLIDE + 1)
 ptr_t slide_start[EDITOR_MAX_SLIDES];
 uint32_t slide_number = 0;
-uint8_t slide_colour[EDITOR_MAX_LINES];
+uint8_t slide_colour[EDITOR_MAX_SLIDES];
 
 #define HIDE_SPRITE(sprite) POKE(0xD015U, PEEK(0xD015U) & ~(1<<sprite))
 #define SHOW_SPRITE(sprite) POKE(0xD015U, PEEK(0xD015U) | (1<<sprite))
