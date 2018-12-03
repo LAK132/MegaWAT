@@ -604,6 +604,17 @@ void editor_goto_slide(uint8_t num)
             editor_next_slide();
 }
 
+void editor_show_message(uint8_t line, uint8_t *str)
+{
+    text_line = line;
+    editor_fetch_line();
+    editor_clear_line();
+    string_buffer = str;
+    editor_render_string();
+    screen_rbuffer.rows_used = CURRENT_ROW;
+    outputLineToRenderBuffer();
+}
+
 uint32_t kk, cc;
 void editor_process_special_key(uint8_t key)
 {
