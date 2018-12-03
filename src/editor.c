@@ -99,19 +99,8 @@ void editor_initialise(void)
     text_line = 0;
     cursor_col = 0;
 
-    lfill(SLIDE_DATA, 0, SLIDE_DATA_SIZE);
-    slide_start[0] = SLIDE_DATA;
-    for (y = 1; y < EDITOR_MAX_SLIDES; ++y)
-        slide_start[y] = slide_start[y-1] + (EDITOR_END_LINE * 2);
-
-    // default slide colours to 0x6
-    lfill((ptr_t)slide_colour, 0x6, sizeof(slide_colour));
-
-    // default to no file_name
-    lfill((ptr_t)file_name, 0, sizeof(file_name));
-
     // make sure slide 2 is preloaded correctly
-    editor_save_slide();
+    // editor_save_slide(); // DO NOT SAVE - EDITOR BUFFER IS BLANK
     editor_next_slide();
     editor_load_slide();
     editor_save_slide();
@@ -119,6 +108,26 @@ void editor_initialise(void)
     editor_load_slide();
 
     editor_show_slide_number();
+}
+
+void editor_start(void)
+{
+    videoSetSlideMode();
+
+    lfill(SLIDE_DATA, 0, SLIDE_DATA_SIZE);
+    slide_start[0] = SLIDE_DATA;
+    for (y = 1; y < EDITOR_MAX_SLIDES; ++y)
+        slide_start[y] = slide_start[y-1] + (EDITOR_END_LINE * 2);
+
+    // default to no file_name
+    // lfill((ptr_t)file_name, 0, sizeof(file_name));
+
+    // default slide colours to 0x6
+    lfill((ptr_t)slide_colour, 0x6, sizeof(slide_colour));
+
+    editor_show_cursor();
+
+    editor_initialise();
 }
 
 void editor_stash_line(void)

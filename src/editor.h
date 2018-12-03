@@ -18,6 +18,7 @@ extern uint8_t slide_colour[EDITOR_MAX_SLIDES];
 
 void editor_show_cursor(void);
 void editor_poll_keyboard(void);
-void editor_initialise(void);
+void editor_start(void);
+void editor_show_message(uint8_t line, uint8_t *str);
 
 #endif // EDITOR_H
