@@ -1,6 +1,6 @@
 #include "fileio.h"
 
-uint8_t file_name[FILE_NAME_MAX_LEN] = "default.mwt";
+uint8_t file_name[FILE_NAME_MAX_LEN] = "default";
 uint8_t drive = 8;
 
 uint8_t last_message[32];
@@ -9,12 +9,12 @@ static FILE *file;
 static uint8_t i, line = 0;
 static uint32_t j, sz, diff;
 
-/*
+// /*
 static uint8_t c;
 uint8_t get_error_code(uint8_t LFN)
 {
-    cbm_k_clrch();
     static int rtn = 0;
+    cbm_k_clrch();
     c = '0';
     i = 0;
     do {
@@ -29,11 +29,10 @@ uint8_t get_error_code(uint8_t LFN)
         last_message[i++] = c;
     } while (c != 0x0D);
     last_message[i] = 0;
-    show_last_error();
     return rtn;
 }
 
-uint8_t command[32];
+uint8_t command[42];
 uint8_t drive_command(uint8_t CMD)
 {
     static uint8_t i;
@@ -46,15 +45,65 @@ uint8_t drive_command(uint8_t CMD)
 }
 // */
 
+const static uint8_t mwb[] = ".mwb";
+const static uint8_t mwt[] = ".mwt";
+uint8_t backup_pres(uint8_t CMD)
+{
+    const static uint8_t renamef[] = "r:";
+    const static uint8_t scratch[] = "s:";
+    static uint8_t i, l;
+    l = strlen(file_name);
+
+    // Scratch previous backup
+    i = 0;
+    lcopy(scratch, command + i, sizeof(scratch) - 1);
+    i += sizeof(scratch) - 1;
+    lcopy(file_name, command + i, l);
+    i += l;
+    lcopy(mwb, command + i, sizeof(mwb) - 1);
+    i += sizeof(mwb) - 1;
+    command[i++] = '\n';
+    command[i] = 0;
+    drive_command(CMD);
+
+    // Make a new backup
+    i = 0;
+    lcopy(renamef, command + i, sizeof(renamef) - 1);
+    i += sizeof(renamef) - 1;
+    lcopy(file_name, command + i, l);
+    i += l;
+    lcopy(mwb, command + i, sizeof(mwb) - 1);
+    i += sizeof(mwb) - 1;
+    command[i++] = '=';
+    lcopy(file_name, command + i, l);
+    i += l;
+    lcopy(mwt, command + i, sizeof(mwt) - 1);
+    i += sizeof(mwt) - 1;
+    command[i++] = '\n';
+    command[i] = 0;
+    return drive_command(CMD);
+}
+
 // fread/fwrite are limited to 16 bits,
 // so we need a buffer in the 16 pointer range
 static uint8_t data_buffer[128];
 
 int fileio_save_pres(void)
 {
-    static int rtn = 0;
-    file = fopen(file_name, "w");
-    videoSetSlideMode();
+    static int rtn;
+    static uint8_t i;
+    cbm_k_setnam("");
+    cbm_k_setlfs(15, drive, 15);
+    cbm_k_open();
+    backup_pres(15);
+    cbm_k_close(15);
+
+    rtn = 0;
+    i = 0;
+    for (; file_name[i] != 0; ++i)
+        data_buffer[i] = file_name[i];
+    lcopy(mwt, data_buffer + i, sizeof(mwt));
+    file = fopen(data_buffer, "w");
     if (file)
     {
         for (i = 0; i < EDITOR_END_SLIDE; ++i)
@@ -94,20 +143,25 @@ int fileio_save_pres(void)
     else
     {
         rtn = errno;
-        editor_show_message(line++, "failed to open file");
+        // editor_show_message(line++, "failed to open file");
+        editor_show_message(line++, strerror(rtn));
         for (;;) TOGGLE_BACK();
     }
     videoSetSlideMode();
-
     return rtn;
 }
 
 int fileio_load_pres(void)
 {
-    static int rtn = 0;
+    static int rtn;
+    static uint8_t i;
+    rtn = 0;
     line = 0;
-    file = fopen(file_name, "r");
-    videoSetSlideMode();
+    i = 0;
+    for (; file_name[i] != 0; ++i)
+        data_buffer[i] = file_name[i];
+    lcopy(mwt, data_buffer + i, sizeof(mwt));
+    file = fopen(data_buffer, "r");
     if (file)
     {
         slide_start[0] = SLIDE_DATA;
@@ -148,10 +202,10 @@ int fileio_load_pres(void)
     else
     {
         rtn = errno;
-        editor_show_message(line++, "failed to open file");
+        // editor_show_message(line++, "failed to open file");
+        editor_show_message(line++, strerror(rtn));
         for (;;) TOGGLE_BACK();
     }
     videoSetSlideMode();
-
     return rtn;
 }

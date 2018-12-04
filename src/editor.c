@@ -48,7 +48,8 @@ uint32_t sram, cram;
 uint16_t cursor_toggle = 0;
 
 void editor_show_slide_number(void);
-void editor_hide_slide_number(void);
+// void editor_hide_slide_number(void);
+#define editor_hide_slide_number() lfill(0x0500,0x00,0x100)
 
 void editor_insert_line(uint8_t before)
 {
@@ -979,10 +980,10 @@ void editor_show_slide_number(void)
     POKE(0xD075U, 0xFF); // Alpha blend set to fully visible
 }
 
-void editor_hide_slide_number(void)
-{
-    lfill(0x0500,0x00,0x100);
-}
+// void editor_hide_slide_number(void)
+// {
+//     lfill(0x0500,0x00,0x100);
+// }
 
 void editor_poll_keyboard(void)
 {
