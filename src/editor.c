@@ -529,6 +529,12 @@ void editor_next_slide(void)
         else // SLIDE0 active
             active_slide = 1;
 
+        ++slide_number;
+        // Set the border colour
+        POKE(0xD020, slide_colour[slide_number]);
+        // Set the background colour
+        POKE(0xD021, slide_colour[slide_number]);
+
         // Change the screen address
         videoSetActiveGraphicsBuffer(active_slide);
         // Don't change the render buffer address yet
@@ -539,7 +545,6 @@ void editor_next_slide(void)
         lcopy(active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE2_SCREEN_RAM, SLIDE_SIZE);
         lcopy(active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE2_COLOUR_RAM, SLIDE_SIZE);
 
-        ++slide_number;
         // Pre-render the next slide
         if (slide_number + 1 < EDITOR_END_SLIDE)
         {
@@ -550,11 +555,6 @@ void editor_next_slide(void)
 
         // Change the render buffer address
         videoSetActiveRenderBuffer(active_slide);
-
-        // Set the border colour
-        POKE(0xD020, slide_colour[slide_number]);
-        // Set the background colour
-        POKE(0xD021, slide_colour[slide_number]);
     }
 }
 
@@ -572,13 +572,18 @@ void editor_previous_slide(void)
         else // SLIDE0 active
             active_slide = 1;
 
+        --slide_number;
+        // Set the border colour
+        POKE(0xD020, slide_colour[slide_number]);
+        // Set the background colour
+        POKE(0xD021, slide_colour[slide_number]);
+
         // Change the screen address
         videoSetActiveGraphicsBuffer(active_slide);
         // Don't change the render buffer address yet
         // so we can pre-render the previous slide without
         // affecting the current slide
 
-        --slide_number;
         // Pre-render the previous slide
         if (slide_number)
         {
@@ -590,11 +595,6 @@ void editor_previous_slide(void)
 
         // Change the render buffer address
         videoSetActiveRenderBuffer(active_slide);
-
-        // Set the border colour
-        POKE(0xD020, slide_colour[slide_number]);
-        // Set the background colour
-        POKE(0xD021, slide_colour[slide_number]);
     }
 }
 
