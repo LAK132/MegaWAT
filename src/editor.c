@@ -827,20 +827,42 @@ void editor_process_special_key(uint8_t key)
             editor_stash_line();
             editor_save_slide();
 
-            // XXX - switch to blank slide
-            // XXX - use slide to show SD card contents
-            // XXX - use hardware reverse to show selection
-            // XXX - on RETURN: load presentation
-            // XXX - on ESC: return to editing previous presentation
-            // lcopy((ptr_t)"default.mwt,s,w", (ptr_t)file_name, sizeof("default.mwt"));
-            if (fileio_load_pres())
+            k = text_line;
+            c = cursor_col;
+            // XXX - "Are you sure?" prompt
+
+            active_rbuffer = &screen_rbuffer;
+            clearRenderBuffer();
+            active_rbuffer = &scratch_rbuffer;
+            clearRenderBuffer();
+
+            editor_show_message(0, "open a different presentation? unsaved changes will be lost");
+            editor_show_message(2, "RETURN: ok");
+            editor_show_message(4, "ESC: cancel");
+
+            while (READ_KEY() != KEY_ESC && READ_KEY() != KEY_RETURN) continue;
+            if (READ_KEY() == KEY_RETURN)
             {
-                console_write_au32(errno);
-                console_write_astr(strerror(errno));
+                // XXX - use slide to show SD card contents
+                // XXX - use hardware reverse to show selection
+                // XXX - on RETURN: load presentation
+                // XXX - on ESC: return to editing previous presentation
+                // lcopy((ptr_t)"default.mwt,s,w", (ptr_t)file_name, sizeof("default.mwt"));
+                if (fileio_load_pres())
+                {
+                    // console_write_au32(errno);
+                    // console_write_astr(strerror(errno));
+                }
+                else
+                {
+                    editor_initialise();
+                }
             }
             else
             {
-                editor_initialise();
+                // return to normal editing
+                text_line = k;
+                cursor_col = c;
             }
 
             editor_load_slide();
