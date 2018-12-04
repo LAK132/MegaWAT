@@ -44,8 +44,6 @@ uint8_t slide_colour[EDITOR_MAX_SLIDES];
 int8_t maxlen = 80;
 uint8_t key = 0;
 uint8_t mod = 0;
-int16_t xx;
-uint8_t h;
 uint32_t sram, cram;
 uint16_t cursor_toggle = 0;
 
@@ -59,6 +57,9 @@ void editor_insert_line(uint8_t before)
 
 void editor_get_line_info(void)
 {
+    static uint8_t y;
+    static uint32_t l;
+
     y = 0;
     text_line_start[y++] = 0;
     for (l = 0; y < EDITOR_MAX_LINES && l < editor_buffer_size;)
@@ -112,6 +113,8 @@ void editor_initialise(void)
 
 void editor_start(void)
 {
+    static uint8_t y;
+
     videoSetSlideMode();
 
     lfill(SLIDE_DATA, 0, SLIDE_DATA_SIZE);
@@ -132,6 +135,8 @@ void editor_start(void)
 
 void editor_stash_line(void)
 {
+    static uint8_t x, y, z, c;
+
     // Stash the line encoded in scratch buffer into the specified line
 
     // Can't stash end line
@@ -216,6 +221,10 @@ void editor_stash_line(void)
 
 void editor_check_line_grew(void)
 {
+    static int8_t s;
+    static uint8_t y;
+    static uint32_t l;
+
     if (text_line < EDITOR_END_LINE)
     {
         // Check if this code point grew the height of the line.
@@ -241,6 +250,10 @@ void editor_check_line_grew(void)
 
 void editor_check_line_shrunk(void)
 {
+    static int8_t s;
+    static uint8_t y;
+    static uint32_t l;
+
     if (text_line < EDITOR_END_LINE)
     {
         // Check if this code point grew the height of the line.
@@ -341,6 +354,9 @@ void editor_delete_glyph(void)
 
 void editor_fetch_line(void)
 {
+    static uint8_t c;
+    static uint32_t k, m;
+
     // Fetch the specified line, and pre-render it into scratch
 
     active_rbuffer = &scratch_rbuffer;
@@ -379,16 +395,18 @@ void editor_fetch_line(void)
 
 void editor_show_cursor(void)
 {
+    static int16_t x;
+    static uint8_t y;
     // Put cursor in initial position
-    xx = 5;
+    x = 5;
     y = 30;
-    POKE(0xD000, xx & 0xFF);
+    POKE(0xD000, x & 0xFF);
     POKE(0xD001, y);
-    if (xx & 0x100)
+    if (x & 0x100)
         POKE(0xD010U, 0x01);
     else
         POKE(0xD010U, 0);
-    if (xx & 0x200)
+    if (x & 0x200)
         POKE(0xD05FU, PEEK(0xD05FU)|0x01);
     else
         POKE(0xD05FU, PEEK(0xD05FU)&0xfe);
@@ -396,6 +414,9 @@ void editor_show_cursor(void)
 
 void editor_update_cursor(void)
 {
+    static int16_t xx;
+    static uint8_t x, y, h;
+
     if (cursor_col > scratch_rbuffer.glyph_count)
         cursor_col = scratch_rbuffer.glyph_count;
 
@@ -428,6 +449,8 @@ void editor_update_cursor(void)
 
 void editor_insert_codepoint(uint16_t code_point)
 {
+    static uint8_t z;
+
     // Shift to fix ASCII vs PETSCII for the C64 font
     if (!font_id && code_point >= 0x60)
         code_point -= 0x60;
@@ -446,6 +469,9 @@ void editor_insert_codepoint(uint16_t code_point)
 
 void editor_save_slide(void)
 {
+    static uint8_t c;
+    static uint32_t i, j, l;
+
     l = (text_line_start[EDITOR_END_LINE] - text_line_start[0]) * sizeof(uint16_t);
 
     // We use slide_number + 1 lots, so just do the calculation once
@@ -493,6 +519,9 @@ void editor_save_slide(void)
 
 void editor_load_slide(void)
 {
+    static uint8_t w;
+    static uint32_t j;
+
     active_rbuffer = &scratch_rbuffer;
     clearRenderBuffer();
     active_rbuffer = &screen_rbuffer;
@@ -622,10 +651,11 @@ void editor_show_message(uint8_t line, uint8_t *str)
     outputLineToRenderBuffer();
 }
 
-uint32_t kk, cc;
 void editor_process_special_key(uint8_t key)
 {
-    kk = 0; // if the cursor was moved
+    static uint8_t k, c;
+
+    k = 0; // if the cursor was moved
     if (present_mode) switch (key)
     {
         case 0x0D:
@@ -710,7 +740,7 @@ void editor_process_special_key(uint8_t key)
                 editor_update_cursor();
                 screen_rbuffer.rows_used = CURRENT_ROW;
                 outputLineToRenderBuffer();
-                kk = 1;
+                k = 1;
             }
             // else if (current_row && text_line)
             else if (text_line)
@@ -726,7 +756,7 @@ void editor_process_special_key(uint8_t key)
                 editor_fetch_line();
                 cursor_col = scratch_rbuffer.glyph_count;
                 editor_update_cursor();
-                kk = 1;
+                k = 1;
             }
         } break;
 
@@ -736,8 +766,8 @@ void editor_process_special_key(uint8_t key)
         case 0x93: cursor_col = 0xFF; k = 1; break;
 
         // Cursor navigation within a line
-        case 0x9d: if (cursor_col) --cursor_col; kk = 1; break;
-        case 0x1d: if (cursor_col < scratch_rbuffer.glyph_count) ++cursor_col; kk = 1; break;
+        case 0x9d: if (cursor_col) --cursor_col; k = 1; break;
+        case 0x1d: if (cursor_col < scratch_rbuffer.glyph_count) ++cursor_col; k = 1; break;
 
         // Cursor navigation between lines
         // Here we adjust which line we are editing,
@@ -754,7 +784,7 @@ void editor_process_special_key(uint8_t key)
                 ++text_line;
                 editor_fetch_line();
                 editor_update_cursor();
-                kk = 1;
+                k = 1;
             }
         } break;
         case 0x91: { // Cursor up
@@ -764,7 +794,7 @@ void editor_process_special_key(uint8_t key)
                 --text_line;
                 editor_fetch_line();
                 editor_update_cursor();
-                kk = 1;
+                k = 1;
             }
         } break;
         case 0xED:
@@ -843,8 +873,8 @@ void editor_process_special_key(uint8_t key)
             HIDE_CURSOR();
             editor_stash_line();
             editor_save_slide();
-            kk = text_line;
-            cc = cursor_col;
+            k = text_line;
+            c = cursor_col;
             // XXX - "Are you sure?" prompt
 
             active_rbuffer = &screen_rbuffer;
@@ -865,16 +895,16 @@ void editor_process_special_key(uint8_t key)
             else
             {
                 // return to normal editing
-                text_line = kk;
-                cursor_col = cc;
+                text_line = k;
+                cursor_col = c;
             }
             editor_load_slide();
             editor_fetch_line();
-            kk = 0;
+            k = 0;
         } break;
         default: break;
     }
-    if (kk && cursor_col > 0 && cursor_col <= scratch_rbuffer.glyph_count)
+    if (k && cursor_col > 0 && cursor_col <= scratch_rbuffer.glyph_count)
     {
         if (font_id != scratch_rbuffer.glyphs[cursor_col-1].font_id)
             setFont(scratch_rbuffer.glyphs[cursor_col-1].font_id);
@@ -956,6 +986,8 @@ void editor_hide_slide_number(void)
 
 void editor_poll_keyboard(void)
 {
+    static uint32_t l, m;
+
     #ifndef __MEGA65__
     while (key != KEY_ESC)
     #else

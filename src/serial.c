@@ -9,13 +9,13 @@ void console_write_pchar(uint8_t c)
     __asm__("nop");
 }
 
-int32_t ii;
 void console_write_pstr(uint8_t *str)
 {
-    for (ii = 0; ii < console_indent; ++ii)
+    static int32_t i;
+    for (i = 0; i < console_indent; ++i)
         console_write_pchar(' ');
-    for (ii = 0; str[ii]; ++ii)
-        console_write_pchar(str[ii]);
+    for (i = 0; str[i]; ++i)
+        console_write_pchar(str[i]);
 }
 
 void console_write_achar(uint8_t c)
@@ -44,51 +44,57 @@ void console_write_achar(uint8_t c)
 
 void console_write_astr(uint8_t *str)
 {
-    for (ii = 0; ii < console_indent; ++ii)
+    static int32_t i;
+    for (i = 0; i < console_indent; ++i)
         console_write_achar(' ');
-    for (ii = 0; str[ii]; ++ii)
-        console_write_achar(str[ii]);
+    for (i = 0; str[i]; ++i)
+        console_write_achar(str[i]);
 }
 
 uint8_t cc[8];
 void console_write_au8(uint8_t n)
 {
+    static int32_t i;
     console_write_achar(' ');
     console_write_achar('0');
     console_write_achar('x');
-    for (ii = 0; ii < 2; ++ii)
-        cc[ii] = (n >> (ii * 4)) & 0xF;
-    for (--ii; ii >= 0; --ii)
-        if (cc[ii] >= 0xA)
-            console_write_achar('A' + (cc[ii] - 0xA));
+    for (i = 0; i < 2; ++i)
+        cc[i] = (n >> (i * 4)) & 0xF;
+    for (--i; i >= 0; --i)
+        if (cc[i] >= 0xA)
+            console_write_achar('A' + (cc[i] - 0xA));
         else
-            console_write_achar('0' + cc[ii]);
+            console_write_achar('0' + cc[i]);
 }
 
 void console_write_au16(uint16_t n)
 {
+    static int32_t i;
+
     console_write_achar(' ');
     console_write_achar('0');
     console_write_achar('x');
-    for (ii = 0; ii < 4; ++ii)
-        cc[ii] = (n >> (ii * 4)) & 0xF;
-    for (--ii; ii >= 0; --ii)
-        if (cc[ii] >= 0xA)
-            console_write_achar('A' + (cc[ii] - 0xA));
+    for (i = 0; i < 4; ++i)
+        cc[i] = (n >> (i * 4)) & 0xF;
+    for (--i; i >= 0; --i)
+        if (cc[i] >= 0xA)
+            console_write_achar('A' + (cc[i] - 0xA));
         else
-            console_write_achar('0' + cc[ii]);
+            console_write_achar('0' + cc[i]);
 }
 
 void console_write_au32(uint32_t n)
 {
+    static int32_t i;
+
     console_write_achar(' ');
     console_write_achar('0');
     console_write_achar('x');
-    for (ii = 0; ii < 8; ++ii)
-        cc[ii] = (n >> (ii * 4)) & 0xF;
-    for (--ii; ii >= 0; --ii)
-        if (cc[ii] >= 0xA)
-            console_write_achar('A' + (cc[ii] - 0xA));
+    for (i = 0; i < 8; ++i)
+        cc[i] = (n >> (i * 4)) & 0xF;
+    for (--i; i >= 0; --i)
+        if (cc[i] >= 0xA)
+            console_write_achar('A' + (cc[i] - 0xA));
         else
-            console_write_achar('0' + cc[ii]);
+            console_write_achar('0' + cc[i]);
 }

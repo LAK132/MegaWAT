@@ -31,8 +31,6 @@ struct dmagic_dmalist {
 struct dmagic_dmalist dmalist;
 uint8_t dma_byte;
 
-uint8_t copy_buffer[256];
-
 void do_dma(void)
 {
   m65_io_enable();
@@ -117,11 +115,11 @@ void lpoke(uint32_t address, uint8_t value)
 #endif
 
 // use uint32_t here to prevent integer overflow
-uint32_t ii, copy_size;
-uint32_t copy_trigger_start = 0, copy_trigger_end = 0;
-uint8_t bb;
 void lcopy_safe(uint32_t src, uint32_t dst, uint16_t count)
 {
+    static uint8_t copy_buffer[256];
+    static uint32_t i, copy_size;
+
     if (count)
     {
         if (count < sizeof(copy_buffer))
@@ -133,26 +131,26 @@ void lcopy_safe(uint32_t src, uint32_t dst, uint16_t count)
         else if (src > dst)
         {
             // destination is lower than source, start from low side
-            for (ii = 0; ii < count; ii += sizeof(copy_buffer))
+            for (i = 0; i < count; i += sizeof(copy_buffer))
             {
-                copy_size = count - ii;
+                copy_size = count - i;
                 if (copy_size > sizeof(copy_buffer))
                     copy_size = sizeof(copy_buffer);
-                lcopy(src + ii, (uint32_t)copy_buffer, copy_size);
-                lcopy((uint32_t)copy_buffer, dst + ii, copy_size);
+                lcopy(src + i, (uint32_t)copy_buffer, copy_size);
+                lcopy((uint32_t)copy_buffer, dst + i, copy_size);
             }
         }
         else if (src < dst)
         {
             // destination is higher than source, start from high side
-            for (ii = count; ii > 0;)
+            for (i = count; i > 0;)
             {
-                copy_size = ii > sizeof(copy_buffer)
+                copy_size = i > sizeof(copy_buffer)
                     ? sizeof(copy_buffer)
-                    : ii;
-                ii -= copy_size;
-                lcopy(src + ii, (uint32_t)copy_buffer, copy_size);
-                lcopy((uint32_t)copy_buffer, dst + ii, copy_size);
+                    : i;
+                i -= copy_size;
+                lcopy(src + i, (uint32_t)copy_buffer, copy_size);
+                lcopy((uint32_t)copy_buffer, dst + i, copy_size);
             }
         }
     }

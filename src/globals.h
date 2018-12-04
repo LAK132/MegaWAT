@@ -55,8 +55,4 @@ extern uint8_t char_attrib[2];
 extern uint32_t screen_width;
 extern uint32_t screen_size;
 
-extern int8_t s, r, t;
-extern uint8_t c, x, y, z, w;
-extern uint32_t i, j, k, l, m;
-
 void toggle_write_protection(void);

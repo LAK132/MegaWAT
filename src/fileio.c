@@ -5,65 +5,61 @@ uint8_t drive = 8;
 
 uint8_t last_message[32];
 
-uint8_t line = 0;
-uint32_t sz;
+static FILE *file;
+static uint8_t i, line = 0;
+static uint32_t j, sz, diff;
+
 /*
-uint8_t rtn1;
-uint8_t c;
-uint32_t ii;
+static uint8_t c;
 uint8_t get_error_code(uint8_t LFN)
 {
     cbm_k_clrch();
-    rtn1 = 0;
+    static int rtn = 0;
     c = '0';
-    ii = 0;
+    i = 0;
     do {
-        rtn1 = (rtn1 * 10) + (c - '0');
+        rtn = (rtn * 10) + (c - '0');
         cbm_k_chkin(LFN);
         c = cbm_k_basin();
-        last_message[ii++] = c;
+        last_message[i++] = c;
     } while (c != 0x2C);
     do {
         cbm_k_chkin(LFN);
         c = cbm_k_basin();
-        last_message[ii++] = c;
+        last_message[i++] = c;
     } while (c != 0x0D);
-    last_message[ii] = 0;
+    last_message[i] = 0;
     show_last_error();
-    return rtn1;
+    return rtn;
 }
 
 uint8_t command[32];
 uint8_t drive_command(uint8_t CMD)
 {
-    for (ii = 0; command[ii] != 0; ++ii)
+    static uint8_t i;
+    for (i = 0; command[i] != 0; ++i)
     {
         cbm_k_ckout(CMD);
-        cbm_k_bsout(command[ii]);
+        cbm_k_bsout(command[i]);
     }
     return get_error_code(CMD);
 }
 // */
 
-FILE *file;
-int rtn;
-uint8_t ii;
-uint32_t jj, diff;
-
 // fread/fwrite are limited to 16 bits,
 // so we need a buffer in the 16 pointer range
-uint8_t data_buffer[128];
+static uint8_t data_buffer[128];
 
 int fileio_save_pres(void)
 {
-    rtn = 0;
+    static int rtn = 0;
     file = fopen(file_name, "w");
     videoSetSlideMode();
     if (file)
     {
-        for (ii = 0; ii < EDITOR_END_SLIDE; ++ii)
+        for (i = 0; i < EDITOR_END_SLIDE; ++i)
         {
-            sz = slide_start[ii + 1] - slide_start[ii];
+            sz = slide_start[i + 1] - slide_start[i];
             if (sizeof(sz) != fwrite(&sz, 1, sizeof(sz), file))
             {
                 editor_show_message(line++, "failed to write size");
@@ -71,19 +67,19 @@ int fileio_save_pres(void)
             }
             TOGGLE_BACK();
 
-            if (sizeof(slide_colour[ii]) != fwrite(&slide_colour[ii], 1, sizeof(slide_colour[ii]), file))
+            if (sizeof(slide_colour[i]) != fwrite(&slide_colour[i], 1, sizeof(slide_colour[i]), file))
             {
                 editor_show_message(line++, "failed to write slide_colour");
                 for (;;) TOGGLE_BACK();
             }
             TOGGLE_BACK();
 
-            for (jj = 0; jj < sz; jj += sizeof(data_buffer))
+            for (j = 0; j < sz; j += sizeof(data_buffer))
             {
-                diff = sz - jj;
+                diff = sz - j;
                 if (diff > sizeof(data_buffer))
                     diff = sizeof(data_buffer);
-                lcopy(slide_start[ii] + jj, data_buffer, diff);
+                lcopy(slide_start[i] + j, data_buffer, diff);
                 if (diff != fwrite(data_buffer, 1, diff, file))
                 {
                     editor_show_message(line++, "failed to write slide_start");
@@ -108,14 +104,14 @@ int fileio_save_pres(void)
 
 int fileio_load_pres(void)
 {
-    rtn = 0;
+    static int rtn = 0;
     line = 0;
     file = fopen(file_name, "r");
     videoSetSlideMode();
     if (file)
     {
         slide_start[0] = SLIDE_DATA;
-        for (ii = 0; ii < EDITOR_END_SLIDE; ++ii)
+        for (i = 0; i < EDITOR_END_SLIDE; ++i)
         {
             if (sizeof(sz) != fread(&sz, 1, sizeof(sz), file))
             {
@@ -124,17 +120,17 @@ int fileio_load_pres(void)
             }
             TOGGLE_BACK();
 
-            slide_start[ii + 1] = slide_start[ii] + sz;
-            if (sizeof(slide_colour[ii]) != fread(&slide_colour[ii], 1, sizeof(slide_colour[ii]), file))
+            slide_start[i + 1] = slide_start[i] + sz;
+            if (sizeof(slide_colour[i]) != fread(&slide_colour[i], 1, sizeof(slide_colour[i]), file))
             {
                 editor_show_message(line++, "failed to read slide_colour");
                 for (;;) TOGGLE_BACK();
             }
             TOGGLE_BACK();
 
-            for (jj = 0; jj < sz; jj += sizeof(data_buffer))
+            for (j = 0; j < sz; j += sizeof(data_buffer))
             {
-                diff = sz - jj;
+                diff = sz - j;
                 if (diff > sizeof(data_buffer))
                     diff = sizeof(data_buffer);
                 if (diff != fread(data_buffer, 1, diff, file))
@@ -142,7 +138,7 @@ int fileio_load_pres(void)
                     editor_show_message(line++, "failed to write slide_start");
                     for (;;) TOGGLE_BACK();
                 }
-                lcopy(data_buffer, slide_start[ii] + jj, diff);
+                lcopy(data_buffer, slide_start[i] + j, diff);
                 TOGGLE_BACK();
             }
             TOGGLE_BACK();

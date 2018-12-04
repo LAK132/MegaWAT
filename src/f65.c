@@ -97,6 +97,7 @@ void clearRenderBuffer(void)
 
 void outputLineToRenderBuffer(void)
 {
+    static uint32_t i, j;
     if ((scratch_rbuffer.max_above + scratch_rbuffer.max_below) < 1)
         return;
 
@@ -147,6 +148,9 @@ void findFontStructures(void)
 
 void deleteGlyph(uint8_t glyph_num)
 {
+    static uint8_t x, y;
+    static uint32_t m;
+
     // Make sure buffer and glyph number are ok
     if (!active_rbuffer)
         return;
@@ -249,11 +253,12 @@ void deleteGlyph(uint8_t glyph_num)
 void replaceGlyph(uint8_t glyph_num, uint16_t code_point);
 void insertGlyph(uint8_t glyph_num, uint16_t code_point);
 
-uint8_t v1, v2, v3, v4, v5;
 glyph_details_t *active_glyph = 0;
 glyph_details_t glyph_buffer;
 void getGlyphDetails(uint16_t code_point, uint8_t colour_and_attributes, uint8_t first_column)
 {
+    static uint32_t i;
+
     if (!active_glyph)
         return;
 
@@ -294,6 +299,9 @@ void getGlyphDetails(uint16_t code_point, uint8_t colour_and_attributes, uint8_t
 
 void renderGlyphDetails(uint8_t alpha_and_extras, uint8_t position)
 {
+    static uint8_t x, y, v1, v2, v3, v4, v5;
+    static uint32_t i, l;
+
     if (!active_rbuffer)
         return;
 
@@ -858,12 +866,10 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
     }
 }*/
 
-ptr_t font_address = 0;
-ptr_t point_tile, tile_address, tile_cards;
-uint16_t card_address;
-
 void patchFonts(void)
 {
+    static ptr_t font_address = 0;
+
     if (!current_font) return;
     font_address = current_font; // backup the current font
     font_count = 0;
@@ -875,19 +881,23 @@ void patchFonts(void)
         font_addresses[font_count++] = current_font;
         current_font += font_size;
 
-	// Stop if end of list
+        // Stop if end of list
         if (!font_size)
             break;
 
-	// Stop if we are at the end of the asset RAM area
-	if (current_font >= (ASSET_RAM + ASSET_RAM_SIZE))
-	  break;
+        // Stop if we are at the end of the asset RAM area
+        if (current_font >= (ASSET_RAM + ASSET_RAM_SIZE))
+            break;
     }
     current_font = font_address; // reapply the active font
 }
 
 void patchFont(void)
 {
+    static uint16_t card_address;
+    static uint32_t i, j;
+    static ptr_t point_tile, tile_address, tile_cards;
+
     findFontStructures();
     if (!font_size)
         return;

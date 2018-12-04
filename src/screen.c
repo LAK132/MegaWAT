@@ -50,6 +50,9 @@ void screen_hex(shortptr_t addr, int32_t value)
 int8_t dec9[9];
 void format_hex(const shortptr_t addr, const int32_t value, const int8_t columns)
 {
+    static uint8_t c;
+    static uint32_t i;
+
     screen_hex((shortptr_t)&dec9[0], value);
 
     c = 8 - columns;
@@ -111,6 +114,7 @@ uint8_t carry, temp;
 uint16_t value;
 void screen_decimal(shortptr_t addr, uint16_t v)
 {
+    static uint32_t j, k;
     // XXX - We should do this off-screen and copy into place later, to avoid glitching
     // on display.
 
@@ -167,6 +171,8 @@ void screen_decimal(shortptr_t addr, uint16_t v)
 int8_t dec6[6];
 void format_decimal(const shortptr_t addr, const int16_t value, const int8_t columns)
 {
+    static uint32_t i;
+
     screen_decimal((shortptr_t)&dec6[0], value);
 
     for (i = 0; i < columns; ++i)
@@ -231,6 +237,8 @@ void screen_colour_line(uint8_t line, uint8_t colour)
 
 void fatal_error(charptr_t filename, uint16_t line_number)
 {
+    static uint32_t i;
+
     display_footer(FOOTER_FATAL);
     for (i = 0; lpeek(filename + i); ++i)
         POKE(FOOTER_ADDRESS + 44 + i, lpeek(filename + i));
@@ -244,6 +252,8 @@ void fatal_error(charptr_t filename, uint16_t line_number)
 
 void set_screen_attributes(ptr_t p, uint8_t count, uint8_t attr)
 {
+    static uint32_t i;
+
     // This involves setting colour RAM values, so we need to either LPOKE, or
     // map the 2KB colour RAM in at $D800 and work with it there.
     // XXX - For now we are LPOKING
