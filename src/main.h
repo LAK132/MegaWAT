@@ -6,7 +6,7 @@
 #include "globals.h"
 #include "f65.h"
 #include "memory.h"
-#include "screen.h"
+// #include "screen.h"
 #include "videomodes.h"
 #include "editor.h"
 #include "serial.h"

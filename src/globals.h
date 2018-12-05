@@ -41,6 +41,42 @@
 #define ATTRIB_HORI_FLIP   0x40
 #define ATTRIB_VERT_FLIP   0x80
 
+#define SCREEN_ADDRESS (0x8000U)
+#define CHARSET_ADDRESS (0x8800U)
+#define COLOUR_RAM_ADDRESS (0x1F800U)
+#define FOOTER_ADDRESS (SCREEN_ADDRESS+24*80)
+
+#define FOOTER_COPYRIGHT     0
+#define FOOTER_BLANK         1
+#define FOOTER_FATAL         2
+#define FOOTER_MAX           2
+
+#define ATTRIB_REVERSE 0x20
+#define ATTRIB_BLINK 0x10
+#define ATTRIB_UNDERLINE 0x80
+#define ATTRIB_HIGHLIGHT 0x40
+
+#define COLOUR_BLACK        0x0
+#define COLOUR_WHITE        0x1
+#define COLOUR_RED          0x2
+#define COLOUR_CYAN         0x3
+#define COLOUR_PURPLE       0x4
+#define COLOUR_GREEN        0x5
+#define COLOUR_BLUE         0x6
+#define COLOUR_YELLOW       0x7
+#define COLOUR_ORANGE       0x8
+#define COLOUR_BROWN        0x9
+#define COLOUR_PINK         0xA
+#define COLOUR_GREY1        0xB
+#define COLOUR_DARKGREY     0xB
+#define COLOUR_GREY2        0xC
+#define COLOUR_GREY         0xC
+#define COLOUR_MEDIUMGREY   0xC
+#define COLOUR_LIGHTGREEN   0xD
+#define COLOUR_LIGHTBLUE    0xE
+#define COLOUR_GREY3        0xF
+#define COLOUR_LIGHTGREY    0xF
+
 #define READ_KEY() (*(charptr_t)0xD610)
 #define READ_MOD() (*(charptr_t)0xD611)
 

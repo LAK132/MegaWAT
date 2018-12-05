@@ -31,7 +31,6 @@ FILES=		$(PROGRAM) \
 			c64-m65.cfg
 
 SOURCES=	$(SRCDIR)/main.c \
-			$(SRCDIR)/screen.c \
 			$(SRCDIR)/editor.c \
 			$(SRCDIR)/videomodes.c \
 			$(SRCDIR)/memory.c \
@@ -43,7 +42,6 @@ SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/romprotection.s
 
 ASSFILES=	$(OBJDIR)/main.s \
-			$(OBJDIR)/screen.s \
 			$(OBJDIR)/editor.s \
 			$(OBJDIR)/videomodes.s \
 			$(OBJDIR)/memory.s \

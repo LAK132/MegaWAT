@@ -1,7 +1,7 @@
 #include "f65.h"
 #include "globals.h"
 #include "memory.h"
-#include "screen.h"
+// #include "screen.h"
 #include "videomodes.h"
 #include "serial.h"
 #include "stdio.h"
