@@ -646,6 +646,7 @@ void editor_show_message(uint8_t line, uint8_t *str)
     text_line = line;
     editor_fetch_line();
     editor_clear_line();
+    setFont(0);
     string_buffer = str;
     editor_render_string();
     screen_rbuffer.rows_used = CURRENT_ROW;
@@ -974,7 +975,6 @@ void editor_show_slide_number(void)
         for(remainder = 0; remainder < 8; ++remainder)
             for(yy = 0; yy < 8; ++yy)
                 POKE(0x0540 + remainder + (yy * 8), lpeek(0x2DC00 + (edit_mode_message[remainder] * 8) + yy));
-
 
     // Set sprite data fetch area to $0500
     POKE(2041, 0x0500 / 0x40);
