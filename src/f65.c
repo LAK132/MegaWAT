@@ -866,27 +866,22 @@ void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alp
     }
 }*/
 
+ptr_t next_font_address;
 void patchFonts(void)
 {
-    static ptr_t font_address = 0;
+    static ptr_t font_address;
 
     if (!current_font) return;
     font_address = current_font; // backup the current font
-    font_count = 0;
-    for (;;)
+    for (font_count = 0; font_count < MAX_FONTS && current_font < (ASSET_RAM + ASSET_RAM_SIZE);)
     {
-        if (font_count == MAX_FONTS)
-            break;
         patchFont();
         font_addresses[font_count++] = current_font;
         current_font += font_size;
+        next_font_address = current_font;
 
         // Stop if end of list
         if (!font_size)
-            break;
-
-        // Stop if we are at the end of the asset RAM area
-        if (current_font >= (ASSET_RAM + ASSET_RAM_SIZE))
             break;
     }
     current_font = font_address; // reapply the active font

@@ -7,7 +7,8 @@
 #define MAX_FONTS 16
 extern uint8_t font_id;
 extern ptr_t current_font;
-extern uint32_t font_addresses[MAX_FONTS];
+extern ptr_t font_addresses[MAX_FONTS];
+extern ptr_t next_font_address;
 extern uint8_t font_count;
 
 typedef struct glyph_size {

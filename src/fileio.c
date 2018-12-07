@@ -209,3 +209,30 @@ int fileio_load_pres(void)
     videoSetSlideMode();
     return rtn;
 }
+
+const static uint8_t f65[] = ".f65";
+int fileio_load_font(void)
+{
+    static int rtn;
+    static uint8_t i;
+    rtn = 0;
+    line = 0;
+    i = 0;
+    for (; file_name[i] != 0; ++i)
+        data_buffer[i] = file_name[i];
+    lcopy(f65, data_buffer + i, sizeof(f65) - 1);
+    file = fopen(data_buffer, "r");
+    if (file)
+    {
+        current_font = next_font_address;
+        sz = 0;
+        for (i = sizeof(data_buffer); i == sizeof(data_buffer); sz += i)
+        {
+            i = fread(data_buffer, 1, sizeof(data_buffer), file);
+            lcopy(data_buffer, current_font + sz, i);
+        }
+        next_font_address += sz;
+        patchFont();
+    } else rtn = errno;
+    return rtn;
+}
