@@ -644,7 +644,7 @@ void editor_goto_slide(uint8_t num)
 void editor_show_message(uint8_t line, uint8_t *str)
 {
     text_line = line;
-    editor_fetch_line();
+    // editor_fetch_line();
     editor_clear_line();
     setFont(0);
     string_buffer = str;
@@ -838,9 +838,9 @@ void editor_process_special_key(uint8_t key)
             clearRenderBuffer();
 
             editor_show_message(0, "open a different presentation? unsaved changes will be lost");
-            editor_show_message(2, file_name);
-            editor_show_message(4, "RETURN: ok");
-            editor_show_message(5, "ESC: cancel");
+            editor_show_message(1, file_name);
+            editor_show_message(2, "RETURN: ok");
+            editor_show_message(3, "ESC: cancel");
 
             i = strlen(file_name);
 
@@ -852,18 +852,18 @@ void editor_process_special_key(uint8_t key)
                     if (key >= 0x61 && key <= 0x7A) key -= 0x20;
                     file_name[i] = key;
                     ++i;
-                    editor_show_message(2, file_name);
+                    editor_show_message(1, file_name);
                     READ_KEY() = 1;
                 }
                 else if (key == 0x14 && i > 0)
                 {
                     --i;
                     file_name[i] = 0;
-                    editor_show_message(2, file_name);
+                    editor_show_message(1, file_name);
                     READ_KEY() = 1;
                 }
             }
-            if (READ_KEY() == KEY_RETURN)
+            if (key == KEY_RETURN)
             {
                 // XXX - use slide to show SD card contents
                 // XXX - use hardware reverse to show selection
@@ -912,9 +912,9 @@ void editor_process_special_key(uint8_t key)
                 i = strlen(file_name);
 
                 editor_show_message(0, "save as");
-                editor_show_message(2, file_name);
-                editor_show_message(4, "RETURN: ok");
-                editor_show_message(5, "ESC: cancel");
+                editor_show_message(1, file_name);
+                editor_show_message(2, "RETURN: ok");
+                editor_show_message(3, "ESC: cancel");
 
                 for (key = READ_KEY(); key != KEY_ESC && key != KEY_RETURN; key = READ_KEY())
                 {
@@ -924,14 +924,14 @@ void editor_process_special_key(uint8_t key)
                         if (key >= 0x61 && key <= 0x7A) key -= 0x20;
                         file_name[i] = key;
                         ++i;
-                        editor_show_message(2, file_name);
+                        editor_show_message(1, file_name);
                         READ_KEY() = 1;
                     }
                     else if (key == 0x14 && i > 0)
                     {
                         --i;
                         file_name[i] = 0;
-                        editor_show_message(2, file_name);
+                        editor_show_message(1, file_name);
                         READ_KEY() = 1;
                     }
                         // editor_show_message(2, file_name);
