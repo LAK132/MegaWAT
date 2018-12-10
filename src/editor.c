@@ -655,7 +655,7 @@ void editor_show_message(uint8_t line, uint8_t *str)
 
 void editor_process_special_key(uint8_t key)
 {
-    static uint8_t k, c;
+    static uint8_t k, c, i;
 
     k = 0; // if the cursor was moved
     if (present_mode) switch (key)
@@ -838,17 +838,37 @@ void editor_process_special_key(uint8_t key)
             clearRenderBuffer();
 
             editor_show_message(0, "open a different presentation? unsaved changes will be lost");
-            editor_show_message(2, "RETURN: ok");
-            editor_show_message(4, "ESC: cancel");
+            editor_show_message(2, file_name);
+            editor_show_message(4, "RETURN: ok");
+            editor_show_message(5, "ESC: cancel");
 
-            while (READ_KEY() != KEY_ESC && READ_KEY() != KEY_RETURN) continue;
+            i = strlen(file_name);
+
+            for (key = READ_KEY(); key != KEY_ESC && key != KEY_RETURN; key = READ_KEY())
+            {
+                if (((key >= 0x30 && key <= 0x39) || (key >= 0x41 && key <= 0x5A) ||
+                    (key >= 0x61 && key <= 0x7A)) && i < sizeof(file_name)-6)
+                {
+                    if (key >= 0x61 && key <= 0x7A) key -= 0x20;
+                    file_name[i] = key;
+                    ++i;
+                    editor_show_message(2, file_name);
+                    READ_KEY() = 1;
+                }
+                else if (key == 0x14 && i > 0)
+                {
+                    --i;
+                    file_name[i] = 0;
+                    editor_show_message(2, file_name);
+                    READ_KEY() = 1;
+                }
+            }
             if (READ_KEY() == KEY_RETURN)
             {
                 // XXX - use slide to show SD card contents
                 // XXX - use hardware reverse to show selection
                 // XXX - on RETURN: load presentation
                 // XXX - on ESC: return to editing previous presentation
-                // lcopy((ptr_t)"default.mwt,s,w", (ptr_t)file_name, sizeof("default.mwt"));
                 if (fileio_load_pres())
                 {
                     // console_write_au32(errno);
@@ -874,19 +894,65 @@ void editor_process_special_key(uint8_t key)
             editor_save_slide();
 
             // if not saved previously or SHIFT held, go to SAVE AS screen
-            if (file_name[0] == 0 || mod == MOD_SHIFT)
+            if (file_name[0] == 0 || mod & MOD_SHIFT)
             {
                 // Save As
                 // XXX - switch to blank slide
                 // XXX - use scratch buffer for input
                 // XXX - on RETURN: save
                 // XXX - on ESC: cancel
-                // lcopy((ptr_t)"default.mwt,s,w", (ptr_t)file_name, sizeof("default.mwt"));
-            }
-            if (fileio_save_pres())
-            {
-                console_write_au32(errno);
-                console_write_astr(strerror(errno));
+                k = text_line;
+                c = cursor_col;
+
+                active_rbuffer = &screen_rbuffer;
+                clearRenderBuffer();
+                active_rbuffer = &scratch_rbuffer;
+                clearRenderBuffer();
+
+                i = strlen(file_name);
+
+                editor_show_message(0, "save as");
+                editor_show_message(2, file_name);
+                editor_show_message(4, "RETURN: ok");
+                editor_show_message(5, "ESC: cancel");
+
+                for (key = READ_KEY(); key != KEY_ESC && key != KEY_RETURN; key = READ_KEY())
+                {
+                    if (((key >= 0x30 && key <= 0x39) || (key >= 0x41 && key <= 0x5A) ||
+                        (key >= 0x61 && key <= 0x7A)) && i < sizeof(file_name)-6)
+                    {
+                        if (key >= 0x61 && key <= 0x7A) key -= 0x20;
+                        file_name[i] = key;
+                        ++i;
+                        editor_show_message(2, file_name);
+                        READ_KEY() = 1;
+                    }
+                    else if (key == 0x14 && i > 0)
+                    {
+                        --i;
+                        file_name[i] = 0;
+                        editor_show_message(2, file_name);
+                        READ_KEY() = 1;
+                    }
+                        // editor_show_message(2, file_name);
+                }
+                if (key == KEY_RETURN)
+                {
+                    if (fileio_save_pres())
+                    {
+                        console_write_au32(errno);
+                        console_write_astr(strerror(errno));
+                    }
+                }
+                else
+                {
+                    // clear out filename so we don't accidentally
+                    // save with a bad name later
+                    lfill(file_name, 0, sizeof(file_name));
+                    // return to normal editing
+                    text_line = k;
+                    cursor_col = c;
+                }
             }
 
             editor_load_slide();
