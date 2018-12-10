@@ -1,6 +1,6 @@
 #include "fileio.h"
 
-uint8_t file_name[FILE_NAME_MAX_LEN] = "default";
+uint8_t file_name[FILE_NAME_MAX_LEN] = "";
 uint8_t drive = 8;
 
 uint8_t last_message[32];
