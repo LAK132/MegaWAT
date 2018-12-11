@@ -869,15 +869,8 @@ void editor_process_special_key(uint8_t key)
                 // XXX - use hardware reverse to show selection
                 // XXX - on RETURN: load presentation
                 // XXX - on ESC: return to editing previous presentation
-                if (fileio_load_pres())
-                {
-                    // console_write_au32(errno);
-                    // console_write_astr(strerror(errno));
-                }
-                else
-                {
-                    editor_initialise();
-                }
+                fileio_load_pres();
+                editor_initialise();
             }
             else
             {
@@ -938,11 +931,7 @@ void editor_process_special_key(uint8_t key)
                 }
                 if (key == KEY_RETURN)
                 {
-                    if (fileio_save_pres())
-                    {
-                        console_write_au32(errno);
-                        console_write_astr(strerror(errno));
-                    }
+                    fileio_save_pres();
                 }
                 else
                 {
@@ -973,8 +962,8 @@ void editor_process_special_key(uint8_t key)
             clearRenderBuffer();
 
             editor_show_message(0, "start a new presentation? unsaved changes will be lost");
-            editor_show_message(2, "RETURN: ok");
-            editor_show_message(4, "ESC: cancel");
+            editor_show_message(1, "RETURN: ok");
+            editor_show_message(2, "ESC: cancel");
 
             while (READ_KEY() != KEY_ESC && READ_KEY() != KEY_RETURN) continue;
             if (READ_KEY() == KEY_RETURN)

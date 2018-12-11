@@ -143,9 +143,11 @@ int fileio_save_pres(void)
     else
     {
         rtn = errno;
-        // editor_show_message(line++, "failed to open file");
+        editor_show_message(line++, "failed to open file");
         editor_show_message(line++, strerror(rtn));
-        for (;;) TOGGLE_BACK();
+        editor_show_message(line++, "RETURN: ok");
+        editor_show_message(line++, "");
+        for (;READ_KEY() != KEY_RETURN;);
     }
     videoSetSlideMode();
     return rtn;
@@ -202,9 +204,11 @@ int fileio_load_pres(void)
     else
     {
         rtn = errno;
-        // editor_show_message(line++, "failed to open file");
+        editor_show_message(line++, "failed to open file");
         editor_show_message(line++, strerror(rtn));
-        for (;;) TOGGLE_BACK();
+        editor_show_message(line++, "RETURN: ok");
+        editor_show_message(line++, "");
+        for (;READ_KEY() != KEY_RETURN;);
     }
     videoSetSlideMode();
     return rtn;
