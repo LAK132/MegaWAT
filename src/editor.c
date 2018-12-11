@@ -825,6 +825,7 @@ void editor_process_special_key(uint8_t key)
         } break;
         case 0xCF: { // MEGA O
             // Open
+            HIDE_CURSOR(); // XXX - show the cursor in the "text box"
             editor_stash_line();
             editor_save_slide();
 
@@ -883,6 +884,7 @@ void editor_process_special_key(uint8_t key)
             editor_fetch_line();
         } break;
         case 0xD3: { // MEGA S
+            HIDE_CURSOR(); // XXX - show the cursor in the "text box"
             editor_stash_line();
             editor_save_slide();
 
@@ -927,7 +929,6 @@ void editor_process_special_key(uint8_t key)
                         editor_show_message(1, file_name);
                         READ_KEY() = 1;
                     }
-                        // editor_show_message(2, file_name);
                 }
                 if (key == KEY_RETURN)
                 {
@@ -949,7 +950,7 @@ void editor_process_special_key(uint8_t key)
         } break;
         case 0xCE: { // MEGA N
             // New
-            HIDE_CURSOR();
+            HIDE_CURSOR(); // XXX - show the cursor in the "text box"
             editor_stash_line();
             editor_save_slide();
             k = text_line;
@@ -977,6 +978,61 @@ void editor_process_special_key(uint8_t key)
                 text_line = k;
                 cursor_col = c;
             }
+            editor_load_slide();
+            editor_fetch_line();
+            k = 0;
+        } break;
+        case 0xCC: { // MEGA L
+            HIDE_CURSOR(); // XXX - show the cursor in the "text box"
+            editor_stash_line();
+            editor_save_slide();
+            k = text_line;
+            c = cursor_col;
+            // XXX - "Are you sure?" prompt
+
+            active_rbuffer = &screen_rbuffer;
+            clearRenderBuffer();
+            active_rbuffer = &scratch_rbuffer;
+            clearRenderBuffer();
+
+            editor_show_message(0, "load font");
+            editor_show_message(1, file_name);
+            editor_show_message(2, "RETURN: ok");
+            editor_show_message(3, "ESC: cancel");
+
+            for (key = READ_KEY(); key != KEY_ESC && key != KEY_RETURN; key = READ_KEY())
+            {
+                if (((key >= 0x30 && key <= 0x39) || (key >= 0x41 && key <= 0x5A) ||
+                    (key >= 0x61 && key <= 0x7A)) && i < sizeof(file_name)-6)
+                {
+                    if (key >= 0x61 && key <= 0x7A) key -= 0x20;
+                    file_name[i] = key;
+                    ++i;
+                    editor_show_message(1, file_name);
+                    READ_KEY() = 1;
+                }
+                else if (key == 0x14 && i > 0)
+                {
+                    --i;
+                    file_name[i] = 0;
+                    editor_show_message(1, file_name);
+                    READ_KEY() = 1;
+                }
+            }
+            if (key == KEY_RETURN)
+            {
+                fileio_load_font();
+            }
+            else
+            {
+                // clear out filename so we don't accidentally
+                // save with a bad name later
+                lfill(file_name, 0, sizeof(file_name));
+                // return to normal editing
+                text_line = k;
+                cursor_col = c;
+            }
+
             editor_load_slide();
             editor_fetch_line();
             k = 0;

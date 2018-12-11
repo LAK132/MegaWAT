@@ -147,7 +147,7 @@ int fileio_save_pres(void)
         editor_show_message(line++, strerror(rtn));
         editor_show_message(line++, "RETURN: ok");
         editor_show_message(line++, "");
-        for (;READ_KEY() != KEY_RETURN;);
+        for (READ_KEY() = 1; READ_KEY() != KEY_RETURN;);
     }
     videoSetSlideMode();
     return rtn;
@@ -208,7 +208,7 @@ int fileio_load_pres(void)
         editor_show_message(line++, strerror(rtn));
         editor_show_message(line++, "RETURN: ok");
         editor_show_message(line++, "");
-        for (;READ_KEY() != KEY_RETURN;);
+        for (READ_KEY() = 1; READ_KEY() != KEY_RETURN;);
     }
     videoSetSlideMode();
     return rtn;
@@ -224,7 +224,7 @@ int fileio_load_font(void)
     i = 0;
     for (; file_name[i] != 0; ++i)
         data_buffer[i] = file_name[i];
-    lcopy(f65, data_buffer + i, sizeof(f65) - 1);
+    lcopy(f65, data_buffer + i, sizeof(f65));
     file = fopen(data_buffer, "r");
     if (file)
     {
@@ -237,6 +237,15 @@ int fileio_load_font(void)
         }
         next_font_address += sz;
         patchFont();
-    } else rtn = errno;
+    }
+    else
+    {
+        rtn = errno;
+        editor_show_message(line++, "failed to open font file");
+        editor_show_message(line++, strerror(rtn));
+        editor_show_message(line++, "RETURN: ok");
+        editor_show_message(line++, "");
+        for (READ_KEY() = 1; READ_KEY() != KEY_RETURN;);
+    }
     return rtn;
 }
