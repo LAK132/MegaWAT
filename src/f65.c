@@ -228,6 +228,10 @@ void deleteGlyph(uint8_t glyph_num)
     // We also do a DMA here for speed
     // lcopy((ptr_t)&active_rbuffer->glyphs[glyph_num + 1],
     //     (ptr_t)&active_rbuffer->glyphs[glyph_num], sizeof(glyph_details_t) * (99 - glyph_num));
+
+    // XXX - fix for possible compiler bug
+    // for some reason lcopy gets stuck sometimes, this lpoke fixes it
+    lpoke(0x1F770, ((longptr_t)&active_rbuffer->glyphs[glyph_num + 1] >> 24) & 0xFF);
     lcopy((ptr_t)&active_rbuffer->glyphs[glyph_num + 1], (ptr_t)&active_rbuffer->glyphs[glyph_num], 99 - glyph_num);
 
     // Reduce number of remaining glyphs
