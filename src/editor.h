@@ -15,6 +15,8 @@
 #define EDITOR_MAX_SLIDES (EDITOR_END_SLIDE + 1)
 extern ptr_t slide_start[EDITOR_MAX_SLIDES];
 extern uint8_t slide_colour[EDITOR_MAX_SLIDES];
+extern uint8_t slide_resolution[EDITOR_MAX_SLIDES];
+extern uint8_t slide_font_pack[EDITOR_MAX_SLIDES][FILE_NAME_MAX_LEN-6];
 
 void editor_show_cursor(void);
 void editor_poll_keyboard(void);

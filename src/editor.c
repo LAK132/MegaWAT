@@ -32,6 +32,8 @@ uint32_t editor_buffer_size = sizeof(editor_buffer) / sizeof(uint16_t);
 ptr_t slide_start[EDITOR_MAX_SLIDES];
 uint32_t slide_number = 0;
 uint8_t slide_colour[EDITOR_MAX_SLIDES];
+uint8_t slide_resolution[EDITOR_MAX_SLIDES];
+uint8_t slide_font_pack[EDITOR_MAX_SLIDES][FILE_NAME_MAX_LEN-6];
 
 #define HIDE_SPRITE(sprite) POKE(0xD015U, PEEK(0xD015U) & ~(1<<sprite))
 #define SHOW_SPRITE(sprite) POKE(0xD015U, PEEK(0xD015U) | (1<<sprite))
@@ -101,6 +103,12 @@ void editor_initialise(void)
     text_line = 0;
     cursor_col = 0;
 
+    lfill(data_buffer, 0, sizeof(data_buffer));
+    lcopy(slide_font_pack[0], data_buffer,
+        strlen(slide_font_pack[slide_number]));
+    if (slide_font_pack[0][0] != 0)
+        fileio_load_font();
+
     // make sure slide 2 is preloaded correctly
     // editor_save_slide(); // DO NOT SAVE - EDITOR BUFFER IS BLANK
     editor_next_slide();
@@ -121,7 +129,10 @@ void editor_start(void)
     lfill(SLIDE_DATA, 0, SLIDE_DATA_SIZE);
     slide_start[0] = SLIDE_DATA;
     for (y = 1; y < EDITOR_MAX_SLIDES; ++y)
+    {
         slide_start[y] = slide_start[y-1] + (EDITOR_END_LINE * 2);
+        lfill(slide_font_pack[y], 0, sizeof(slide_font_pack[y]));
+    }
 
     // default to no file_name
     // lfill((ptr_t)file_name, 0, sizeof(file_name));
@@ -549,6 +560,29 @@ void editor_load_slide(void)
     editor_update_cursor();
 }
 
+void editor_check_font_pack(uint32_t new_slide, uint32_t old_slide)
+{
+
+    // check if the loaded font needs to change
+    if (strcmp(slide_font_pack[new_slide], slide_font_pack[old_slide]))
+    {
+        if (slide_font_pack[new_slide][0] == 0)
+        {
+            // no font loaded for this slide, keep using the current one
+            lcopy(slide_font_pack[new_slide], slide_font_pack[old_slide],
+                strlen(slide_font_pack[old_slide]));
+        }
+        else
+        {
+            // this slide has a set font, load it
+            lfill(data_buffer, 0, sizeof(data_buffer));
+            lcopy(slide_font_pack[new_slide], data_buffer,
+                strlen(slide_font_pack[new_slide]));
+            fileio_load_font();
+        }
+    }
+}
+
 void editor_next_slide(void)
 {
     if (slide_number + 1 < EDITOR_END_SLIDE)
@@ -566,6 +600,8 @@ void editor_next_slide(void)
         POKE(0xD020, slide_colour[slide_number]);
         // Set the background colour
         POKE(0xD021, slide_colour[slide_number]);
+
+        editor_check_font_pack(slide_number, slide_number - 1);
 
         // Change the screen address
         videoSetActiveGraphicsBuffer(active_slide);
@@ -613,6 +649,8 @@ void editor_previous_slide(void)
         POKE(0xD020, slide_colour[slide_number]);
         // Set the background colour
         POKE(0xD021, slide_colour[slide_number]);
+
+        editor_check_font_pack(slide_number, slide_number + 1);
 
         // Change the screen address
         videoSetActiveGraphicsBuffer(active_slide);
@@ -940,17 +978,18 @@ void editor_process_special_key(uint8_t key)
                 }
                 if (key == KEY_RETURN)
                 {
-                    fileio_save_pres();
+                    if (fileio_save_pres())
+                        lfill(file_name, 0, sizeof(file_name));
                 }
                 else
                 {
                     // clear out filename so we don't accidentally
                     // save with a bad name later
                     lfill(file_name, 0, sizeof(file_name));
-                    // return to normal editing
-                    text_line = k;
-                    cursor_col = c;
                 }
+                // return to normal editing
+                text_line = k;
+                cursor_col = c;
             }
 
             editor_load_slide();
@@ -990,7 +1029,7 @@ void editor_process_special_key(uint8_t key)
             editor_fetch_line();
             k = 0;
         } break;
-        case 0xCC: { // MEGA L
+        case 0xC6: { // MEGA F
             HIDE_CURSOR(); // XXX - show the cursor in the "text box"
             editor_stash_line();
             editor_save_slide();
@@ -1003,47 +1042,50 @@ void editor_process_special_key(uint8_t key)
             active_rbuffer = &scratch_rbuffer;
             clearRenderBuffer();
 
-            editor_show_message(0, "load font");
-            editor_show_message(1, file_name);
+            lfill(data_buffer, 0, sizeof(data_buffer));
+            i = strlen(slide_font_pack[slide_number]);
+            lcopy(slide_font_pack[slide_number], data_buffer, i);
+
+            editor_show_message(0, "set font pack for this slide");
+            editor_show_message(1, data_buffer);
             editor_show_message(2, "RETURN: ok");
             editor_show_message(3, "ESC: cancel");
 
             for (key = READ_KEY(); key != KEY_ESC && key != KEY_RETURN; key = READ_KEY())
             {
                 if (((key >= 0x30 && key <= 0x39) || (key >= 0x41 && key <= 0x5A) ||
-                    (key >= 0x61 && key <= 0x7A)) && i < sizeof(file_name)-6)
+                    (key >= 0x61 && key <= 0x7A)) && i < sizeof(slide_font_pack[slide_number]))
                 {
                     if (key >= 0x61 && key <= 0x7A) key -= 0x20;
-                    file_name[i] = key;
+                    data_buffer[i] = key;
                     ++i;
-                    editor_show_message(1, file_name);
+                    editor_show_message(1, data_buffer);
                     READ_KEY() = 1;
                 }
                 else if (key == 0x14 && i > 0)
                 {
                     --i;
-                    file_name[i] = 0;
-                    editor_show_message(1, file_name);
+                    data_buffer[i] = 0;
+                    editor_show_message(1, data_buffer);
                     READ_KEY() = 1;
                 }
             }
             if (key == KEY_RETURN)
             {
-                fileio_load_font();
+                lcopy(data_buffer, slide_font_pack[slide_number],
+                    sizeof(slide_font_pack[slide_number]));
+                if (fileio_load_font())
+                    lfill(slide_font_pack[slide_number], 0,
+                        sizeof(slide_font_pack[slide_number]));
             }
-            else
-            {
-                // clear out filename so we don't accidentally
-                // save with a bad name later
-                lfill(file_name, 0, sizeof(file_name));
-                // return to normal editing
-                text_line = k;
-                cursor_col = c;
-            }
+            text_line = k;
+            cursor_col = c;
 
             editor_load_slide();
             editor_fetch_line();
             k = 0;
+            READ_KEY() = 1;
+            READ_MOD() = 1;
         } break;
         default: break;
     }

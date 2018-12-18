@@ -9,7 +9,7 @@ ASTDIR=		assets
 MKDIRS=		$(SRCDIR) $(OBJDIR) $(BINDIR) $(ROMDIR)
 
 DISK=		$(BINDIR)/DISK.D81
-PROGRAM=	$(BINDIR)/megawat.fprg
+PROGRAM=	$(BINDIR)/megawat.prg
 SERIAL=		/dev/ttyUSB1
 
 WGET=		wget
@@ -38,6 +38,7 @@ SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/f65.c \
 			$(SRCDIR)/globals.c \
 			$(SRCDIR)/fileio.c \
+			$(SRCDIR)/font_load.s \
 			$(SRCDIR)/charset.s \
 			$(SRCDIR)/romprotection.s
 
@@ -49,6 +50,7 @@ ASSFILES=	$(OBJDIR)/main.s \
 			$(OBJDIR)/f65.s \
 			$(OBJDIR)/globals.s \
 			$(OBJDIR)/fileio.s \
+			$(OBJDIR)/font_load.s \
 			$(OBJDIR)/charset.s \
 			$(OBJDIR)/romprotection.s
 
@@ -65,7 +67,6 @@ HEADERS=	Makefile \
 			$(SRCDIR)/ascii.h
 
 DATAFILES=	ascii8x8.bin
-
 
 CC65=		$(CC65DIR)/bin/cc65
 CL65=		$(CC65DIR)/bin/cl65
@@ -86,7 +87,7 @@ endif
 
 MONLOAD=	$(COREDIR)/src/tools/monitor_load
 KICKUP=		$(COREDIR)/bin/KICKUP.M65
-BITSTRM=	$(COREDIR)/bin/nexys4ddr-widget-20181130.14-newpix-57e7c48+DIRTY.bit
+BITSTRM=	$(COREDIR)/bin/nexys4ddr-widget-20181215.21-newpix-5e5ad11+DIRTY.bit
 CHARROM=	$(COREDIR)/charrom.bin
 
 TTFTOF65=	$(FONTRSTDIR)/ttftof65
@@ -124,7 +125,7 @@ load:		$(MONLOAD) $(C65SYSROM) $(PROGRAM)
 
 # TEMPLATES
 
-.PRECIOUS: $(OBJDIR)/%.s %.f65 $(ROMDIR)/%.rom
+.PRECIOUS: $(OBJDIR)/%.s $(OBJDIR)/%.FPK %.f65 $(ROMDIR)/%.rom
 
 %.f65:	%.ttf Makefile $(TTFTOF65)
 	$(TTFTOF65) -A -P 8 -T $< -o $@
@@ -136,7 +137,7 @@ $(OBJDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) | $(OBJDIR)
 $(ROMDIR)/%.rom:	| $(ROMDIR)
 	$(WGET) -O $@ http://www.zimmers.net/anonftp/pub/cbm/firmware/computers/c65/$* || { rm -f $@ ; false; }
 
-$(OBJDIR)/%.fpk:	Makefile $(ASTDIR)/*.ttf $(ASTDIR)/*.otf $(TTFTOF65) | $(ASTDIR) $(OBJDIR)
+$(OBJDIR)/%.FPK:	Makefile $(ASTDIR)/*.ttf $(ASTDIR)/*.otf $(TTFTOF65) | $(ASTDIR) $(OBJDIR)
 	./makefonts.sh $@ > /dev/null
 
 $(BINDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(BINDIR)
@@ -145,14 +146,14 @@ $(BINDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(BINDIR)
 $(BINDIR)/loader.prg:	src/fast_memory.s src/splash.s src/loader.c src/memory.c src/memory.h Makefile $(ASTDIR)/megawat-splash.m65
 	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ src/splash.s src/loader.c src/memory.c src/fast_memory.s
 
-$(BINDIR)/%.fprg:	Makefile $(OBJDIR)/%.fpk $(BINDIR)/%.prg $(C65SYSROM)
+$(BINDIR)/%.fprg:	Makefile $(OBJDIR)/%.FPK $(BINDIR)/%.prg $(C65SYSROM)
 	#	Generate single binary with fonts and ROM in place
 	dd if=$(BINDIR)/$*.prg of=$@
 	dd if=/dev/zero bs=1024 count=12 of=$@ oflag=append conv=notrunc
 	dd if=$(ASTDIR)/dosram.bin bs=1024 count=8 of=$@ oflag=append conv=notrunc
 	dd if=/dev/zero bs=1024 count=56 of=$@ oflag=append conv=notrunc
 	dd if=$(C65SYSROM) bs=1024 count=128 of=$@ oflag=append conv=notrunc
-	dd if=$(OBJDIR)/$*.fpk bs=1024 count=128 of=$@ oflag=append conv=notrunc
+	dd if=$(OBJDIR)/$*.FPK bs=1024 count=128 of=$@ oflag=append conv=notrunc
 
 $(BINDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(BINDIR)
 	if [ -f $@ ]; then rm -f $@; fi
