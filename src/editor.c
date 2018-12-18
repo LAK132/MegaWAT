@@ -559,6 +559,8 @@ void editor_next_slide(void)
         else // SLIDE0 active
             active_slide = 1;
 
+        BLANK_SCREEN();
+
         ++slide_number;
         // Set the border colour
         POKE(0xD020, slide_colour[slide_number]);
@@ -570,6 +572,8 @@ void editor_next_slide(void)
         // Don't change the render buffer address yet
         // so we can pre-render the next slide without
         // affecting the current slide
+
+        UNBLANK_SCREEN();
 
         // Move current slide (SLIDE0/1) to previous slide (SLIDE2)
         lcopy(active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE2_SCREEN_RAM, SLIDE_SIZE);
@@ -602,6 +606,8 @@ void editor_previous_slide(void)
         else // SLIDE0 active
             active_slide = 1;
 
+        BLANK_SCREEN();
+
         --slide_number;
         // Set the border colour
         POKE(0xD020, slide_colour[slide_number]);
@@ -613,6 +619,8 @@ void editor_previous_slide(void)
         // Don't change the render buffer address yet
         // so we can pre-render the previous slide without
         // affecting the current slide
+
+        UNBLANK_SCREEN();
 
         // Pre-render the previous slide
         if (slide_number)
