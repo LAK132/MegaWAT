@@ -107,7 +107,14 @@ void editor_initialise(void)
     lcopy(slide_font_pack[0], data_buffer,
         strlen(slide_font_pack[slide_number]));
     if (slide_font_pack[0][0] != 0)
-        fileio_load_font();
+    {
+        if (fileio_load_font())
+        {
+            lfill(&(slide_font_pack[slide_number][0]), 0,
+                sizeof(slide_font_pack[slide_number]));
+            for (READ_KEY() = 1; READ_KEY() != KEY_RETURN; TOGGLE_BACK()) TOGGLE_BACK();
+        }
+    }
 
     // make sure slide 2 is preloaded correctly
     // editor_save_slide(); // DO NOT SAVE - EDITOR BUFFER IS BLANK
@@ -562,7 +569,6 @@ void editor_load_slide(void)
 
 void editor_check_font_pack(uint32_t new_slide, uint32_t old_slide)
 {
-
     // check if the loaded font needs to change
     if (memcmp(slide_font_pack[new_slide], slide_font_pack[old_slide], sizeof(slide_font_pack[0])) != 0)
     {
@@ -578,7 +584,12 @@ void editor_check_font_pack(uint32_t new_slide, uint32_t old_slide)
             lfill(data_buffer, 0, sizeof(data_buffer));
             lcopy(slide_font_pack[new_slide], data_buffer,
                 strlen(slide_font_pack[new_slide]));
-            fileio_load_font();
+            if (fileio_load_font())
+            {
+                lfill(&(slide_font_pack[new_slide][0]), 0,
+                    sizeof(slide_font_pack[new_slide]));
+                for (READ_KEY() = 1; READ_KEY() != KEY_RETURN; TOGGLE_BACK()) TOGGLE_BACK();
+            }
         }
     }
 }
