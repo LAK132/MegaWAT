@@ -594,6 +594,13 @@ void editor_check_font_pack(uint32_t new_slide, uint32_t old_slide)
     }
 }
 
+void editor_preload_slide(int8_t offset)
+{
+    slide_number += offset;
+    editor_load_slide();
+    slide_number -= offset;
+}
+
 void editor_next_slide(void)
 {
     if (slide_number + 1 < EDITOR_END_SLIDE)
@@ -607,31 +614,31 @@ void editor_next_slide(void)
         BLANK_SCREEN();
 
         ++slide_number;
-        // Set the border colour
-        POKE(0xD020, slide_colour[slide_number]);
-        // Set the background colour
-        POKE(0xD021, slide_colour[slide_number]);
-
-        editor_check_font_pack(slide_number, slide_number - 1);
 
         // Change the screen address
         videoSetActiveGraphicsBuffer(active_slide);
+
+        // Change font pack if necessary
+        editor_check_font_pack(slide_number, slide_number - 1);
+
         // Don't change the render buffer address yet
         // so we can pre-render the next slide without
         // affecting the current slide
-
-        UNBLANK_SCREEN();
 
         // Move current slide (SLIDE0/1) to previous slide (SLIDE2)
         lcopy(active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE2_SCREEN_RAM, SLIDE_SIZE);
         lcopy(active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE2_COLOUR_RAM, SLIDE_SIZE);
 
+        // Set the border colour
+        POKE(0xD020, slide_colour[slide_number]);
+        // Set the background colour
+        POKE(0xD021, slide_colour[slide_number]);
+        UNBLANK_SCREEN();
+
         // Pre-render the next slide
         if (slide_number + 1 < EDITOR_END_SLIDE)
         {
-            ++slide_number;
-            editor_load_slide();
-            --slide_number;
+            editor_preload_slide(1);
         }
 
         // Change the render buffer address
@@ -656,28 +663,28 @@ void editor_previous_slide(void)
         BLANK_SCREEN();
 
         --slide_number;
+
+        // Change the screen address
+        videoSetActiveGraphicsBuffer(active_slide);
+
+        // Change font pack if necessary
+        editor_check_font_pack(slide_number, slide_number + 1);
+
+        // Don't change the render buffer address yet
+        // so we can pre-render the previous slide without
+        // affecting the current slide
+        // Pre-render the previous slide
+
         // Set the border colour
         POKE(0xD020, slide_colour[slide_number]);
         // Set the background colour
         POKE(0xD021, slide_colour[slide_number]);
-
-        editor_check_font_pack(slide_number, slide_number + 1);
-
-        // Change the screen address
-        videoSetActiveGraphicsBuffer(active_slide);
-        // Don't change the render buffer address yet
-        // so we can pre-render the previous slide without
-        // affecting the current slide
-
         UNBLANK_SCREEN();
 
-        // Pre-render the previous slide
         if (slide_number)
         {
             videoSetActiveRenderBuffer(2);
-            --slide_number;
-            editor_load_slide();
-            ++slide_number;
+            editor_preload_slide(-1);
         }
 
         // Change the render buffer address
@@ -939,72 +946,72 @@ void editor_process_special_key(uint8_t key)
 
             editor_load_slide();
             editor_fetch_line();
+            SHOW_CURSOR();
         } break;
         case 0xD3: { // MEGA S
             HIDE_CURSOR(); // XXX - show the cursor in the "text box"
             editor_stash_line();
             editor_save_slide();
-
-            // if not saved previously or SHIFT held, go to SAVE AS screen
-            if (file_name[0] == 0 || mod & MOD_SHIFT)
+            k = text_line;
+            c = cursor_col;
+            do
             {
-                // Save As
-                // XXX - switch to blank slide
-                // XXX - use scratch buffer for input
-                // XXX - on RETURN: save
-                // XXX - on ESC: cancel
-                k = text_line;
-                c = cursor_col;
-
-                active_rbuffer = &screen_rbuffer;
-                clearRenderBuffer();
-                active_rbuffer = &scratch_rbuffer;
-                clearRenderBuffer();
-
-                i = strlen(file_name);
-
-                editor_show_message(0, "save as");
-                editor_show_message(1, file_name);
-                editor_show_message(2, "RETURN: ok");
-                editor_show_message(3, "ESC: cancel");
-
-                for (key = READ_KEY(); key != KEY_ESC && key != KEY_RETURN; key = READ_KEY())
+                // if not saved previously or SHIFT held, go to SAVE AS screen
+                if (file_name[0] == 0 || mod & MOD_SHIFT)
                 {
-                    if (((key >= 0x30 && key <= 0x39) || (key >= 0x41 && key <= 0x5A) ||
-                        (key >= 0x61 && key <= 0x7A)) && i < sizeof(file_name)-6)
+                    // Save As
+                    // XXX - switch to blank slide
+                    // XXX - use scratch buffer for input
+                    // XXX - on RETURN: save
+                    // XXX - on ESC: cancel
+
+                    active_rbuffer = &screen_rbuffer;
+                    clearRenderBuffer();
+                    active_rbuffer = &scratch_rbuffer;
+                    clearRenderBuffer();
+
+                    i = strlen(file_name);
+
+                    editor_show_message(0, "save as");
+                    editor_show_message(1, file_name);
+                    editor_show_message(2, "RETURN: ok");
+                    editor_show_message(3, "ESC: cancel");
+
+                    for (key = READ_KEY(); key != KEY_ESC && key != KEY_RETURN; key = READ_KEY())
                     {
-                        if (key >= 0x61 && key <= 0x7A) key -= 0x20;
-                        file_name[i] = key;
-                        ++i;
-                        editor_show_message(1, file_name);
-                        READ_KEY() = 1;
+                        if (((key >= 0x30 && key <= 0x39) || (key >= 0x41 && key <= 0x5A) ||
+                            (key >= 0x61 && key <= 0x7A)) && i < sizeof(file_name)-6)
+                        {
+                            if (key >= 0x61 && key <= 0x7A) key -= 0x20;
+                            file_name[i] = key;
+                            ++i;
+                            editor_show_message(1, file_name);
+                            READ_KEY() = 1;
+                        }
+                        else if (key == 0x14 && i > 0)
+                        {
+                            --i;
+                            file_name[i] = 0;
+                            editor_show_message(1, file_name);
+                            READ_KEY() = 1;
+                        }
                     }
-                    else if (key == 0x14 && i > 0)
+                    if (key != KEY_RETURN)
                     {
-                        --i;
-                        file_name[i] = 0;
-                        editor_show_message(1, file_name);
-                        READ_KEY() = 1;
-                    }
-                }
-                if (key == KEY_RETURN)
-                {
-                    if (fileio_save_pres())
+                        // clear out filename so we don't accidentally
+                        // save with a bad name later
                         lfill(file_name, 0, sizeof(file_name));
+                        break; // we don't want to save
+                    }
                 }
-                else
-                {
-                    // clear out filename so we don't accidentally
-                    // save with a bad name later
+                if (fileio_save_pres())
                     lfill(file_name, 0, sizeof(file_name));
-                }
-                // return to normal editing
-                text_line = k;
-                cursor_col = c;
-            }
-
+            } while (0);
             editor_load_slide();
             editor_fetch_line();
+            text_line = k;
+            cursor_col = c;
+            SHOW_CURSOR();
         } break;
         case 0xCE: { // MEGA N
             // New
@@ -1027,6 +1034,9 @@ void editor_process_special_key(uint8_t key)
             while (READ_KEY() != KEY_ESC && READ_KEY() != KEY_RETURN) continue;
             if (READ_KEY() == KEY_RETURN)
             {
+                // clear out filename so we don't accidentally
+                // save with a bad name later
+                lfill(file_name, 0, sizeof(file_name));
                 // restart
                 editor_start();
             }
@@ -1039,6 +1049,7 @@ void editor_process_special_key(uint8_t key)
             editor_load_slide();
             editor_fetch_line();
             k = 0;
+            SHOW_CURSOR();
         } break;
         case 0xC6: { // MEGA F
             HIDE_CURSOR(); // XXX - show the cursor in the "text box"
@@ -1086,17 +1097,20 @@ void editor_process_special_key(uint8_t key)
                 lcopy(data_buffer, slide_font_pack[slide_number],
                     sizeof(slide_font_pack[slide_number]));
                 if (fileio_load_font())
+                {
                     lfill(slide_font_pack[slide_number], 0,
                         sizeof(slide_font_pack[slide_number]));
+                    for (READ_KEY() = 1; READ_KEY() != KEY_RETURN; TOGGLE_BACK()) TOGGLE_BACK();
+                }
             }
-            text_line = k;
-            cursor_col = c;
-
             editor_load_slide();
             editor_fetch_line();
+            text_line = k;
+            cursor_col = c;
             k = 0;
             READ_KEY() = 1;
             READ_MOD() = 1;
+            SHOW_CURSOR();
         } break;
         default: break;
     }
