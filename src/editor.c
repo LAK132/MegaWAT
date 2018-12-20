@@ -564,12 +564,12 @@ void editor_check_font_pack(uint32_t new_slide, uint32_t old_slide)
 {
 
     // check if the loaded font needs to change
-    if (strcmp(slide_font_pack[new_slide], slide_font_pack[old_slide]))
+    if (memcmp(slide_font_pack[new_slide], slide_font_pack[old_slide], sizeof(slide_font_pack[0])) != 0)
     {
         if (slide_font_pack[new_slide][0] == 0)
         {
             // no font loaded for this slide, keep using the current one
-            lcopy(slide_font_pack[new_slide], slide_font_pack[old_slide],
+            lcopy(slide_font_pack[old_slide], slide_font_pack[new_slide],
                 strlen(slide_font_pack[old_slide]));
         }
         else
