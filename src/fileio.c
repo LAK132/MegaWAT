@@ -114,28 +114,24 @@ int fileio_save_pres(void)
                 editor_show_message(line++, "failed to write size");
                 for (;;) TOGGLE_BACK();
             }
-            TOGGLE_BACK();
 
             if (sizeof(slide_colour[i]) != fwrite(&slide_colour[i], 1, sizeof(slide_colour[i]), file))
             {
                 editor_show_message(line++, "failed to write slide_colour");
                 for (;;) TOGGLE_BACK();
             }
-            TOGGLE_BACK();
 
             if (sizeof(slide_resolution[i]) != fwrite(&slide_resolution[i], 1, sizeof(slide_resolution[i]), file))
             {
                 editor_show_message(line++, "failed to write slide_resolution");
                 for (;;) TOGGLE_BACK();
             }
-            TOGGLE_BACK();
 
             if (sizeof(slide_font_pack[i]) != fwrite(slide_font_pack[i], 1, sizeof(slide_font_pack[i]), file))
             {
-                editor_show_message(line++, "filed to write slide_font_pack");
+                editor_show_message(line++, "failed to write slide_font_pack");
                 for (;;) TOGGLE_BACK();
             }
-            TOGGLE_BACK();
 
             for (j = 0; j < sz; j += sizeof(data_buffer))
             {
@@ -148,9 +144,7 @@ int fileio_save_pres(void)
                     editor_show_message(line++, "failed to write slide_start");
                     for (;;) TOGGLE_BACK();
                 }
-                TOGGLE_BACK();
             }
-            TOGGLE_BACK();
         }
         rtn = fclose(file);
     }
@@ -189,7 +183,6 @@ int fileio_load_pres(void)
                 editor_show_message(line++, "failed to read size");
                 for (;;) TOGGLE_BACK();
             }
-            TOGGLE_BACK();
 
             slide_start[i + 1] = slide_start[i] + sz;
             if (sizeof(slide_colour[i]) != fread(&slide_colour[i], 1, sizeof(slide_colour[i]), file))
@@ -197,21 +190,18 @@ int fileio_load_pres(void)
                 editor_show_message(line++, "failed to read slide_colour");
                 for (;;) TOGGLE_BACK();
             }
-            TOGGLE_BACK();
 
             if (sizeof(slide_resolution[i]) != fread(&slide_resolution[i], 1, sizeof(slide_resolution[i]), file))
             {
                 editor_show_message(line++, "failed to read slide_resolution");
                 for (;;) TOGGLE_BACK();
             }
-            TOGGLE_BACK();
 
             if (sizeof(slide_font_pack[i]) != fread(slide_font_pack[i], 1, sizeof(slide_font_pack[i]), file))
             {
                 editor_show_message(line++, "failed to read slide_font_pack");
                 for (;;) TOGGLE_BACK();
             }
-            TOGGLE_BACK();
 
             for (j = 0; j < sz; j += sizeof(data_buffer))
             {
@@ -224,9 +214,7 @@ int fileio_load_pres(void)
                     for (;;) TOGGLE_BACK();
                 }
                 lcopy(data_buffer, slide_start[i] + j, diff);
-                TOGGLE_BACK();
             }
-            TOGGLE_BACK();
         }
         rtn = fclose(file);
     }
@@ -256,32 +244,24 @@ int fileio_load_font(void)
     lcopy(fpk, data_buffer + i, sizeof(fpk));
     i += sizeof(fpk);
     lcopy(data_buffer, 0x0400, i);
-    editor_show_message(1, 0x0400);
-    lfill(0x40000, 0, 0x20000);
+    lfill(ASSET_RAM, 0, ASSET_RAM_SIZE);
 
-    editor_show_message(0, "loading font pack");
-    i = font_load_asm(strlen(data_buffer));
-    if (i == 1)
+    rtn = font_load_asm(strlen(data_buffer));
+    if (rtn)
     {
-        editor_show_message(0, "failed to set font pack name");
-        editor_show_message(2, "RETURN: ok");
-        editor_show_message(3, "");
+        editor_show_message(0, "failed to load font pack");
+        editor_show_message(1, data_buffer);
+        editor_show_message(2,
+            rtn == 1 ? "failed to set font pack name"
+            : rtn == 2 ? "failed to load font pack from SD card, make sure name is correct"
+            : "");
+        editor_show_message(3, "RETURN: ok");
         for (READ_KEY() = 1; READ_KEY() != KEY_RETURN;);
+        return rtn;
     }
-    if (i == 2)
-    {
-        editor_show_message(0, "failed to load font pack from SD card, make sure name is correct");
-        editor_show_message(2, "RETURN: ok");
-        editor_show_message(3, "");
-        for (READ_KEY() = 1; READ_KEY() != KEY_RETURN;);
-    }
-    editor_show_message(0, "loaded font pack");
-
-    editor_show_message(0, "patching font pack");
     current_font = ASSET_RAM;
     patchFonts();
     setFont(0);
-    editor_show_message(0, "patched font pack");
 
     return rtn;
 }
