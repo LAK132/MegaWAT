@@ -31,6 +31,7 @@ uint32_t editor_buffer_size = sizeof(editor_buffer) / sizeof(uint16_t);
 
 ptr_t slide_start[EDITOR_MAX_SLIDES];
 uint8_t slide_number = 0;
+uint8_t preload_slide_number[3] = {0};
 uint8_t slide_colour[EDITOR_MAX_SLIDES];
 uint8_t slide_resolution[EDITOR_MAX_SLIDES];
 uint8_t slide_font_pack[EDITOR_MAX_SLIDES][FILE_NAME_MAX_LEN-6];
@@ -104,6 +105,7 @@ void editor_initialise(void)
     cursor_col = 0;
 
     lfill(data_buffer, 0, sizeof(data_buffer));
+    lfill(preload_slide_number, EDITOR_END_SLIDE, sizeof(preload_slide_number));
     lcopy(slide_font_pack[0], data_buffer,
         strlen(slide_font_pack[slide_number]));
     if (slide_font_pack[0][0] != 0)
@@ -605,6 +607,8 @@ void editor_next_slide(void)
 {
     if (slide_number + 1 < EDITOR_END_SLIDE)
     {
+        preload_slide_number[2] = preload_slide_number[active_slide];
+
         // Switch active slide (next slide)
         if (active_slide) // SLIDE1 active
             active_slide = 0;
@@ -659,6 +663,8 @@ void editor_previous_slide(void)
             active_slide = 0;
         else // SLIDE0 active
             active_slide = 1;
+
+        preload_slide_number[active_slide] = preload_slide_number[2];
 
         BLANK_SCREEN();
 
