@@ -139,7 +139,6 @@ void findFontStructures(void)
     point_list_address = current_font + 0x100;
     tile_array_start = 0;
     lcopy(current_font + 0x84, (ptr_t)&tile_array_start, 3);
-    tile_map_size = current_font + tile_map_start - (longptr_t)tile_array_start;
     tile_map_address = current_font + tile_map_start;
     tile_array_address = current_font + tile_array_start;
 
