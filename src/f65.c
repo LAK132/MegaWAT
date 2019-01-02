@@ -28,7 +28,7 @@ ptr_t point_list_address = 0U, point_list_size = 0U;
 
 // tile map
 uint16_t tile_map_start = 0U;
-ptr_t tile_map_address = 0U, tile_map_size = 0U;
+ptr_t tile_map_address = 0U;
 
 // tile array
 longptr_t tile_array_start = 0U, tile_array_address = 0U;
