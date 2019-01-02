@@ -878,7 +878,11 @@ void patchFonts(void)
     font_address = current_font; // backup the current font
     for (font_count = 0; font_count < MAX_FONTS && current_font < (ASSET_RAM + ASSET_RAM_SIZE);)
     {
-        patchFont();
+        if (lpeek(current_font) == 0x3D)
+            // already patched
+            lcopy(current_font + 0x8c, (ptr_t)&font_size, 4);
+        else
+            patchFont();
         font_addresses[font_count++] = current_font;
         current_font += font_size;
         next_font_address = current_font;
@@ -932,4 +936,6 @@ void patchFont(void)
             tile_cards += 2;
         }
     }
+
+    lpoke(current_font, 0x3D);
 }
