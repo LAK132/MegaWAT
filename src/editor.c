@@ -1100,14 +1100,11 @@ void editor_process_special_key(uint8_t key)
             }
             if (key == KEY_RETURN)
             {
-                lcopy(data_buffer, slide_font_pack[slide_number],
-                    sizeof(slide_font_pack[slide_number]));
+                lfill(slide_font_pack[slide_number], 0, sizeof(slide_font_pack[slide_number]));
                 if (fileio_load_font())
-                {
-                    lfill(slide_font_pack[slide_number], 0,
-                        sizeof(slide_font_pack[slide_number]));
                     for (READ_KEY() = 1; READ_KEY() != KEY_RETURN; TOGGLE_BACK()) TOGGLE_BACK();
-                }
+                else
+                    lcopy(data_buffer, slide_font_pack[slide_number], i);
             }
             editor_load_slide();
             editor_fetch_line();
