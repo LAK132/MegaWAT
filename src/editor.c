@@ -30,7 +30,7 @@ uint16_t editor_buffer[SLIDE_SIZE / sizeof(uint16_t)];
 uint32_t editor_buffer_size = sizeof(editor_buffer) / sizeof(uint16_t);
 
 ptr_t slide_start[EDITOR_MAX_SLIDES];
-uint32_t slide_number = 0;
+uint8_t slide_number = 0;
 uint8_t slide_colour[EDITOR_MAX_SLIDES];
 uint8_t slide_resolution[EDITOR_MAX_SLIDES];
 uint8_t slide_font_pack[EDITOR_MAX_SLIDES][FILE_NAME_MAX_LEN-6];
