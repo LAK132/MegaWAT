@@ -78,22 +78,13 @@ void editor_get_line_info(void)
 }
 
 void editor_save_slide(void);
-void editor_next_slide(void);
-void editor_load_slide(void);
-void editor_previous_slide(void);
+void editor_smart_load_slide(uint8_t curr, uint8_t next, char preload);
+void editor_next_slide(char preload);
+void editor_previous_slide(char preload);
 
 void editor_initialise(void)
 {
     videoSetSlideMode();
-
-    active_slide = 0;
-    videoSetActiveGraphicsBuffer(active_slide);
-    videoSetActiveRenderBuffer(active_slide);
-
-    active_rbuffer = &screen_rbuffer;
-    clearRenderBuffer();
-    active_rbuffer = &scratch_rbuffer;
-    clearRenderBuffer();
 
     // Fill the rest of the buffer with zeros
     lfill((ptr_t)editor_buffer, 0x00, sizeof(editor_buffer));
@@ -118,13 +109,10 @@ void editor_initialise(void)
         }
     }
 
-    // make sure slide 2 is preloaded correctly
-    // editor_save_slide(); // DO NOT SAVE - EDITOR BUFFER IS BLANK
-    editor_next_slide();
-    editor_load_slide();
-    editor_save_slide();
-    editor_previous_slide();
-    editor_load_slide();
+    active_slide = 0;
+    slide_number = 0;
+    // use smart load to make sure slide 2 is preloaded correctly
+    editor_smart_load_slide(0, 1, 1);
 
     editor_show_slide_number();
 }
@@ -569,41 +557,79 @@ void editor_load_slide(void)
     editor_update_cursor();
 }
 
-void editor_check_font_pack(uint32_t new_slide, uint32_t old_slide)
+char editor_load_font_pack(uint8_t slide)
 {
-    // check if the loaded font needs to change
-    if (memcmp(slide_font_pack[new_slide], slide_font_pack[old_slide], sizeof(slide_font_pack[0])) != 0)
+    if (slide_font_pack[slide][0] != 0)
     {
-        if (slide_font_pack[new_slide][0] == 0)
+        // this slide has a set font, load it
+        lfill(data_buffer, 0, sizeof(data_buffer));
+        lcopy(slide_font_pack[slide], data_buffer,
+            sizeof(slide_font_pack[slide]));
+        if (fileio_load_font())
         {
-            // no font loaded for this slide, keep using the current one
-            lcopy(slide_font_pack[old_slide], slide_font_pack[new_slide],
-                strlen(slide_font_pack[old_slide]));
-        }
-        else
-        {
-            // this slide has a set font, load it
-            lfill(data_buffer, 0, sizeof(data_buffer));
-            lcopy(slide_font_pack[new_slide], data_buffer,
-                strlen(slide_font_pack[new_slide]));
-            if (fileio_load_font())
-            {
-                lfill(&(slide_font_pack[new_slide][0]), 0,
-                    sizeof(slide_font_pack[new_slide]));
-                for (READ_KEY() = 1; READ_KEY() != KEY_RETURN; TOGGLE_BACK()) TOGGLE_BACK();
-            }
+            lfill(slide_font_pack[slide], 0,
+                sizeof(slide_font_pack[slide]));
+            for (READ_KEY() = 1; READ_KEY() != KEY_RETURN; TOGGLE_BACK()) TOGGLE_BACK();
         }
     }
 }
 
-void editor_preload_slide(int8_t offset)
+void editor_smart_load_slide(uint8_t curr, uint8_t next, char preload)
 {
-    slide_number += offset;
-    editor_load_slide();
-    slide_number -= offset;
+    // Change the screen address
+    videoSetActiveGraphicsBuffer(active_slide);
+    // Change the renderer address
+    videoSetActiveRenderBuffer(active_slide);
+    // strncmp return 0 if one one of the args is zero length
+    if (strncmp(slide_font_pack[slide_number], slide_font_pack[curr], sizeof(slide_font_pack[0])) != 0)
+    {
+        BLANK_SCREEN();
+        // font pack differs from previous slide, must update
+        editor_load_font_pack(curr);
+        UNBLANK_SCREEN();
+    }
+    slide_number = curr;
+    if (preload_slide_number[active_slide] != curr)
+    {
+        BLANK_SCREEN();
+        // this slide has not been preloaded, must update
+        editor_load_slide();
+        preload_slide_number[active_slide] = curr;
+        UNBLANK_SCREEN();
+    }
+    // memcmp does NOT return 0 if one of the args is zero length
+    if (preload && memcmp(slide_font_pack[curr], slide_font_pack[next], sizeof(slide_font_pack[0])) == 0)
+    {
+        // same font, we can safely preload the next slide
+        do {
+            if (next > curr && preload_slide_number[active_slide ? 0 : 1] != next)
+            {
+                // next slide should be in a main slide buffer
+                videoSetActiveRenderBuffer(active_slide ? 0 : 1);
+                preload_slide_number[active_slide ? 0 : 1] = next;
+            }
+            else if (next < curr && preload_slide_number[2] != next)
+            {
+                // next slide should be in the secondary slide buffer
+                videoSetActiveRenderBuffer(2);
+                preload_slide_number[2] = next;
+            }
+            else break;
+            slide_number = next;
+            editor_load_slide();
+
+            // set back to current slide
+            videoSetActiveRenderBuffer(active_slide);
+            slide_number = curr;
+        } while (0);
+    }
+    // Set the border colour
+    POKE(0xD020, slide_colour[curr]);
+    // Set the background colour
+    POKE(0xD021, slide_colour[curr]);
 }
 
-void editor_next_slide(void)
+void editor_next_slide(char preload)
 {
     if (slide_number + 1 < EDITOR_END_SLIDE)
     {
@@ -615,42 +641,17 @@ void editor_next_slide(void)
         else // SLIDE0 active
             active_slide = 1;
 
-        BLANK_SCREEN();
-
-        ++slide_number;
-
-        // Change the screen address
-        videoSetActiveGraphicsBuffer(active_slide);
-
-        // Change font pack if necessary
-        editor_check_font_pack(slide_number, slide_number - 1);
-
-        // Don't change the render buffer address yet
-        // so we can pre-render the next slide without
-        // affecting the current slide
-
         // Move current slide (SLIDE0/1) to previous slide (SLIDE2)
         lcopy(active_slide ? SLIDE0_SCREEN_RAM : SLIDE1_SCREEN_RAM, SLIDE2_SCREEN_RAM, SLIDE_SIZE);
         lcopy(active_slide ? SLIDE0_COLOUR_RAM : SLIDE1_COLOUR_RAM, SLIDE2_COLOUR_RAM, SLIDE_SIZE);
 
-        // Set the border colour
-        POKE(0xD020, slide_colour[slide_number]);
-        // Set the background colour
-        POKE(0xD021, slide_colour[slide_number]);
-        UNBLANK_SCREEN();
-
-        // Pre-render the next slide
-        if (slide_number + 1 < EDITOR_END_SLIDE)
-        {
-            editor_preload_slide(1);
-        }
-
-        // Change the render buffer address
-        videoSetActiveRenderBuffer(active_slide);
+        // we can safely ignore overflow here
+        editor_smart_load_slide(slide_number + 1, slide_number + 2,
+            slide_number < (sizeof(slide_number) * 0x100) - 2 ? preload : 0);
     }
 }
 
-void editor_previous_slide(void)
+void editor_previous_slide(char preload)
 {
     if (slide_number)
     {
@@ -666,55 +667,27 @@ void editor_previous_slide(void)
 
         preload_slide_number[active_slide] = preload_slide_number[2];
 
-        BLANK_SCREEN();
-
-        --slide_number;
-
-        // Change the screen address
-        videoSetActiveGraphicsBuffer(active_slide);
-
-        // Change font pack if necessary
-        editor_check_font_pack(slide_number, slide_number + 1);
-
-        // Don't change the render buffer address yet
-        // so we can pre-render the previous slide without
-        // affecting the current slide
-        // Pre-render the previous slide
-
-        // Set the border colour
-        POKE(0xD020, slide_colour[slide_number]);
-        // Set the background colour
-        POKE(0xD021, slide_colour[slide_number]);
-        UNBLANK_SCREEN();
-
-        if (slide_number)
-        {
-            videoSetActiveRenderBuffer(2);
-            editor_preload_slide(-1);
-        }
-
-        // Change the render buffer address
-        videoSetActiveRenderBuffer(active_slide);
+        // we can safely ignore overflow here
+        editor_smart_load_slide(slide_number - 1, slide_number - 2, slide_number >= 2 ? preload : 0);
     }
 }
 
-void editor_goto_slide(uint8_t num)
+static void editor_goto_slide(uint8_t num, char preload)
 {
     if (slide_number == num)
         return;
 
     if (slide_number > num)
         while (slide_number > num)
-            editor_previous_slide();
+            editor_previous_slide(slide_number - 1 == num ? preload : 0);
     else
         while(slide_number < num)
-            editor_next_slide();
+            editor_next_slide(slide_number + 1 == num ? preload : 0);
 }
 
-void editor_show_message(uint8_t line, uint8_t *str)
+static void editor_show_message(uint8_t line, uint8_t *str)
 {
     text_line = line;
-    // editor_fetch_line();
     editor_clear_line();
     setFont(0);
     string_buffer = str;
@@ -734,11 +707,11 @@ void editor_process_special_key(uint8_t key)
         case 0x20:
         case 0x11:
         case 0x1D: { // next slide
-            editor_next_slide();
+            editor_next_slide(1);
         } break;
         case 0x91:
         case 0x9D: { // previous slide
-            editor_previous_slide();
+            editor_previous_slide(1);
         } break;
         case 0x03:
         case 0xF5: {
@@ -874,10 +847,9 @@ void editor_process_special_key(uint8_t key)
             editor_stash_line();
             editor_save_slide();
             if (key == 0xC2 || ((key == 0xED || key == 0xEE) && (mod & MOD_SHIFT)))
-                editor_previous_slide();
+                editor_previous_slide(0);
             else
-                editor_next_slide();
-            editor_load_slide();
+                editor_next_slide(0);
             editor_fetch_line();
             editor_show_slide_number();
         } break;
@@ -1013,7 +985,8 @@ void editor_process_special_key(uint8_t key)
                 if (fileio_save_pres())
                     lfill(file_name, 0, sizeof(file_name));
             } while (0);
-            editor_load_slide();
+            editor_next_slide(0);
+            editor_previous_slide(0);
             editor_fetch_line();
             text_line = k;
             cursor_col = c;
