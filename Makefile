@@ -55,6 +55,7 @@ ASSFILES=	$(OBJDIR)/main.s \
 			$(OBJDIR)/romprotection.s
 
 HEADERS=	Makefile \
+			c64-m65.cfg \
 			$(SRCDIR)/main.h \
 			$(SRCDIR)/screen.h \
 			$(SRCDIR)/videomodes.h \
