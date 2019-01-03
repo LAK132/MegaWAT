@@ -2,6 +2,8 @@ The planned memory layout is:
 
 $0000000 - $00003FF - ZP, stack etc as usual
 $0000400 - $00007FF - Normal C64 screen
+$0000400 - $00006FD - Cursor sprite
+$0000700 - $00007FF - Font name for pack loading
 $0000800 - $000CFFF - Code (normal C64-mode loading program) (50KB)
 $000D000 - $000DFFF - C64 charset / IO as normal. Not currently using the 4K RAM beneath.
 $000E000 - $000FFFF - C64 KERNAL ROM

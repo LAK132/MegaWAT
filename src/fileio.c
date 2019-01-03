@@ -243,7 +243,7 @@ int fileio_load_font(void)
     i = strlen(data_buffer);
     lcopy(fpk, data_buffer + i, sizeof(fpk));
     i += sizeof(fpk);
-    lcopy(data_buffer, 0x0400, i);
+    lcopy(data_buffer, 0x0700, i);
     lfill(ASSET_RAM, 0, ASSET_RAM_SIZE);
 
     rtn = font_load_asm(strlen(data_buffer));

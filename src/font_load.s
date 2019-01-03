@@ -5,8 +5,9 @@ _font_load_asm:
     .byte $4B       ; taz
     nop
     lda #$2e
+    ; string in memory location 0x0700
     ldx #$00
-    ldy #$04
+    ldy #$07
     sta $d640
     nop
     .byte $a3,$00   ; ldz #$00
