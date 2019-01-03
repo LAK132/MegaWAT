@@ -436,7 +436,7 @@ void editor_update_cursor(void)
     h = 4 * (scratch_rbuffer.max_above + scratch_rbuffer.max_below);
     if (h < 4)
         h = 4;
-    y = 28 + text_line_first_rows[text_line] * 4;
+    y = 39 + text_line_first_rows[text_line] * 4;
     // Set extended Y height to match required height.
     POKE(0xD056, h);
     // Make cursor be text colour (will alternate to another colour as well)
