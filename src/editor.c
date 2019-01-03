@@ -404,11 +404,9 @@ void editor_fetch_line(void)
 
 void editor_show_cursor(void)
 {
-    static int16_t x;
-    static uint8_t y;
+    const static int16_t x = 5;
+    const static uint8_t y = 30;
     // Put cursor in initial position
-    x = 5;
-    y = 30;
     POKE(0xD000, x & 0xFF);
     POKE(0xD001, y);
     if (x & 0x100)
