@@ -27,7 +27,7 @@ uint8_t text_line_count = 1;
 #define EDITOR_LINE_LEN 128
 uint16_t editor_scratch[EDITOR_LINE_LEN];
 uint16_t editor_buffer[SLIDE_SIZE / sizeof(uint16_t)];
-uint32_t editor_buffer_size = sizeof(editor_buffer) / sizeof(uint16_t);
+const uint32_t editor_buffer_size = sizeof(editor_buffer) / sizeof(uint16_t);
 
 ptr_t slide_start[EDITOR_MAX_SLIDES];
 uint8_t slide_number = 0;
@@ -53,11 +53,6 @@ uint16_t cursor_toggle = 0;
 void editor_show_slide_number(void);
 // void editor_hide_slide_number(void);
 #define editor_hide_slide_number() lfill(0x0500,0x00,0x100)
-
-void editor_insert_line(uint8_t before)
-{
-    // Insert a new blank line before line #before
-}
 
 void editor_get_line_info(void)
 {
@@ -97,8 +92,7 @@ void editor_initialise(void)
 
     lfill(data_buffer, 0, sizeof(data_buffer));
     lfill(preload_slide_number, EDITOR_END_SLIDE, sizeof(preload_slide_number));
-    lcopy(slide_font_pack[0], data_buffer,
-        strlen(slide_font_pack[slide_number]));
+    lcopy(slide_font_pack[0], data_buffer, strlen(slide_font_pack[slide_number]));
     if (slide_font_pack[0][0] != 0)
     {
         if (fileio_load_font())
@@ -555,6 +549,18 @@ void editor_load_slide(void)
     editor_update_cursor();
 }
 
+void editor_insert_line(uint8_t before)
+{
+    static uint8_t i;
+    if (text_line_start[EDITOR_END_LINE] >= editor_buffer_size)
+        return; // no room to instert a new line
+    lcopy_safe(editor_buffer[text_line_start[before]], editor_buffer[text_line_start[before]+1],
+        text_line_start[EDITOR_END_LINE] - text_line_start[before]);
+    editor_buffer[text_line_start[before]] = 0;
+    editor_save_slide();
+    editor_load_slide();
+}
+
 char editor_load_font_pack(uint8_t slide)
 {
     if (slide_font_pack[slide][0] != 0)
@@ -816,10 +822,18 @@ void editor_process_special_key(uint8_t key)
         // Here we adjust which line we are editing,
         // Fix cursor position if it would be beyond the end of the line
         case 0x0d: { // RETURN
-            // Break line into two
-            editor_insert_line(text_line + 1);
-            cursor_col = 0;
-        } // don't break
+            if (text_line < EDITOR_MAX_LINES)
+            {
+                // Break line into two
+                editor_stash_line();
+                editor_insert_line(text_line + 1);
+                cursor_col = 0;
+                ++text_line;
+                editor_fetch_line();
+                editor_update_cursor();
+                k = 1;
+            }
+        } break;
         case 0x11: { // Cursor down
             if (text_line < EDITOR_MAX_LINES)
             {
