@@ -65,7 +65,7 @@ extern uint8_t end_of_line_pattern[2];
 
 void deleteGlyph(uint8_t glyph_num);
 void getGlyphDetails(uint16_t code_point, uint8_t colour_and_attributes, uint8_t first_column);
-void renderGlyphDetails(uint8_t alpha_and_extras, uint8_t position);
+char renderGlyphDetails(uint8_t alpha_and_extras, uint8_t position);
 // void renderGlyph(uint16_t code_point, uint8_t colour_and_attributes, uint8_t alpha_and_extras, uint8_t position);
 void setFont(uint8_t id);
 void findFontStructures(void);
