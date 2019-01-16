@@ -449,8 +449,12 @@ void editor_update_cursor(void)
         POKE(0xD05FU, PEEK(0xD05FU)&0xfe);
 }
 
-void editor_insert_codepoint(uint16_t code_point)
+// NOTE: we don't add the code_point into the line buffer until we stash,
+// this allows us to prevent adding redundant modifier codes (ie font select codes)
+
+char editor_insert_codepoint(uint16_t code_point)
 {
+    static char rtn;
     static uint8_t z;
 
     // Shift to fix ASCII vs PETSCII for the C64 font
@@ -458,15 +462,16 @@ void editor_insert_codepoint(uint16_t code_point)
         code_point -= 0x60;
 
     z = scratch_rbuffer.glyph_count;
-    editor_render_glyph(code_point);
+    rtn = editor_render_glyph(code_point);
     screen_rbuffer.rows_used = CURRENT_ROW;
     outputLineToRenderBuffer();
 
-    // Only advance cursor if the glyph was actually rendered
+    // Only advance cursor and save code point if the glyph was actually rendered
     if (scratch_rbuffer.glyph_count > z)
         ++cursor_col;
     if (cursor_col > scratch_rbuffer.glyph_count)
         cursor_col = scratch_rbuffer.glyph_count;
+    return rtn;
 }
 
 void editor_save_slide(void)
