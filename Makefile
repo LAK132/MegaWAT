@@ -60,6 +60,7 @@ HEADERS=	Makefile \
 			c64-m65.cfg \
 			$(SRCDIR)/main.h \
 			$(SRCDIR)/megastring.h \
+			$(SRCDIR)/editor.h \
 			$(SRCDIR)/screen.h \
 			$(SRCDIR)/videomodes.h \
 			$(SRCDIR)/globals.h \
