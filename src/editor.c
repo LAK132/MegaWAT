@@ -117,7 +117,7 @@ void editor_start(void)
     videoSetSlideMode();
 
     lfill(SLIDE_DATA, 0, SLIDE_DATA_SIZE);
-    slide_start[0] = SLIDE_DATA;
+    lfill(slide_font_pack[0], 0, sizeof(slide_font_pack[0]));
     for (y = 1; y < EDITOR_MAX_SLIDES; ++y)
     {
         slide_start[y] = slide_start[y-1] + (EDITOR_END_LINE * 2);
