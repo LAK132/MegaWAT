@@ -1189,7 +1189,7 @@ void editor_show_slide_number(void)
 
 void editor_poll_keyboard(void)
 {
-    static uint32_t l, m;
+    static uint16_t l;
 
     #ifndef __MEGA65__
     while (key != KEY_ESC)
@@ -1203,7 +1203,7 @@ void editor_poll_keyboard(void)
         {
             // Allow enough time for modifier flags to get asserted
             mod = READ_MOD();
-            for (m = 0; m < 3000; ++m)
+            for (l = 0; l < 3000; ++l)
                 mod |= READ_MOD();
 
             while (READ_KEY())
