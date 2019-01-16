@@ -931,8 +931,7 @@ void editor_process_special_key(uint8_t key)
                 // XXX - use hardware reverse to show selection
                 // XXX - on RETURN: load presentation
                 // XXX - on ESC: return to editing previous presentation
-                if (fileio_load_pres())
-                    for (READ_KEY() = 0; READ_KEY() != KEY_ESC; TOGGLE_BACK()) TOGGLE_BACK();
+                fileio_load_pres();
                 editor_initialise();
             }
             else
