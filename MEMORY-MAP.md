@@ -13,7 +13,7 @@ $0015000 - $0017FFF - Slide #1 (next) screen RAM
 $0018000 - $001AFFF - Slide #2 (previous) screen RAM
 $001B000 - $001DFFF - Slide #2 (previous) colour RAM
 $001E000 - $001F76F - Text render buffer for screen memory (100 x 30 tiles x 2 bytes per tile)
-$001F770 - $001FFFF - Unused
+$001F770 - $001FFFF - Single line scratch
 $0020000 - $0023FFF - C65 DOS ROM
 $0024000 - $0027FFF - Slide data (16KB) [editor text buffer]
 $0028000 - $002FFFF - C64 and C65 ROMs
