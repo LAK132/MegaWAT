@@ -90,7 +90,7 @@ void editor_initialise(void)
     cursor_col = 0;
 
     lfill(data_buffer, 0, sizeof(data_buffer));
-    lfill(preload_slide_number, EDITOR_END_SLIDE, sizeof(preload_slide_number));
+    lfill(preload_slide_number, EDITOR_MAX_SLIDES, sizeof(preload_slide_number));
     lcopy(slide_font_pack[0], data_buffer, strlen(slide_font_pack[slide_number]));
     if (slide_font_pack[0][0] != 0)
     {
@@ -546,7 +546,7 @@ void editor_load_slide(void)
     // Update line starts for new buffer
     editor_get_line_info();
     w = text_line;
-    for (text_line = 0; text_line < EDITOR_MAX_LINES; ++text_line)
+    for (text_line = 0; text_line < EDITOR_END_LINE; ++text_line)
     {
         editor_fetch_line();
         editor_stash_line();
