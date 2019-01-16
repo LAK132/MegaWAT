@@ -708,7 +708,7 @@ static void editor_show_message(uint8_t line, uint8_t *str)
 
 void editor_process_special_key(uint8_t key)
 {
-    static uint8_t k, c, i;
+    static uint8_t k, c, i, j;
 
     k = 0; // if the cursor was moved
     if (present_mode) switch (key)
@@ -889,7 +889,7 @@ void editor_process_special_key(uint8_t key)
             editor_stash_line();
             editor_save_slide();
 
-            k = text_line;
+            j = text_line;
             c = cursor_col;
             // XXX - "Are you sure?" prompt
 
@@ -936,19 +936,21 @@ void editor_process_special_key(uint8_t key)
             else
             {
                 // return to normal editing
-                text_line = k;
+                text_line = j;
                 cursor_col = c;
             }
 
             editor_load_slide();
             editor_fetch_line();
             SHOW_CURSOR();
+            READ_KEY() = 0;
+            k = 1;
         } break;
         case 0xD3: { // MEGA S
             HIDE_CURSOR(); // XXX - show the cursor in the "text box"
             editor_stash_line();
             editor_save_slide();
-            k = text_line;
+            j = text_line;
             c = cursor_col;
             do
             {
@@ -1006,16 +1008,18 @@ void editor_process_special_key(uint8_t key)
             editor_next_slide(0);
             editor_previous_slide(0);
             editor_fetch_line();
-            text_line = k;
+            text_line = j;
             cursor_col = c;
             SHOW_CURSOR();
+            READ_KEY() = 0;
+            k = 1;
         } break;
         case 0xCE: { // MEGA N
             // New
             HIDE_CURSOR(); // XXX - show the cursor in the "text box"
             editor_stash_line();
             editor_save_slide();
-            k = text_line;
+            j = text_line;
             c = cursor_col;
             // XXX - "Are you sure?" prompt
 
@@ -1040,19 +1044,20 @@ void editor_process_special_key(uint8_t key)
             else
             {
                 // return to normal editing
-                text_line = k;
+                text_line = j;
                 cursor_col = c;
             }
             editor_load_slide();
             editor_fetch_line();
-            k = 0;
             SHOW_CURSOR();
+            READ_KEY() = 0;
+            k = 1;
         } break;
         case 0xC6: { // MEGA F
             HIDE_CURSOR(); // XXX - show the cursor in the "text box"
             editor_stash_line();
             editor_save_slide();
-            k = text_line;
+            j = text_line;
             c = cursor_col;
             // XXX - "Are you sure?" prompt
 
@@ -1099,12 +1104,13 @@ void editor_process_special_key(uint8_t key)
             }
             editor_load_slide();
             editor_fetch_line();
-            text_line = k;
+            text_line = j;
             cursor_col = c;
-            k = 0;
             READ_KEY() = 1;
             READ_MOD() = 1;
             SHOW_CURSOR();
+            READ_KEY() = 0;
+            k = 1;
         } break;
         default: break;
     }
