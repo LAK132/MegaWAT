@@ -897,6 +897,7 @@ void editor_process_special_key(uint8_t key)
             clearRenderBuffer();
             active_rbuffer = &scratch_rbuffer;
             clearRenderBuffer();
+            lfill(preload_slide_number, EDITOR_MAX_SLIDES, sizeof(preload_slide_number));
 
             editor_show_message(0, "open a different presentation? unsaved changes will be lost");
             editor_show_message(1, file_name);
@@ -1005,6 +1006,7 @@ void editor_process_special_key(uint8_t key)
                 if (fileio_save_pres())
                     lfill(file_name, 0, sizeof(file_name));
             } while (0);
+            lfill(preload_slide_number, EDITOR_MAX_SLIDES, sizeof(preload_slide_number));
             editor_next_slide(0);
             editor_previous_slide(0);
             editor_fetch_line();
@@ -1027,6 +1029,7 @@ void editor_process_special_key(uint8_t key)
             clearRenderBuffer();
             active_rbuffer = &scratch_rbuffer;
             clearRenderBuffer();
+            lfill(preload_slide_number, EDITOR_MAX_SLIDES, sizeof(preload_slide_number));
 
             editor_show_message(0, "start a new presentation? unsaved changes will be lost");
             editor_show_message(1, "RETURN: ok");
@@ -1065,6 +1068,7 @@ void editor_process_special_key(uint8_t key)
             clearRenderBuffer();
             active_rbuffer = &scratch_rbuffer;
             clearRenderBuffer();
+            lfill(preload_slide_number, EDITOR_MAX_SLIDES, sizeof(preload_slide_number));
 
             lfill(data_buffer, 0, sizeof(data_buffer));
             i = strlen(slide_font_pack[slide_number]);
