@@ -92,7 +92,7 @@ endif
 
 MONLOAD=	$(COREDIR)/src/tools/monitor_load
 KICKUP=		$(COREDIR)/bin/KICKUP.M65
-BITSTRM=	$(COREDIR)/bin/nexys4ddr-widget-20181215.21-newpix-5e5ad11+DIRTY.bit
+BITSTRM=	$(COREDIR)/bin/nexys4ddr-widget-20190116.16-newpix-b686673+DIRTY.bit
 CHARROM=	$(COREDIR)/charrom.bin
 
 TTFTOF65=	$(FONTRSTDIR)/ttftof65
