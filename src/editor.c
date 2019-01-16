@@ -125,7 +125,7 @@ void editor_start(void)
     }
 
     // default to no file_name
-    // lfill((ptr_t)file_name, 0, sizeof(file_name));
+    lfill((ptr_t)file_name, 0, sizeof(file_name));
 
     // default slide colours to 0x6
     lfill((ptr_t)slide_colour, 0x6, sizeof(slide_colour));
