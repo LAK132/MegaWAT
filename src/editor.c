@@ -485,7 +485,7 @@ void editor_save_slide(void)
     c = slide_number + 1;
 
     // Find how long this line is currently in the buffer
-    // +1 is safe here because text_line_first_rows is oversized by 1
+    // +1 is safe here because slide_start is oversized by 1
     j = slide_start[c] - slide_start[slide_number];
 
     // make sure we have enough space to stash the current line
