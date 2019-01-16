@@ -316,13 +316,15 @@ void editor_check_line_shrunk(void)
     }
 }
 
-void editor_render_glyph(uint16_t code_point)
+char editor_render_glyph(uint16_t code_point)
 {
+    static char rtn;
     active_rbuffer = &scratch_rbuffer;
     active_glyph = &glyph_buffer;
     getGlyphDetails(code_point, text_colour, 0);
-    renderGlyphDetails(ATTRIB_ALPHA_BLEND, cursor_col);
+    rtn = renderGlyphDetails(ATTRIB_ALPHA_BLEND, cursor_col);
     editor_check_line_grew();
+    return rtn;
 }
 
 uint8_t *string_buffer;
