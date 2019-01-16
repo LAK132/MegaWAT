@@ -599,7 +599,7 @@ void editor_smart_load_slide(uint8_t curr, uint8_t next, char preload)
         UNBLANK_SCREEN();
     }
     slide_number = curr;
-    if (preload_slide_number[active_slide] != curr)
+    if (!preload || preload_slide_number[active_slide] != curr)
     {
         BLANK_SCREEN();
         // this slide has not been preloaded, must update
