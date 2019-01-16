@@ -1,11 +1,11 @@
 #include "f65.h"
 #include "globals.h"
 #include "memory.h"
-// #include "screen.h"
 #include "videomodes.h"
 #include "serial.h"
 #include "stdio.h"
 #include "string.h"
+#include "megastring.h"
 #include "fileio.h"
 
 #ifndef EDITOR_H
@@ -15,26 +15,12 @@
 // (We allow 128 instead of 100, so that we can have a number of font and attribute/colour changes
 // in there.)
 #define EDITOR_LINE_LEN 128
-typedef uint16_t* line_t;
 
 #define EDITOR_END_LINE 60
 #define EDITOR_MAX_LINES (EDITOR_END_LINE + 1)
-typedef struct
-{
-    uint8_t colour = 0;
-    uint8_t resolution = 0;
-    uint8_t fontPack[FILE_NAME_MAX_LEN-6] = "";
-    // NOTE: we don't actually use the entire space here,
-    // and sequential slides can overlap
-    uint16_t lines[EDITOR_MAX_LINES * EDITOR_LINE_LEN];
-} slide_t;
 
 #define EDITOR_END_SLIDE 16
 #define EDITOR_MAX_SLIDES (EDITOR_END_SLIDE + 1)
-typedef struct
-{
-    slide_t *slides[EDITOR_MAX_SLIDES];
-} presentation_t;
 
 // line functions
 uint8_t editor_line_length(line_t *line);

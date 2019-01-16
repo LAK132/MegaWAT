@@ -31,6 +31,7 @@ FILES=		$(PROGRAM) \
 			c64-m65.cfg
 
 SOURCES=	$(SRCDIR)/main.c \
+			$(SRCDIR)/megastring.c \
 			$(SRCDIR)/editor.c \
 			$(SRCDIR)/videomodes.c \
 			$(SRCDIR)/memory.c \
@@ -43,6 +44,7 @@ SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/romprotection.s
 
 ASSFILES=	$(OBJDIR)/main.s \
+			$(OBJDIR)/megastring.s \
 			$(OBJDIR)/editor.s \
 			$(OBJDIR)/videomodes.s \
 			$(OBJDIR)/memory.s \
@@ -57,6 +59,7 @@ ASSFILES=	$(OBJDIR)/main.s \
 HEADERS=	Makefile \
 			c64-m65.cfg \
 			$(SRCDIR)/main.h \
+			$(SRCDIR)/megastring.h \
 			$(SRCDIR)/screen.h \
 			$(SRCDIR)/videomodes.h \
 			$(SRCDIR)/globals.h \
