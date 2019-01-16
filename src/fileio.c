@@ -112,25 +112,29 @@ int fileio_save_pres(void)
             if (sizeof(sz) != fwrite(&sz, 1, sizeof(sz), file))
             {
                 editor_show_message(line++, "failed to write size");
-                for (;;) TOGGLE_BACK();
+                rtn = 1;
+                break;
             }
 
             if (sizeof(slide_colour[i]) != fwrite(&slide_colour[i], 1, sizeof(slide_colour[i]), file))
             {
                 editor_show_message(line++, "failed to write slide_colour");
-                for (;;) TOGGLE_BACK();
+                rtn = 1;
+                break;
             }
 
             if (sizeof(slide_resolution[i]) != fwrite(&slide_resolution[i], 1, sizeof(slide_resolution[i]), file))
             {
                 editor_show_message(line++, "failed to write slide_resolution");
-                for (;;) TOGGLE_BACK();
+                rtn = 1;
+                break;
             }
 
             if (sizeof(slide_font_pack[i]) != fwrite(slide_font_pack[i], 1, sizeof(slide_font_pack[i]), file))
             {
                 editor_show_message(line++, "failed to write slide_font_pack");
-                for (;;) TOGGLE_BACK();
+                rtn = 1;
+                break;
             }
 
             for (j = 0; j < sz; j += sizeof(data_buffer))
@@ -142,19 +146,20 @@ int fileio_save_pres(void)
                 if (diff != fwrite(data_buffer, 1, diff, file))
                 {
                     editor_show_message(line++, "failed to write slide_start");
-                    for (;;) TOGGLE_BACK();
+                    rtn = 1;
+                    break;
                 }
             }
         }
         rtn = fclose(file);
     }
-    else
+    else rtn = errno;
+    if (rtn)
     {
-        rtn = errno;
-        editor_show_message(line++, "failed to open file");
-        editor_show_message(line++, strerror(rtn));
+        editor_show_message(line++, "failed to save file");
+        if (errno) editor_show_message(line++, strerror(errno));
         editor_show_message(line++, "RETURN: ok");
-        editor_show_message(line++, "");
+        editor_show_message(line++, "           ");
         for (READ_KEY() = 1; READ_KEY() != KEY_RETURN;);
     }
     videoSetSlideMode();
@@ -181,26 +186,30 @@ int fileio_load_pres(void)
             if (sizeof(sz) != fread(&sz, 1, sizeof(sz), file))
             {
                 editor_show_message(line++, "failed to read size");
-                for (;;) TOGGLE_BACK();
+                rtn = 1;
+                break;
             }
 
             slide_start[i + 1] = slide_start[i] + sz;
             if (sizeof(slide_colour[i]) != fread(&slide_colour[i], 1, sizeof(slide_colour[i]), file))
             {
                 editor_show_message(line++, "failed to read slide_colour");
-                for (;;) TOGGLE_BACK();
+                rtn = 1;
+                break;
             }
 
             if (sizeof(slide_resolution[i]) != fread(&slide_resolution[i], 1, sizeof(slide_resolution[i]), file))
             {
                 editor_show_message(line++, "failed to read slide_resolution");
-                for (;;) TOGGLE_BACK();
+                rtn = 1;
+                break;
             }
 
             if (sizeof(slide_font_pack[i]) != fread(slide_font_pack[i], 1, sizeof(slide_font_pack[i]), file))
             {
                 editor_show_message(line++, "failed to read slide_font_pack");
-                for (;;) TOGGLE_BACK();
+                rtn = 1;
+                break;
             }
 
             for (j = 0; j < sz; j += sizeof(data_buffer))
@@ -211,20 +220,21 @@ int fileio_load_pres(void)
                 if (diff != fread(data_buffer, 1, diff, file))
                 {
                     editor_show_message(line++, "failed to write slide_start");
-                    for (;;) TOGGLE_BACK();
+                    rtn = 1;
+                    break;
                 }
                 lcopy(data_buffer, slide_start[i] + j, diff);
             }
         }
         rtn = fclose(file);
     }
-    else
+    else rtn = errno;
+    if (rtn)
     {
-        rtn = errno;
         editor_show_message(line++, "failed to open file");
-        editor_show_message(line++, strerror(rtn));
+        if (errno) editor_show_message(line++, strerror(errno));
         editor_show_message(line++, "RETURN: ok");
-        editor_show_message(line++, "");
+        editor_show_message(line++, "           ");
         for (READ_KEY() = 1; READ_KEY() != KEY_RETURN;);
     }
     videoSetSlideMode();
