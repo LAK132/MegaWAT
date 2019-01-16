@@ -493,8 +493,6 @@ void editor_save_slide(void)
     {
         // Space available is bigger than space needed, shrink
         i = j - l; // amount to shrink by
-        // make sure there is at least 1 character (null) in the line
-        if (!l) --i;
 
         lcopy_safe(
             slide_start[c],
