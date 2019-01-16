@@ -702,7 +702,7 @@ static void editor_goto_slide(uint8_t num, char preload)
             editor_next_slide(slide_number + 1 == num ? preload : 0);
 }
 
-static void editor_show_message(uint8_t line, uint8_t *str)
+void editor_show_message(uint8_t line, uint8_t *str)
 {
     text_line = line;
     editor_clear_line();
