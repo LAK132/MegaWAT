@@ -1138,7 +1138,6 @@ uint8_t slide_num_message[8]={19+64,12,9,4,5,' ','0','0'}; // "Slide 00"
 uint8_t edit_mode_message[8]={5+64,4,9,20,9,14,7,'.'};
 uint8_t present_mode_message[8]={16+64,18,5,19,5,14,20,'.'};
 
-
 void editor_show_slide_number(void)
 {
     // Clear sprite (8x21 bytes) and write
@@ -1197,11 +1196,6 @@ void editor_show_slide_number(void)
     POKE(0xD074U, 0x02); // Make sprite alpha blended
     POKE(0xD075U, 0xFF); // Alpha blend set to fully visible
 }
-
-// void editor_hide_slide_number(void)
-// {
-//     lfill(0x0500,0x00,0x100);
-// }
 
 void editor_poll_keyboard(void)
 {
