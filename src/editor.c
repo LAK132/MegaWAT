@@ -11,7 +11,7 @@ uint8_t text_line = 0;
 #define EDITOR_MAX_LINES (EDITOR_END_LINE + 1)
 uint32_t text_line_start[EDITOR_MAX_LINES];
 uint32_t text_line_first_rows[EDITOR_END_LINE];
-uint8_t text_line_count = 1;
+
 // Physical rows on the slide (as compared to the lines of text that
 // produce them).
 // uint8_t current_row = 0;
@@ -86,7 +86,6 @@ void editor_initialise(void)
 
     editor_get_line_info();
 
-    text_line_count = 0;
     text_line = 0;
     cursor_col = 0;
 
