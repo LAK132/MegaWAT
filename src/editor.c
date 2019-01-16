@@ -1008,11 +1008,10 @@ void editor_process_special_key(uint8_t key)
                     lfill(file_name, 0, sizeof(file_name));
             } while (0);
             lfill(preload_slide_number, EDITOR_MAX_SLIDES, sizeof(preload_slide_number));
-            editor_next_slide(0);
-            editor_previous_slide(0);
-            editor_fetch_line();
             text_line = j;
             cursor_col = c;
+            editor_load_slide();
+            editor_fetch_line();
             SHOW_CURSOR();
             READ_KEY() = 0;
             k = 1;
