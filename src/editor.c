@@ -488,7 +488,7 @@ void editor_save_slide(void)
     // +1 is safe here because slide_start is oversized by 1
     j = slide_start[c] - slide_start[slide_number];
 
-    // make sure we have enough space to stash the current line
+    // make sure we have enough space to stash the current slide
     if (j > l)
     {
         // Space available is bigger than space needed, shrink
