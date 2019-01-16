@@ -9,7 +9,6 @@ static FILE *file;
 static uint8_t i, line = 0;
 static uint32_t j, sz, diff;
 
-// /*
 static uint8_t c;
 uint8_t get_error_code(uint8_t LFN)
 {
@@ -43,7 +42,6 @@ uint8_t drive_command(uint8_t CMD)
     }
     return get_error_code(CMD);
 }
-// */
 
 const static uint8_t mwb[] = ".mwb";
 const static uint8_t mwt[] = ".mwt";
@@ -108,7 +106,8 @@ int fileio_save_pres(void)
     {
         for (i = 0; i < EDITOR_END_SLIDE; ++i)
         {
-            sz = slide_start[i + 1] - slide_start[i];
+            sz = (slide_start[i + 1] - slide_start[i]) * sizeof(uint16_t);
+
             if (sizeof(sz) != fwrite(&sz, 1, sizeof(sz), file))
             {
                 editor_show_message(line++, "failed to write size");
@@ -142,7 +141,7 @@ int fileio_save_pres(void)
                 diff = sz - j;
                 if (diff > sizeof(data_buffer))
                     diff = sizeof(data_buffer);
-                lcopy(slide_start[i] + j, data_buffer, diff);
+                lcopy(string_loff(presentation, slide_start[i]) + j, data_buffer, diff);
                 if (diff != fwrite(data_buffer, 1, diff, file))
                 {
                     editor_show_message(line++, "failed to write slide_start");
@@ -180,7 +179,7 @@ int fileio_load_pres(void)
     file = fopen(data_buffer, "r");
     if (file)
     {
-        slide_start[0] = SLIDE_DATA;
+        slide_start[0] = 0;
         for (i = 0; i < EDITOR_END_SLIDE; ++i)
         {
             if (sizeof(sz) != fread(&sz, 1, sizeof(sz), file))
@@ -190,7 +189,8 @@ int fileio_load_pres(void)
                 break;
             }
 
-            slide_start[i + 1] = slide_start[i] + sz;
+            slide_start[i + 1] = slide_start[i] + (sz / sizeof(uint16_t));
+
             if (sizeof(slide_colour[i]) != fread(&slide_colour[i], 1, sizeof(slide_colour[i]), file))
             {
                 editor_show_message(line++, "failed to read slide_colour");
@@ -223,7 +223,7 @@ int fileio_load_pres(void)
                     rtn = 1;
                     break;
                 }
-                lcopy(data_buffer, slide_start[i] + j, diff);
+                lcopy(data_buffer, string_loff(presentation, slide_start[i]) + j, diff);
             }
         }
         rtn = fclose(file);

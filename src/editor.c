@@ -7,29 +7,22 @@ uint8_t cursor_col = 0;
 // Which line of text we are on
 uint8_t text_line = 0;
 // Rows where each line of text is drawn
-#define EDITOR_END_LINE 60
-#define EDITOR_MAX_LINES (EDITOR_END_LINE + 1)
-uint32_t text_line_start[EDITOR_MAX_LINES];
-uint32_t text_line_first_rows[EDITOR_END_LINE];
+uint16_t text_line_start[EDITOR_MAX_LINES];
+uint16_t text_line_first_rows[EDITOR_MAX_LINES];
 
 // Physical rows on the slide (as compared to the lines of text that
 // produce them).
-// uint8_t current_row = 0;
-// uint8_t next_row = 0;
 #define CURRENT_ROW (text_line_first_rows[text_line])
 #define NEXT_ROW (text_line_first_rows[text_line + 1])
 #define END_ROW (text_line_first_rows[EDITOR_END_LINE])
 #define CURRENT_ROW_HEIGHT (NEXT_ROW - CURRENT_ROW)
 
-// XXX For now, have a fixed 128x30 buffer for text
-// (We allow 128 instead of 100, so that we can have a number of font and attribute/colour changes
-// in there.)
-#define EDITOR_LINE_LEN 128
-uint16_t editor_scratch[EDITOR_LINE_LEN];
-uint16_t editor_buffer[SLIDE_SIZE / sizeof(uint16_t)];
-const uint32_t editor_buffer_size = sizeof(editor_buffer) / sizeof(uint16_t);
+uint16_t _editor_scratch_slide[SLIDE_SIZE / sizeof(uint16_t)];
+string_t scratch_slide;
 
-ptr_t slide_start[EDITOR_MAX_SLIDES];
+string_t presentation;
+uint16_t slide_start[EDITOR_MAX_SLIDES];
+
 uint8_t slide_number = 0;
 uint8_t preload_slide_number[3] = {0};
 uint8_t slide_colour[EDITOR_MAX_SLIDES];
@@ -57,13 +50,13 @@ void editor_show_slide_number(void);
 void editor_get_line_info(void)
 {
     static uint8_t y;
-    static uint32_t l;
+    static uint16_t l;
 
     y = 0;
     text_line_start[y++] = 0;
-    for (l = 0; y < EDITOR_MAX_LINES && l < editor_buffer_size;)
-        if (!editor_buffer[l++])
-            text_line_start[y++] = l;
+    for (l = 0; y < EDITOR_MAX_LINES && l * sizeof(uint16_t) < scratch_slide.size; ++l)
+        if (string_peek(scratch_slide, l) == 0)
+            text_line_start[y++] = l + 1;
 
     for (; y < EDITOR_MAX_LINES; ++y)
         text_line_start[y] = text_line_start[y-1] + 1;
@@ -82,7 +75,7 @@ void editor_initialise(void)
     videoSetSlideMode();
 
     // Fill the rest of the buffer with zeros
-    lfill((ptr_t)editor_buffer, 0x00, sizeof(editor_buffer));
+    string_clear(scratch_slide);
 
     editor_get_line_info();
 
@@ -116,11 +109,20 @@ void editor_start(void)
 
     videoSetSlideMode();
 
+    scratch_slide.ptr = (longptr_t)_editor_scratch_slide;
+    scratch_slide.size = sizeof(_editor_scratch_slide);
+    string_clear(scratch_slide);
+
+    presentation.ptr = (longptr_t)SLIDE_DATA;
+    presentation.size = SLIDE_DATA_SIZE;
+    string_clear(presentation);
+
     lfill(SLIDE_DATA, 0, SLIDE_DATA_SIZE);
+    slide_start[0] = 0;
     lfill(slide_font_pack[0], 0, sizeof(slide_font_pack[0]));
     for (y = 1; y < EDITOR_MAX_SLIDES; ++y)
     {
-        slide_start[y] = slide_start[y-1] + (EDITOR_END_LINE * 2);
+        slide_start[y] = slide_start[y-1] + EDITOR_END_LINE;
         lfill(slide_font_pack[y], 0, sizeof(slide_font_pack[y]));
     }
 
@@ -135,11 +137,14 @@ void editor_start(void)
     editor_initialise();
 }
 
+const string_t scratch_line = { 0x1F770, 0x20000 - 0x1F770 };
 void editor_stash_line(void)
 {
     static uint8_t x, y, z, c;
 
     // Stash the line encoded in scratch buffer into the specified line
+
+    string_clear(scratch_line);
 
     // Can't stash end line
     if (text_line < EDITOR_END_LINE)
@@ -160,22 +165,26 @@ void editor_stash_line(void)
             if (x == 0 || scratch_rbuffer.glyphs[x].colour_and_attributes != text_colour)
             {
                 // Colour change, so write 0xe0XX, where XX is the colour
-                editor_scratch[y++] = 0xE000 | (scratch_rbuffer.glyphs[x].colour_and_attributes & 0xFF);
+                string_poke(scratch_line, y, 0xE000 | (scratch_rbuffer.glyphs[x].colour_and_attributes & 0xFF));
+                ++y;
                 text_colour = scratch_rbuffer.glyphs[x].colour_and_attributes;
                 if (y >= EDITOR_LINE_LEN - 2) break;
             }
             if (x == 0 || scratch_rbuffer.glyphs[x].font_id != font_id)
             {
-                editor_scratch[y++] = 0xE100 | (scratch_rbuffer.glyphs[x].font_id & 0xFF);
+                string_poke(scratch_line, y, 0xE100 | (scratch_rbuffer.glyphs[x].font_id & 0xFF));
+                ++y;
                 font_id = scratch_rbuffer.glyphs[x].font_id;
                 if (y >= EDITOR_LINE_LEN - 2) break;
             }
 
             // Write glyph
-            editor_scratch[y++] = scratch_rbuffer.glyphs[x].code_point;
+            string_poke(scratch_line, y, scratch_rbuffer.glyphs[x].code_point);
+            ++y;
         }
         // Add EOL to scratch
-        editor_scratch[y++] = 0; // y is now the length of scratch used
+        string_poke(scratch_line, y, 0); // y is now the length of scratch used
+        ++y;
 
         // We use line_num + 1 lots, so just do the calculation once
         c = text_line + 1;
@@ -189,14 +198,7 @@ void editor_stash_line(void)
         {
             // Space available is bigger than space needed, shrink
             x = z - y; // amount to shrink by
-            lcopy_safe(
-                (ptr_t)&editor_buffer[text_line_start[c]],
-                (ptr_t)&editor_buffer[text_line_start[c] - x],
-                (text_line_start[EDITOR_END_LINE] - text_line_start[c]) * sizeof(uint16_t)
-            );
-            lfill((ptr_t)&editor_buffer[text_line_start[EDITOR_END_LINE]], 0x00,
-                sizeof(editor_buffer) - (text_line_start[EDITOR_END_LINE] * sizeof(uint16_t))
-            );
+            string_remove(&scratch_slide, text_line_start[text_line], x);
 
             for (; c < EDITOR_MAX_LINES; ++c)
                 text_line_start[c] -= x;
@@ -205,19 +207,14 @@ void editor_stash_line(void)
         {
             // Space available is smaller than space needed, expand
             x = y - z; // amout to expand by
-            lcopy_safe(
-                (ptr_t)&editor_buffer[text_line_start[c]],
-                (ptr_t)&editor_buffer[text_line_start[c] + x],
-                sizeof(editor_buffer) - ((text_line_start[c] + x) * sizeof(uint16_t))
-            );
+            string_insert(&scratch_slide, text_line_start[text_line], x);
 
             for (; c < EDITOR_MAX_LINES; ++c)
                 text_line_start[c] += x;
         }
 
         // copy scratch into main buffer
-        // x2 because it's 16 bit
-        lcopy((ptr_t)editor_scratch, (ptr_t)&editor_buffer[text_line_start[text_line]], y + y);
+        string_write_string(scratch_slide, text_line_start[text_line], &scratch_line);
     }
 }
 
@@ -359,37 +356,45 @@ void editor_delete_glyph(void)
 void editor_fetch_line(void)
 {
     static uint8_t c;
-    static uint32_t k, m;
+    static uint16_t k, m, code;
 
     // Fetch the specified line, and pre-render it into scratch
 
     active_rbuffer = &scratch_rbuffer;
     clearRenderBuffer();
 
-    // Get the start of the next line
-    k = text_line_start[text_line + 1];
-    // Check if it's past the end of the buffer
-    if (k > editor_buffer_size) k = editor_buffer_size;
-
-    c = cursor_col;
-    cursor_col = 0xFF;
-    for (m = text_line_start[text_line]; editor_buffer[m] && m < k; ++m)
+    // Get start of line
+    m = text_line_start[text_line];
+    if (m <= scratch_slide.size)
     {
-        // Reserved code points are used to record colour and other attribute changes
-        switch (editor_buffer[m] & 0xFF00)
+        // Get the start of the next line
+        k = text_line_start[text_line + 1];
+        // Check if it's past the end of the buffer
+        if (k > scratch_slide.size) k = scratch_slide.size;
+
+        c = cursor_col;
+        cursor_col = 0xFF;
+        code = string_peek(scratch_slide, m);
+        while (code && m < k)
         {
-            case 0xE000: {
-                // Set colour and attributes
-                text_colour = editor_buffer[m] & 0xFF;
-            } break;
-            case 0xE100: {
-                setFont(editor_buffer[m] & 0xFF);
-            } break;
-            default: {
-                // if this is actually a code point, render the relevant glyph
-                if ((editor_buffer[m] < 0xD800) || (editor_buffer[m] >= 0xF800))
-                    editor_render_glyph(editor_buffer[m]);
-            } break;
+            // Reserved code points are used to record colour and other attribute changes
+            switch (code & 0xFF00)
+            {
+                case 0xE000: {
+                    // Set colour and attributes
+                    text_colour = code & 0xFF;
+                } break;
+                case 0xE100: {
+                    setFont(code & 0xFF);
+                } break;
+                default: {
+                    // if this is actually a code point, render the relevant glyph
+                    if (code < 0xD800 || code >= 0xF800)
+                        editor_render_glyph(code);
+                } break;
+            }
+            ++m;
+            code = string_peek(scratch_slide, m);
         }
     }
     screen_rbuffer.rows_used = CURRENT_ROW;
@@ -477,9 +482,9 @@ char editor_insert_codepoint(uint16_t code_point)
 void editor_save_slide(void)
 {
     static uint8_t c;
-    static uint32_t i, j, l;
+    static uint16_t i, j, l;
 
-    l = (text_line_start[EDITOR_END_LINE] - text_line_start[0]) * sizeof(uint16_t);
+    l = text_line_start[EDITOR_END_LINE] - text_line_start[0];
 
     // We use slide_number + 1 lots, so just do the calculation once
     c = slide_number + 1;
@@ -494,11 +499,7 @@ void editor_save_slide(void)
         // Space available is bigger than space needed, shrink
         i = j - l; // amount to shrink by
 
-        lcopy_safe(
-            slide_start[c],
-            slide_start[c] - i,
-            (uint16_t)(slide_start[EDITOR_END_SLIDE] - slide_start[c])
-        );
+        string_remove(&presentation, slide_start[slide_number], i);
 
         for (; c < EDITOR_MAX_SLIDES; ++c)
             slide_start[c] -= i;
@@ -508,18 +509,15 @@ void editor_save_slide(void)
         // Space available is smaller than space needed, expand
         i = l - j; // amout to expand by
 
-        lcopy_safe(
-            slide_start[c],
-            slide_start[c] + i,
-            (uint16_t)((SLIDE_DATA + SLIDE_DATA_SIZE) - (longptr_t)(slide_start[c] + i))
-        );
+        string_insert(&presentation, slide_start[slide_number], i);
 
         for (; c < EDITOR_MAX_SLIDES; ++c)
             slide_start[c] += i;
     }
     // copy scratch into main buffer
-    // x2 because it's 16 bit
-    lcopy((ptr_t)editor_buffer, slide_start[slide_number], l);
+    // can't use string_write_string as scratch_slide isn't null terminated
+    lcopy(scratch_slide.ptr, string_loff(presentation, slide_start[slide_number]),
+        l * sizeof(uint16_t));
 }
 
 void editor_refresh_slide(void)
@@ -548,28 +546,43 @@ void editor_load_slide(void)
 
     string_clear(scratch_slide);
 
-    // Copy the next slides buffer into editor buffer
+    // check if we need to trim a little off the end of the slide to get it to fit in the buffer
     j = slide_start[slide_number + 1] - slide_start[slide_number];
-    if (j > sizeof(editor_buffer))
-        j = sizeof(editor_buffer);
+    if (j > scratch_slide.size)
+        j -= scratch_slide.size;
+    else
+        j = 0;
 
-    lcopy(slide_start[slide_number], (ptr_t)editor_buffer, j);
+    // Copy the next slides buffer into editor buffer
+    string_copy_substring(scratch_slide, presentation, slide_start[slide_number], slide_start[slide_number + 1] - j);
 
     // Update line starts for new buffer
     editor_refresh_slide();
     editor_update_cursor();
 }
 
-void editor_insert_line(uint8_t before)
+void editor_insert_line(void)
 {
-    static uint8_t i;
-    if (text_line_start[EDITOR_END_LINE] >= editor_buffer_size)
+    static uint8_t c, i, w;
+    static uint16_t code;
+    if (text_line_start[EDITOR_END_LINE] * sizeof(uint16_t) >= scratch_slide.size ||
+        text_line_start[EDITOR_END_LINE-1]+1 != text_line_start[EDITOR_END_LINE])
         return; // no room to instert a new line
-    lcopy_safe(editor_buffer[text_line_start[before]], editor_buffer[text_line_start[before]+1],
-        text_line_start[EDITOR_END_LINE] - text_line_start[before]);
-    editor_buffer[text_line_start[before]] = 0;
-    editor_save_slide();
-    editor_load_slide();
+
+    // insert break at cursor
+    w = text_line_start[text_line + 1] - text_line_start[text_line];
+    c = 0;
+    for (i = 0; c < cursor_col && i < w; ++i)
+    {
+        code = string_peek(scratch_slide, text_line_start[text_line] + i);
+        if (code < 0xD800 || code >= 0xF800) ++c;
+    }
+
+    string_insert_code(&scratch_slide, text_line_start[text_line] + i, 0);
+
+    // refreshing here seems to prevent font and attribute information from messing up.
+    // because it bleeds from the previous line?
+    editor_refresh_slide();
 }
 
 char editor_load_font_pack(uint8_t slide)
@@ -805,16 +818,27 @@ void editor_process_special_key(uint8_t key)
             // else if (current_row && text_line)
             else if (text_line)
             {
-                // Backspace from start of line
-                // XXX - Should combine remainder of line with previous line (if it will fit)
-                // XXX - Shuffle up the rest of the screen,
-                // XXX - Select the previous line
-                // XXX - Re-render the previous line
-                //       (And shuffle everything down in the process if this line grew taller)
+                // XXX - Should check if the line will fit correctly
                 editor_stash_line();
+
+                // move the cursor to the end of the previous line so it's in the correct
+                // spot before with append the current line to the end
                 --text_line;
                 editor_fetch_line();
-                cursor_col = scratch_rbuffer.glyph_count;
+                cursor_col = 0xFF;
+                editor_update_cursor();
+                editor_stash_line();
+                ++text_line;
+
+                if (text_line < EDITOR_END_LINE)
+                {
+                    string_remove(&scratch_slide, text_line_start[text_line] - 1, 1);
+                    editor_refresh_slide();
+                }
+
+                --text_line;
+                editor_fetch_line();
+
                 editor_update_cursor();
                 k = 1;
             }
@@ -837,29 +861,24 @@ void editor_process_special_key(uint8_t key)
             {
                 // Break line into two
                 editor_stash_line();
-                editor_insert_line(text_line + 1);
+                editor_insert_line();
+                ++text_line;
                 cursor_col = 0;
-                ++text_line;
                 editor_fetch_line();
                 editor_update_cursor();
                 k = 1;
             }
         } break;
-        case 0x11: { // Cursor down
-            if (text_line < EDITOR_MAX_LINES)
+        case 0x11:
+        case 0x91: { // change line
+            if ((key == 0x11 && text_line < EDITOR_MAX_LINES) ||
+                (key == 0x91 && text_line))
             {
                 editor_stash_line();
-                ++text_line;
-                editor_fetch_line();
-                editor_update_cursor();
-                k = 1;
-            }
-        } break;
-        case 0x91: { // Cursor up
-            if (text_line)
-            {
-                editor_stash_line();
-                --text_line;
+                if (key == 0x11)
+                    ++text_line;
+                else
+                    --text_line;
                 editor_fetch_line();
                 editor_update_cursor();
                 k = 1;
