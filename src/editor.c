@@ -524,17 +524,31 @@ void editor_save_slide(void)
     lcopy((ptr_t)editor_buffer, slide_start[slide_number], l);
 }
 
-void editor_load_slide(void)
+void editor_refresh_slide(void)
 {
     static uint8_t w;
-    static uint32_t j;
+
+    editor_get_line_info();
 
     active_rbuffer = &scratch_rbuffer;
     clearRenderBuffer();
     active_rbuffer = &screen_rbuffer;
     clearRenderBuffer();
 
-    lfill((ptr_t)editor_buffer, 0x00, sizeof(editor_buffer));
+    w = text_line;
+    for (text_line = 0; text_line < EDITOR_END_LINE; ++text_line)
+    {
+        editor_fetch_line();
+        editor_stash_line();
+    }
+    text_line = w;
+}
+
+void editor_load_slide(void)
+{
+    static uint16_t j;
+
+    string_clear(scratch_slide);
 
     // Copy the next slides buffer into editor buffer
     j = slide_start[slide_number + 1] - slide_start[slide_number];
@@ -544,14 +558,7 @@ void editor_load_slide(void)
     lcopy(slide_start[slide_number], (ptr_t)editor_buffer, j);
 
     // Update line starts for new buffer
-    editor_get_line_info();
-    w = text_line;
-    for (text_line = 0; text_line < EDITOR_END_LINE; ++text_line)
-    {
-        editor_fetch_line();
-        editor_stash_line();
-    }
-    text_line = w;
+    editor_refresh_slide();
     editor_update_cursor();
 }
 
