@@ -608,6 +608,10 @@ void editor_smart_load_slide(uint8_t curr, uint8_t next, char preload)
     videoSetActiveGraphicsBuffer(active_slide);
     // Change the renderer address
     videoSetActiveRenderBuffer(active_slide);
+    // Set the border colour
+    POKE(0xD020, slide_colour[curr]);
+    // Set the background colour
+    POKE(0xD021, slide_colour[curr]);
     // strncmp return 0 if one one of the args is zero length
     if (strncmp(slide_font_pack[slide_number], slide_font_pack[curr], sizeof(slide_font_pack[0])) != 0)
     {
@@ -651,9 +655,9 @@ void editor_smart_load_slide(uint8_t curr, uint8_t next, char preload)
             slide_number = curr;
         } while (0);
     }
-    // Set the border colour
+    // Set the border colour again just to be sure
     POKE(0xD020, slide_colour[curr]);
-    // Set the background colour
+    // Set the background colour again just to be sure
     POKE(0xD021, slide_colour[curr]);
 }
 
