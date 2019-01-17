@@ -1276,16 +1276,22 @@ void editor_poll_keyboard(void)
 
             // Control+SHIFT <0-9> = select font
             if (!present_mode && (key >= 0x21 && key <= 0x29) && (mod & MOD_CTRL))
+            {
                 setFont(key - 0x21);
+            }
             else if (!present_mode && key >= ' ' && key <= 0x7e)
+            {
                 editor_insert_codepoint(key);
+
+                editor_update_cursor();
+
+                // Make sure cursor is on when typing
+                SHOW_CURSOR();
+            }
             else
+            {
                 editor_process_special_key(key);
-
-            editor_update_cursor();
-
-            // Make sure cursor is on when typing
-            SHOW_CURSOR();
+            }
 
             // If key is still set it might be triggering too fast, so manually wait some time
             if (READ_KEY() == key)
