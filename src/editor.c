@@ -860,7 +860,7 @@ void editor_process_special_key(uint8_t key)
                 --cursor_col;
                 k = 1;
             }
-            else
+            else if (text_line)
             {
                 // reached start of line, go up a line
                 cursor_col = 0xFF;
@@ -875,7 +875,7 @@ void editor_process_special_key(uint8_t key)
                 ++cursor_col;
                 k = 1;
             }
-            else
+            else if (text_line < EDITOR_MAX_LINES)
             {
                 // reached end of line, go down a line
                 cursor_col = 0;
@@ -903,10 +903,10 @@ void editor_process_special_key(uint8_t key)
         } break;
         case 0x11:
         case 0x91: { // change line
-            label_change_line:
             if ((key == 0x11 && text_line < EDITOR_MAX_LINES) ||
                 (key == 0x91 && text_line))
             {
+                label_change_line:
                 editor_stash_line();
                 if (key == 0x11)
                     ++text_line;
