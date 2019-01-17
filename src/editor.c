@@ -854,8 +854,36 @@ void editor_process_special_key(uint8_t key)
         case 0x93: cursor_col = 0xFF; k = 1; break;
 
         // Cursor navigation within a line
-        case 0x9d: if (cursor_col) --cursor_col; k = 1; break;
-        case 0x1d: if (cursor_col < scratch_rbuffer.glyph_count) ++cursor_col; k = 1; break;
+        case 0x9d: {
+            if (cursor_col)
+            {
+                --cursor_col;
+                k = 1;
+            }
+            else
+            {
+                // reached start of line, go up a line
+                cursor_col = 0xFF;
+                k = 1;
+                key = 0x91;
+                goto label_change_line;
+            }
+        } break;
+        case 0x1d: {
+            if (cursor_col < scratch_rbuffer.glyph_count)
+            {
+                ++cursor_col;
+                k = 1;
+            }
+            else
+            {
+                // reached end of line, go down a line
+                cursor_col = 0;
+                k = 1;
+                key = 0x11;
+                goto label_change_line;
+            }
+        } break;
 
         // Cursor navigation between lines
         // Here we adjust which line we are editing,
@@ -875,6 +903,7 @@ void editor_process_special_key(uint8_t key)
         } break;
         case 0x11:
         case 0x91: { // change line
+            label_change_line:
             if ((key == 0x11 && text_line < EDITOR_MAX_LINES) ||
                 (key == 0x91 && text_line))
             {
