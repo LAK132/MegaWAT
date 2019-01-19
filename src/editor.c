@@ -733,6 +733,13 @@ void editor_process_special_key(uint8_t key)
     k = 0; // if the cursor was moved
     if (present_mode) switch (key)
     {
+    case 0x42:
+      // Toggle screen blanking
+      POKE(0xD05DU,PEEK(0xD05DU)&0x7f);
+      POKE(0xD011U,PEEK(0xD011U)^0x10);
+      POKE(0xD05DU,PEEK(0xD05DU)|0x80);
+      break;
+      
         case 0x0D:
         case 0x20:
         case 0x11:
@@ -775,7 +782,6 @@ void editor_process_special_key(uint8_t key)
         case 0x98: text_colour = (text_colour & 0xF0) | COLOUR_MEDIUMGREY; break;
         case 0x99: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTGREEN; break;
         case 0x9A: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTBLUE; break;
-        // The following need fixes to the ASCII keyboard scanner
         case 0x9B: text_colour = (text_colour & 0xF0) | COLOUR_LIGHTGREY; break;
         // case 0x92: text_colour |= ATTRIB_BLINK; break;
 
