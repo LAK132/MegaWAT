@@ -745,10 +745,12 @@ void editor_process_special_key(uint8_t key)
         case 0x11:
         case 0x1D: { // next slide
             editor_next_slide(1);
+            editor_show_slide_number();
         } break;
         case 0x91:
         case 0x9D: { // previous slide
             editor_previous_slide(1);
+            editor_show_slide_number();
         } break;
         case 0x03:
         case 0xF5: {
@@ -1243,6 +1245,7 @@ void editor_show_slide_number(void)
     POKE(0xD075U, 0xFF); // Alpha blend set to fully visible
 }
 
+unsigned char last_joystick=0;
 void editor_poll_keyboard(void)
 {
     static uint16_t l;
@@ -1255,6 +1258,22 @@ void editor_poll_keyboard(void)
     {
         // TOGGLE_BACK();
         key = READ_KEY();
+	if (!key) {
+	  // No key pressed, so check joystick.
+	  // Fire = SPACE to advance slides in presentation mode
+	  // Left/right/up/down direction keys. This will allow navigation via joystick in
+	  // both editor and slide-show mode
+	  l=PEEK(56320U);
+	  if ((!present_mode)||(last_joystick!=l)) {
+	    // Had to comment these out to make program fit in memory! so only left and right
+	    //	    if (!(l&1)) key=0x91;
+	    //	    if (!(l&2)) key=0x11;
+	    if (!(l&4)) key=0x9d;
+	    if (!(l&8)) key=0x1d;
+	  }
+	  if (present_mode) { if (!(l&10)) key=0x20; }
+	  last_joystick=l;
+	}
         if (key)
         {
             // Allow enough time for modifier flags to get asserted
