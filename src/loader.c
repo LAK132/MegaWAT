@@ -15,9 +15,10 @@ void main(void)
     // Go back to upper case
     POKE(0xD018,0x14);
 
-    // Save palette
+    // Make sure correct palette is visible at $D100
+    POKE(0xD070U,0xFF);    
+    // Save original palette
     lcopy(0xFFD3100U,palette_save,0x300);
-    
     // Copy palette into place
     lcopy(splashlogo,0xFFD3100U,0x300);
     
@@ -53,7 +54,7 @@ void main(void)
     POKE(0xD064U,0x00); POKE(0xD065U,0x08); // colour RAM at offset 0x0800
 
     // Then pretend to load for now
-    for(i=0;i<100;i++) {
+    for(i=0;i!=200;i++) {
       POKE(0xD020U,0x0e);
       for(n=0;n<12000;n++) continue;
       POKE(0xD020U,0x01);
@@ -68,7 +69,7 @@ void main(void)
 
     // Restore palette, hide splash ready for loading next part
     // Save palette
-    lcopy(0xFFD3100U,palette_save,0x300);    
+    lcopy(palette_save,0xFFD3100U,0x300);    
     
     // Then actually load the cracktro
     {
