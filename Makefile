@@ -8,7 +8,7 @@ ROMDIR=		rom
 ASTDIR=		assets
 MKDIRS=		$(SRCDIR) $(OBJDIR) $(BINDIR) $(ROMDIR)
 
-DISK=		$(BINDIR)/DISK.D81
+DISK=		$(BINDIR)/MEGAWAT.D81
 PROGRAM=	$(BINDIR)/megawat.prg
 SERIAL=		/dev/ttyUSB1
 
@@ -160,9 +160,17 @@ $(BINDIR)/%.fprg:	Makefile $(OBJDIR)/%.FPK $(BINDIR)/%.prg $(C65SYSROM)
 	dd if=$(C65SYSROM) bs=1024 count=128 of=$@ oflag=append conv=notrunc
 	dd if=$(OBJDIR)/$*.FPK bs=1024 count=128 of=$@ oflag=append conv=notrunc
 
-$(BINDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(BINDIR)
-	if [ -f $@ ]; then rm -f $@; fi
-	$(CBMCONVERT) -v2 -D8o $@ $(FILES)
+$(BINDIR)/MEGAWAT.D81:
+	rm -fr MEGAWAT.D81 tmp
+	mkdir tmp
+	cp assets/PART1 tmp/part1
+	cp bin/loader.prg tmp/megawat
+	cp bin/megawat.prg tmp/part2
+	(cd tmp ; cbmconvert -D8 ../MEGAWAT.D81 * )
+
+#$(BINDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(BINDIR)
+#	if [ -f $@ ]; then rm -f $@; fi
+#	$(CBMCONVERT) -v2 -D8o $@ $(FILES)
 
 define DIR_TEMPLATE =
 $(1):
