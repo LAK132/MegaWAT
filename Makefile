@@ -160,13 +160,13 @@ $(BINDIR)/%.fprg:	Makefile $(OBJDIR)/%.FPK $(BINDIR)/%.prg $(C65SYSROM)
 	dd if=$(C65SYSROM) bs=1024 count=128 of=$@ oflag=append conv=notrunc
 	dd if=$(OBJDIR)/$*.FPK bs=1024 count=128 of=$@ oflag=append conv=notrunc
 
-$(BINDIR)/MEGAWAT.D81:
-	rm -fr MEGAWAT.D81 tmp
+$(BINDIR)/MEGAWAT.D81:	assets/PART1 bin/loader.prg bin/megawat.prg
+	rm -fr $(BINDIR)/MEGAWAT.D81 tmp
 	mkdir tmp
 	cp assets/PART1 tmp/part1
 	cp bin/loader.prg tmp/megawat
 	cp bin/megawat.prg tmp/part2
-	(cd tmp ; cbmconvert -D8 ../MEGAWAT.D81 * )
+	(cd tmp ; cbmconvert -D8 ../$(BINDIR)/MEGAWAT.D81 * )
 
 #$(BINDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(BINDIR)
 #	if [ -f $@ ]; then rm -f $@; fi
