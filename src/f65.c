@@ -175,9 +175,9 @@ void deleteGlyph(uint8_t glyph_num)
         for (y = 0; y < (rows_above + rows_below); ++y)
         {
             // Copy screen data
-            lcopy(screen + x, screen, bytes_per_row);
+            lcopy_safe(screen + x, screen, bytes_per_row);
             // Copy colour data
-            lcopy(colour + x, colour, bytes_per_row);
+            lcopy_safe(colour + x, colour, bytes_per_row);
 
             screen += screen_width;
             colour += screen_width;
