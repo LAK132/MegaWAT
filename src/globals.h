@@ -85,6 +85,9 @@
 #define UNBLANK_SCREEN() POKE(0xD011U, PEEK(0xD011U) | 0x10)
 #define TOGGLE_BLANK_SCREEN() POKE(0xD011U, PEEK(0xD011U) ^ 0x10)
 
+#define DISABLE_HOT_REGISTERS() POKE(0xD05DU, PEEK(0xD05DU) & 0x7F)
+#define ENABLE_HOT_REGISTERS() POKE(0xD05DU, PEEK(0xD05DU) | 0x80)
+
 extern int32_t cursor_position;
 extern uint8_t cursor_attrib[2];
 
