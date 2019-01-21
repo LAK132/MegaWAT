@@ -101,12 +101,12 @@ TTFTOF65=	$(FONTRSTDIR)/ttftof65
 
 all:		$(FILES) | $(MKDIRS)
 
-clean: clean-bin clean-out clean-font
+clean: clean-obj clean-bin clean-font
 
-clean-bin:
+clean-obj:
 	if [ -d $(OBJDIR) ]; then cd $(OBJDIR) && rm -f *; fi
 
-clean-out:
+clean-bin:
 	if [ -d $(BINDIR) ]; then cd $(BINDIR) && rm -f *; fi
 
 clean-rom:
