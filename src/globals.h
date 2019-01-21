@@ -83,6 +83,7 @@
 #define TOGGLE_BACK() POKE(0xD020U, (PEEK(0xD020U) + 1) & 0xF)
 #define BLANK_SCREEN() POKE(0xD011U, PEEK(0xD011U) & ~0x10)
 #define UNBLANK_SCREEN() POKE(0xD011U, PEEK(0xD011U) | 0x10)
+#define TOGGLE_BLANK_SCREEN() POKE(0xD011U, PEEK(0xD011U) ^ 0x10)
 
 extern int32_t cursor_position;
 extern uint8_t cursor_attrib[2];
