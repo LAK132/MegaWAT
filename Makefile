@@ -160,10 +160,10 @@ $(BINDIR)/%.fprg:	Makefile $(OBJDIR)/%.FPK $(BINDIR)/%.prg $(C65SYSROM)
 	dd if=$(C65SYSROM) bs=1024 count=128 of=$@ oflag=append conv=notrunc
 	dd if=$(OBJDIR)/$*.FPK bs=1024 count=128 of=$@ oflag=append conv=notrunc
 
-$(BINDIR)/MEGAWAT.D81:	assets/PART1 bin/loader.prg bin/megawat.prg assets/*.mwt*
+$(BINDIR)/MEGAWAT.D81:	assets/PART1 bin/loader.prg bin/megawat.prg assets/*.mwt* assets/lca2019-cover.prg
 	rm -fr $(BINDIR)/MEGAWAT.D81 tmp
 	mkdir tmp
-	cp assets/*.mwt* tmp/
+	cp assets/*.mwt* assets/lca2019-cover.prg tmp/
 	cp assets/PART1 tmp/part1
 	cp bin/loader.prg tmp/megawat
 	cp bin/megawat.prg tmp/part2
