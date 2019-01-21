@@ -337,10 +337,8 @@ void editor_render_string(void)
 void editor_clear_line(void)
 {
     active_rbuffer = &scratch_rbuffer;
-    cursor_col = scratch_rbuffer.glyph_count + 1;
-    while(cursor_col)
-        deleteGlyph(cursor_col--);
-    deleteGlyph(cursor_col);
+    clearRenderBuffer();
+    cursor_col = 0;
 
     editor_check_line_shrunk();
 }
@@ -952,8 +950,6 @@ void editor_process_special_key(uint8_t key)
 
             active_rbuffer = &screen_rbuffer;
             clearRenderBuffer();
-            active_rbuffer = &scratch_rbuffer;
-            clearRenderBuffer();
             lfill(preload_slide_number, EDITOR_MAX_SLIDES, sizeof(preload_slide_number));
 
             editor_show_message(0, "open a different presentation? unsaved changes will be lost");
@@ -1023,8 +1019,6 @@ void editor_process_special_key(uint8_t key)
 
                     active_rbuffer = &screen_rbuffer;
                     clearRenderBuffer();
-                    active_rbuffer = &scratch_rbuffer;
-                    clearRenderBuffer();
 
                     i = strlen(file_name);
 
@@ -1083,8 +1077,6 @@ void editor_process_special_key(uint8_t key)
 
             active_rbuffer = &screen_rbuffer;
             clearRenderBuffer();
-            active_rbuffer = &scratch_rbuffer;
-            clearRenderBuffer();
             lfill(preload_slide_number, EDITOR_MAX_SLIDES, sizeof(preload_slide_number));
 
             editor_show_message(0, "start a new presentation? unsaved changes will be lost");
@@ -1121,8 +1113,6 @@ void editor_process_special_key(uint8_t key)
             // XXX - "Are you sure?" prompt
 
             active_rbuffer = &screen_rbuffer;
-            clearRenderBuffer();
-            active_rbuffer = &scratch_rbuffer;
             clearRenderBuffer();
             lfill(preload_slide_number, EDITOR_MAX_SLIDES, sizeof(preload_slide_number));
 
