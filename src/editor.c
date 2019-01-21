@@ -61,7 +61,7 @@ void editor_get_line_info(void)
     for (; y < EDITOR_MAX_LINES; ++y)
         text_line_start[y] = text_line_start[y-1] + 1;
 
-    for (y = 0; y < EDITOR_END_LINE; ++y)
+    for (y = 0; y < EDITOR_MAX_LINES; ++y)
         text_line_first_rows[y] = y;
 }
 
@@ -290,7 +290,7 @@ void editor_check_line_shrunk(void)
             for (y = text_line + 1; y < EDITOR_MAX_LINES; ++y)
                 text_line_first_rows[y] += s;
 
-            if (END_ROW < EDITOR_MAX_LINES)
+            if (END_ROW < EDITOR_END_LINE)
             {
                 // There is now space at the end of the screen, blank it out
                 l = END_ROW * screen_width;
