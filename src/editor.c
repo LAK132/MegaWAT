@@ -754,8 +754,7 @@ void editor_process_special_key(uint8_t key)
         } break;
         case 0x03:
         case 0xF5: {
-            // XXX - Reload editor buffer for current slide
-            // XXX - Unhide cursor
+            UNBLANK_SCREEN(); // just to be sure
             present_mode = 0;
             editor_load_slide();
             text_line = 0;
