@@ -8,7 +8,7 @@
 void videoSetSlideMode(void)
 {
     // Enable VicII hot registers
-    POKE(0xD05DU, PEEK(0xD05DU) | 0x80);
+    ENABLE_HOT_REGISTERS(); // 0xD05D
 
     /* 800x600 with 800x480 active area.
      16 bit text mode with 100 character virtual line length.
@@ -65,7 +65,7 @@ void videoSetSlideMode(void)
     POKE(0xd04E,0x52);
 
     // Disable VicII hot registers
-    POKE(0xD05DU, PEEK(0xD05DU) & ~0x80);
+    DISABLE_HOT_REGISTERS(); // 0xD05D
 
     // Disable maskable interrupts (MEGA+SHIFT)
     __asm__("sei");
