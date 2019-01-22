@@ -733,7 +733,7 @@ void editor_process_special_key(uint8_t key)
     k = 0; // if the cursor was moved
     if (present_mode) switch (key)
     {
-    case 0x42:
+        case 0x62:
       // Toggle screen blanking
       POKE(0xD05DU,PEEK(0xD05DU)&0x7f);
       POKE(0xD011U,PEEK(0xD011U)^0x10);
