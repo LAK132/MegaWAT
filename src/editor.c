@@ -39,8 +39,6 @@ uint8_t mod = 0;
 uint32_t sram, cram;
 uint16_t cursor_toggle = 0;
 
-void editor_show_slide_number(void);
-// void editor_hide_slide_number(void);
 #define editor_hide_slide_number() lfill(0x0500,0x00,0x100)
 
 void editor_get_line_info(void)
@@ -60,11 +58,6 @@ void editor_get_line_info(void)
     for (y = 0; y < EDITOR_MAX_LINES; ++y)
         text_line_first_rows[y] = y;
 }
-
-void editor_save_slide(void);
-void editor_smart_load_slide(uint8_t curr, uint8_t next, char preload);
-void editor_next_slide(char preload);
-void editor_previous_slide(char preload);
 
 void editor_initialise(void)
 {
