@@ -29,10 +29,6 @@ uint8_t slide_colour[EDITOR_MAX_SLIDES];
 uint8_t slide_resolution[EDITOR_MAX_SLIDES];
 uint8_t slide_font_pack[EDITOR_MAX_SLIDES][FILE_NAME_MAX_LEN-6];
 
-#define HIDE_SPRITE(sprite) POKE(0xD015U, PEEK(0xD015U) & ~(1<<sprite))
-#define SHOW_SPRITE(sprite) POKE(0xD015U, PEEK(0xD015U) | (1<<sprite))
-#define TOGGLE_SPRITE(sprite) POKE(0xD015U, PEEK(0xD015U) ^ (1<<sprite))
-
 #define HIDE_CURSOR() HIDE_SPRITE(0)
 #define SHOW_CURSOR() SHOW_SPRITE(0)
 #define TOGGLE_CURSOR() TOGGLE_SPRITE(0)
