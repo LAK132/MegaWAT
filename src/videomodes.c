@@ -37,8 +37,8 @@ void videoSetSlideMode(void)
     // Enable sprite 0 (cursor)
     POKE(0xD015U,0x01);
 
-    // No side borders
-    POKE(0xD05CU, 0x00);
+    // Minimum side borders
+    POKE(0xD05CU, 0x04);
     POKE(0xD05DU, PEEK(0xD05DU) & 0x80);
 
     // Set H640 and V400 and enable extended attributes and 8-bit colour values
