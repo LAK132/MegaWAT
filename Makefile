@@ -28,7 +28,8 @@ L65OPTS=	-C c64-m65.cfg --asm-include-dir $(CC65DIR)/asminc --lib-path $(CC65DIR
 FILES=		$(PROGRAM) \
 			$(BINDIR)/loader.prg \
 			autoboot.c65 \
-			c64-m65.cfg
+			c64-m65.cfg \
+			$(DISK)
 
 SOURCES=	$(SRCDIR)/main.c \
 			$(SRCDIR)/megastring.c \
