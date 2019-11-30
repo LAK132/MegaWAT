@@ -243,7 +243,8 @@ int fileio_load_pres(void)
 
 extern uint8_t font_load_asm(uint8_t);
 
-const static uint8_t fpk[] = ".FPK";
+// MUST be lower case, as it gets converted to upper case via PETSCII/ASCII conversion?
+const static uint8_t fpk[] = ".fpk";
 int fileio_load_font(void)
 {
     static int rtn;
