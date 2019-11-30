@@ -29,6 +29,7 @@ FILES=		$(PROGRAM) \
 			$(BINDIR)/loader.prg \
 			autoboot.c65 \
 			c64-m65.cfg \
+			$(BINDIR)/title-slide.prg \
 			$(DISK)
 
 SOURCES=	$(SRCDIR)/main.c \
@@ -146,6 +147,15 @@ $(ROMDIR)/%.rom:	| $(ROMDIR)
 $(OBJDIR)/%.FPK:	Makefile $(ASTDIR)/*.ttf $(ASTDIR)/*.otf $(TTFTOF65) | $(ASTDIR) $(OBJDIR)
 	./makefonts.sh $@ > /dev/null
 
+title-slide.out:	$(ASTDIR)/Title-Slide-800x480.png ../mega65-core/src/tools/pngprepare/pngtoscreens
+	../mega65-core/src/tools/pngprepare/pngtoscreens title-slide.out $(ASTDIR)/Title-Slide-800x480.png
+
+title-slide.packed:	title-slide.out
+	../mega65-core/src/tools/pngprepare/rlepack title-slide.out title-slide.packed
+
+$(BINDIR)/title-slide.prg:	title-slide.packed ../mega65-core/src/tests/packedtileset.prg
+	cat ../mega65-core/src/tests/packedtileset.prg title-slide.packed > $(BINDIR)/title-slide.prg
+
 $(BINDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(BINDIR)
 	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(ASSFILES)
 
@@ -161,10 +171,11 @@ $(BINDIR)/%.fprg:	Makefile $(OBJDIR)/%.FPK $(BINDIR)/%.prg $(C65SYSROM)
 	dd if=$(C65SYSROM) bs=1024 count=128 of=$@ oflag=append conv=notrunc
 	dd if=$(OBJDIR)/$*.FPK bs=1024 count=128 of=$@ oflag=append conv=notrunc
 
-$(BINDIR)/MEGAWAT.D81:	assets/PART1 bin/loader.prg bin/megawat.prg assets/*.mwt* assets/lca2019-cover.prg
+$(BINDIR)/MEGAWAT.D81:	assets/PART1 bin/loader.prg bin/megawat.prg assets/*.mwt* bin/title-slide.prg
 	rm -fr $(BINDIR)/MEGAWAT.D81 tmp
 	mkdir tmp
-	cp assets/*.mwt* assets/lca2019-cover.prg tmp/
+	cp assets/*.mwt* tmp/
+	cp bin/title-slide.prg tmp/lca2019-cover.prg
 	cp assets/PART1 tmp/part1
 	cp bin/loader.prg tmp/megawat
 	cp bin/megawat.prg tmp/part2
@@ -178,6 +189,7 @@ define DIR_TEMPLATE =
 $(1):
 	mkdir $(1)
 endef
+
 
 $(foreach dir,$(MKDIRS),$(eval $(call DIR_TEMPLATE,$(dir))))
 
