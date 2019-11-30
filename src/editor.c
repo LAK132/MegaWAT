@@ -415,7 +415,7 @@ void editor_update_cursor(void)
         cursor_col = scratch_rbuffer.glyph_count;
 
     // Work out where cursor should be
-    xx = 15; // Fudge factor
+    xx = 40-1; // Fudge factor
     for (x = 0; x < cursor_col; ++x)
         xx += (scratch_rbuffer.glyphs[x].size.columns * 8) - scratch_rbuffer.glyphs[x].size.trim_pixels;
     // Work out cursor height
