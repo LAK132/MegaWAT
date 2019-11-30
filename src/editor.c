@@ -415,7 +415,7 @@ void editor_update_cursor(void)
         cursor_col = scratch_rbuffer.glyph_count;
 
     // Work out where cursor should be
-    xx = 40-1; // Fudge factor
+    xx = 40-2; // Fudge factor
     for (x = 0; x < cursor_col; ++x)
         xx += (scratch_rbuffer.glyphs[x].size.columns * 8) - scratch_rbuffer.glyphs[x].size.trim_pixels;
     // Work out cursor height
@@ -1207,8 +1207,8 @@ void editor_show_slide_number(void)
     POKE(0xD057U, 0x02);
 
     // Position sprite 2 near lower right corner
-    POKE(0xD003U, 0xF7);
-    POKE(0xD002U, 0xa0);
+    POKE(0xD003U, 0xc7);
+    POKE(0xD002U, 0x76);
     POKE(0xD010U, 0x00);
     POKE(0xD05FU, PEEK(0xD05FU) | 0x02);
 

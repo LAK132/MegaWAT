@@ -38,7 +38,7 @@ void videoSetSlideMode(void)
     POKE(0xD015U,0x01);
 
     // Minimum side borders for 720px mode
-    POKE(0xD05CU, 40); // (800 - 720 ) / 2 = 40
+    POKE(0xD05CU, 40-2); // (800 - 720 ) / 2 = 40
     POKE(0xD05DU, PEEK(0xD05DU) & 0x80);
 
     // Set H640 and V400 and enable extended attributes and 8-bit colour values
@@ -67,6 +67,9 @@ void videoSetSlideMode(void)
     // Disable VicII hot registers
     DISABLE_HOT_REGISTERS(); // 0xD05D
 
+    // Align left edge of text appropriately
+    POKE(0xD04CU, 40); // (800 - 720 ) / 2 = 40
+    
     // Disable maskable interrupts (MEGA+SHIFT)
     __asm__("sei");
 
