@@ -14,8 +14,8 @@ void videoSetSlideMode(void)
      16 bit text mode with 100 character virtual line length.
     */
 
-    // 60Hz video mode
-    POKE(0xD06fU,0x80);
+    // 50Hz PAL video mode for 576p
+    POKE(0xD06fU,0x00);
 
     // 16-bit text mode, 640H sprites, alpha blender, 50MHz CPU, full-colour for chars >$FF
     POKE(0xd054U,0xD5);

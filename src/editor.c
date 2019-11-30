@@ -1207,7 +1207,7 @@ void editor_show_slide_number(void)
     POKE(0xD057U, 0x02);
 
     // Position sprite 2 near lower right corner
-    POKE(0xD003U, 0xc7);
+    POKE(0xD003U, 0xf7);
     POKE(0xD002U, 0x76);
     POKE(0xD010U, 0x00);
     POKE(0xD05FU, PEEK(0xD05FU) | 0x02);
