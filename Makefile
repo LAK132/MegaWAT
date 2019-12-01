@@ -5,6 +5,7 @@ SRCDIR=		src
 OBJDIR=		obj
 BINDIR=		bin
 ROMDIR=		rom
+TMPDIR=		tmp
 ASTDIR=		assets
 MKDIRS=		$(SRCDIR) $(OBJDIR) $(BINDIR) $(ROMDIR)
 
@@ -147,20 +148,20 @@ $(ROMDIR)/%.rom:	| $(ROMDIR)
 $(OBJDIR)/%.FPK:	Makefile $(ASTDIR)/*.ttf $(ASTDIR)/*.otf $(TTFTOF65) | $(ASTDIR) $(OBJDIR)
 	./makefonts.sh $@ > /dev/null
 
-title-slide.out:	$(ASTDIR)/Title-Slide-800x480.png ../mega65-core/src/tools/pngprepare/pngtoscreens
-	../mega65-core/src/tools/pngprepare/pngtoscreens title-slide.out $(ASTDIR)/Title-Slide-800x480.png
+title-slide.out:	$(ASTDIR)/Title-Slide-800x480.png $(COREDIR)/src/tools/pngprepare/pngtoscreens
+	$(COREDIR)/src/tools/pngprepare/pngtoscreens title-slide.out $(ASTDIR)/Title-Slide-800x480.png
 
 title-slide.packed:	title-slide.out
-	../mega65-core/src/tools/pngprepare/rlepack title-slide.out title-slide.packed
+	$(COREDIR)/src/tools/pngprepare/rlepack title-slide.out title-slide.packed
 
-$(BINDIR)/title-slide.prg:	title-slide.packed ../mega65-core/src/tests/packedtileset.prg
-	cat ../mega65-core/src/tests/packedtileset.prg title-slide.packed > $(BINDIR)/title-slide.prg
+$(BINDIR)/title-slide.prg:	title-slide.packed $(COREDIR)/src/tests/packedtileset.prg
+	cat $(COREDIR)/src/tests/packedtileset.prg title-slide.packed > $(BINDIR)/title-slide.prg
 
 $(BINDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(BINDIR)
 	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(ASSFILES)
 
-$(BINDIR)/loader.prg:	src/fast_memory.s src/splash.s src/loader.c src/memory.c src/memory.h Makefile $(ASTDIR)/megawat-splash.m65
-	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ src/splash.s src/loader.c src/memory.c src/fast_memory.s
+$(BINDIR)/loader.prg:	$(SRCDIR)/fast_memory.s $(SRCDIR)/splash.s $(SRCDIR)/loader.c $(SRCDIR)/memory.c $(SRCDIR)/memory.h Makefile $(ASTDIR)/megawat-splash.m65
+	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(filter %.c %.s, $^)
 
 $(BINDIR)/%.fprg:	Makefile $(OBJDIR)/%.FPK $(BINDIR)/%.prg $(C65SYSROM)
 	#	Generate single binary with fonts and ROM in place
@@ -171,15 +172,15 @@ $(BINDIR)/%.fprg:	Makefile $(OBJDIR)/%.FPK $(BINDIR)/%.prg $(C65SYSROM)
 	dd if=$(C65SYSROM) bs=1024 count=128 of=$@ oflag=append conv=notrunc
 	dd if=$(OBJDIR)/$*.FPK bs=1024 count=128 of=$@ oflag=append conv=notrunc
 
-$(BINDIR)/MEGAWAT.D81:	assets/PART1 bin/loader.prg bin/megawat.prg assets/*.mwt* bin/title-slide.prg
-	rm -fr $(BINDIR)/MEGAWAT.D81 tmp
-	mkdir tmp
-	cp assets/*.mwt* tmp/
-	cp bin/title-slide.prg tmp/lca2019-cover.prg
-	cp assets/PART1 tmp/part1
-	cp bin/loader.prg tmp/megawat
-	cp bin/megawat.prg tmp/part2
-	(cd tmp ; cbmconvert -D8 ../$(BINDIR)/MEGAWAT.D81 * )
+$(BINDIR)/MEGAWAT.D81:	$(ASTDIR)/PART1 $(BINDIR)/loader.prg $(BINDIR)/megawat.prg $(ASTDIR)/*.mwt* $(BINDIR)/title-slide.prg
+	rm -fr $(BINDIR)/MEGAWAT.D81 $(TMPDIR)
+	mkdir $(TMPDIR)
+	cp $(ASTDIR)/*.mwt* $(TMPDIR)/
+	cp $(BINDIR)/title-slide.prg $(TMPDIR)/lca2019-cover.prg
+	cp $(ASTDIR)/PART1 $(TMPDIR)/part1
+	cp $(BINDIR)/loader.prg $(TMPDIR)/megawat
+	cp $(BINDIR)/megawat.prg $(TMPDIR)/part2
+	(cd $(TMPDIR) && cbmconvert -D8 ../$(BINDIR)/MEGAWAT.D81 * )
 
 #$(BINDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(BINDIR)
 #	if [ -f $@ ]; then rm -f $@; fi
