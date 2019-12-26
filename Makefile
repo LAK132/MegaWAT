@@ -31,6 +31,7 @@ FILES=		$(PROGRAM) \
 			autoboot.c65 \
 			c64-m65.cfg \
 			$(BINDIR)/title-slide.prg \
+			$(BINDIR)/audiopath.prg \
 			$(DISK)
 
 SOURCES=	$(SRCDIR)/main.c \
@@ -151,6 +152,11 @@ $(OBJDIR)/%.FPK:	Makefile $(ASTDIR)/*.ttf $(ASTDIR)/*.otf $(TTFTOF65) | $(ASTDIR
 title-slide.out:	$(ASTDIR)/Title-Slide-800x480.png $(COREDIR)/src/tools/pngprepare/pngtoscreens
 	$(COREDIR)/src/tools/pngprepare/pngtoscreens title-slide.out $(ASTDIR)/Title-Slide-800x480.png
 
+$(BINDIR)/%.prg:	$(ASTDIR)/%.png
+	$(COREDIR)/src/tools/pngprepare/pngtoscreens $@.out $<
+	$(COREDIR)/src/tools/pngprepare/rlepack $@.out $@.packed
+	cat $(COREDIR)/src/tests/packedtileset.prg $@.packed > $@
+
 title-slide.packed:	title-slide.out
 	$(COREDIR)/src/tools/pngprepare/rlepack title-slide.out title-slide.packed
 
@@ -172,6 +178,7 @@ $(BINDIR)/%.fprg:	Makefile $(OBJDIR)/%.FPK $(BINDIR)/%.prg $(C65SYSROM)
 	dd if=$(C65SYSROM) bs=1024 count=128 of=$@ oflag=append conv=notrunc
 	dd if=$(OBJDIR)/$*.FPK bs=1024 count=128 of=$@ oflag=append conv=notrunc
 
+<<<<<<< HEAD
 $(BINDIR)/MEGAWAT.D81:	$(ASTDIR)/PART1 $(BINDIR)/loader.prg $(BINDIR)/megawat.prg $(ASTDIR)/*.mwt* $(BINDIR)/title-slide.prg
 	rm -fr $(BINDIR)/MEGAWAT.D81 $(TMPDIR)
 	mkdir $(TMPDIR)
@@ -181,6 +188,18 @@ $(BINDIR)/MEGAWAT.D81:	$(ASTDIR)/PART1 $(BINDIR)/loader.prg $(BINDIR)/megawat.pr
 	cp $(BINDIR)/loader.prg $(TMPDIR)/megawat
 	cp $(BINDIR)/megawat.prg $(TMPDIR)/part2
 	(cd $(TMPDIR) && cbmconvert -D8 ../$(BINDIR)/MEGAWAT.D81 * )
+=======
+$(BINDIR)/MEGAWAT.D81:	assets/PART1 bin/loader.prg bin/megawat.prg assets/*.mwt* bin/title-slide.prg
+	rm -fr $(BINDIR)/MEGAWAT.D81 tmp
+	mkdir tmp
+	cp assets/*.mwt* tmp/
+	cp bin/title-slide.prg tmp/lca2019-cover.prg
+	cp assets/PART1 tmp/part1
+	cp bin/loader.prg tmp/megawat
+	cp bin/megawat.prg tmp/part2
+	cp bin/audiopath.prg tmp/audiopath
+	(cd tmp ; cbmconvert -D8 ../$(BINDIR)/MEGAWAT.D81 * )
+>>>>>>> add 36C3 slides + diagram to MegaWAT target.
 
 #$(BINDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(BINDIR)
 #	if [ -f $@ ]; then rm -f $@; fi
