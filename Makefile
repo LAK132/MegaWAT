@@ -178,7 +178,6 @@ $(BINDIR)/%.fprg:	Makefile $(OBJDIR)/%.FPK $(BINDIR)/%.prg $(C65SYSROM)
 	dd if=$(C65SYSROM) bs=1024 count=128 of=$@ oflag=append conv=notrunc
 	dd if=$(OBJDIR)/$*.FPK bs=1024 count=128 of=$@ oflag=append conv=notrunc
 
-<<<<<<< HEAD
 $(BINDIR)/MEGAWAT.D81:	$(ASTDIR)/PART1 $(BINDIR)/loader.prg $(BINDIR)/megawat.prg $(ASTDIR)/*.mwt* $(BINDIR)/title-slide.prg
 	rm -fr $(BINDIR)/MEGAWAT.D81 $(TMPDIR)
 	mkdir $(TMPDIR)
@@ -187,19 +186,8 @@ $(BINDIR)/MEGAWAT.D81:	$(ASTDIR)/PART1 $(BINDIR)/loader.prg $(BINDIR)/megawat.pr
 	cp $(ASTDIR)/PART1 $(TMPDIR)/part1
 	cp $(BINDIR)/loader.prg $(TMPDIR)/megawat
 	cp $(BINDIR)/megawat.prg $(TMPDIR)/part2
+	cp $(BINDIR)/audiopath.prg $(TMPDIR)/audiopath
 	(cd $(TMPDIR) && cbmconvert -D8 ../$(BINDIR)/MEGAWAT.D81 * )
-=======
-$(BINDIR)/MEGAWAT.D81:	assets/PART1 bin/loader.prg bin/megawat.prg assets/*.mwt* bin/title-slide.prg
-	rm -fr $(BINDIR)/MEGAWAT.D81 tmp
-	mkdir tmp
-	cp assets/*.mwt* tmp/
-	cp bin/title-slide.prg tmp/lca2019-cover.prg
-	cp assets/PART1 tmp/part1
-	cp bin/loader.prg tmp/megawat
-	cp bin/megawat.prg tmp/part2
-	cp bin/audiopath.prg tmp/audiopath
-	(cd tmp ; cbmconvert -D8 ../$(BINDIR)/MEGAWAT.D81 * )
->>>>>>> add 36C3 slides + diagram to MegaWAT target.
 
 #$(BINDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(BINDIR)
 #	if [ -f $@ ]; then rm -f $@; fi
