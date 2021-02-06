@@ -1,8 +1,8 @@
-[Oo]bj/
-[Rr]om/
-[Bb]in/
-.vs/
-.vscode/
+obj/**
+rom/**
+bin/**
+.vs/**
+.vscode/**
 *.[Bb][Ii][Nn]
 *.[Ff]65
 *.[Ff][Pp][Kk]

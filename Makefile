@@ -19,6 +19,7 @@ CBMCONVDIR=	cbmconvert
 FONTRSTDIR=	c65gs-font-rasteriser
 XEMUDIR=	../xemu
 COREDIR=	../mega65-core
+TOOLSDIR=	../mega65-tools
 # CC65DIR=	$(COREDIR)/cc65
 # CBMCONVDIR=	$(COREDIR)/cbmconvert
 # FONTRSTDIR=	../c65gs-font-rasteriser
@@ -29,36 +30,29 @@ L65OPTS=	-C c64-m65.cfg --asm-include-dir $(CC65DIR)/asminc --lib-path $(CC65DIR
 FILES=		$(PROGRAM) \
 			$(BINDIR)/loader.prg \
 			autoboot.c65 \
-			c64-m65.cfg \
-			$(BINDIR)/title-slide.prg \
-			$(BINDIR)/audiopath.prg \
-			$(DISK)
+			c64-m65.cfg
 
-SOURCES=	$(SRCDIR)/main.c \
+C_SOURCE=	$(SRCDIR)/main.c \
 			$(SRCDIR)/megastring.c \
 			$(SRCDIR)/editor.c \
 			$(SRCDIR)/videomodes.c \
 			$(SRCDIR)/memory.c \
-			$(SRCDIR)/fast_memory.s \
 			$(SRCDIR)/f65.c \
 			$(SRCDIR)/globals.c \
-			$(SRCDIR)/fileio.c \
+			$(SRCDIR)/fileio.c
+
+S_SOURCE=	$(SRCDIR)/fast_memory.s \
 			$(SRCDIR)/font_load.s \
 			$(SRCDIR)/charset.s \
 			$(SRCDIR)/romprotection.s
 
-ASSFILES=	$(OBJDIR)/main.s \
-			$(OBJDIR)/megastring.s \
-			$(OBJDIR)/editor.s \
-			$(OBJDIR)/videomodes.s \
-			$(OBJDIR)/memory.s \
-			$(OBJDIR)/fast_memory.s \
-			$(OBJDIR)/f65.s \
-			$(OBJDIR)/globals.s \
-			$(OBJDIR)/fileio.s \
-			$(OBJDIR)/font_load.s \
-			$(OBJDIR)/charset.s \
-			$(OBJDIR)/romprotection.s
+MEGAWAT_FILES=	$(C_SOURCE:$(SRCDIR)/%.c=$(OBJDIR)/%.c.o) \
+			$(S_SOURCE:$(SRCDIR)/%.s=$(OBJDIR)/%.s.o)
+
+SPLASH_FILES=	$(OBJFILES)/fast_memory.s.o \
+			$(OBJDIR)/splash.s.o \
+			$(OBJDIR)/loader.c.o \
+			$(OBJDIR)/memory.c.o
 
 HEADERS=	Makefile \
 			c64-m65.cfg \
@@ -92,12 +86,13 @@ ifeq ($(F1_EXISTS), 1)
 C65SYSROM=	c65.rom
 else
 C65SYSROM=	$(ROMDIR)/911001.bin.rom
+# C65SYSROM=	$(ROMDIR)/911210.bin.rom
 endif
 
-MONLOAD=	$(COREDIR)/src/tools/monitor_load
-KICKUP=		$(COREDIR)/bin/KICKUP.M65
-BITSTRM=	$(COREDIR)/bin/nexys4ddr-widget-20190116.16-newpix-b686673+DIRTY.bit
-CHARROM=	$(COREDIR)/charrom.bin
+MONLOAD=	$(TOOLSDIR)/bin/m65
+KICKUP=		$(COREDIR)/bin/HICKUP.M65
+BITSTRM=	$(COREDIR)/bin/nexys4.bit
+CHARROM=	$(COREDIR)/bin/charrom.bin
 
 TTFTOF65=	$(FONTRSTDIR)/ttftof65
 
@@ -108,13 +103,13 @@ all:		$(FILES) | $(MKDIRS)
 clean: clean-obj clean-bin clean-font
 
 clean-obj:
-	if [ -d $(OBJDIR) ]; then cd $(OBJDIR) && rm -f *; fi
+	rm -rf $(OBJDIR)
 
 clean-bin:
-	if [ -d $(BINDIR) ]; then cd $(BINDIR) && rm -f *; fi
+	rm -rf $(BINDIR)
 
 clean-rom:
-	if [ -d $(ROMDIR) ]; then cd $(ROMDIR) && rm -f *; fi
+	rm -rf $(ROMDIR)
 
 clean-font:
 	rm -f *.f65
@@ -139,9 +134,14 @@ load:		$(MONLOAD) $(C65SYSROM) $(PROGRAM)
 %.f65:	%.ttf Makefile $(TTFTOF65)
 	$(TTFTOF65) -A -P 8 -T $< -o $@
 
-$(OBJDIR)/%.s:		$(SOURCES) $(HEADERS) $(DATAFILES) $(CC65) | $(OBJDIR)
-	if [ -f $(SRCDIR)/$*.c ]; then $(CC65) $(C65OPTS) -o $@ $(SRCDIR)/$*.c; fi
-	if [ -f $(SRCDIR)/$*.s ]; then cp $(SRCDIR)/$*.s $@; fi
+$(ROMDIR)/911210.zip:	| $(ROMDIR)
+	$(WGET) -O $@ http://www.zimmers.net/anonftp/pub/cbm/firmware/computers/c65/911210.zip || { rm -f $@ ; false; }
+
+$(ROMDIR)/folder_911210/911210.bin: $(ROMDIR)/911210.zip
+	unzip -u $< -d $(ROMDIR)
+
+$(ROMDIR)/911210.bin.rom: $(ROMDIR)/folder_911210/911210.bin
+	cp $< $@
 
 $(ROMDIR)/%.rom:	| $(ROMDIR)
 	$(WGET) -O $@ http://www.zimmers.net/anonftp/pub/cbm/firmware/computers/c65/$* || { rm -f $@ ; false; }
@@ -149,25 +149,14 @@ $(ROMDIR)/%.rom:	| $(ROMDIR)
 $(OBJDIR)/%.FPK:	Makefile $(ASTDIR)/*.ttf $(ASTDIR)/*.otf $(TTFTOF65) | $(ASTDIR) $(OBJDIR)
 	./makefonts.sh $@ > /dev/null
 
-title-slide.out:	$(ASTDIR)/Title-Slide-800x480.png $(COREDIR)/src/tools/pngprepare/pngtoscreens
-	$(COREDIR)/src/tools/pngprepare/pngtoscreens title-slide.out $(ASTDIR)/Title-Slide-800x480.png
+$(OBJDIR)/%.o:		$(SRCDIR)/% $(HEADERS) $(DATAFILES) $(CC65) | $(OBJDIR)
+	$(CL65) $(C65OPTS) -o $@ -c $<
 
-$(BINDIR)/%.prg:	$(ASTDIR)/%.png
-	$(COREDIR)/src/tools/pngprepare/pngtoscreens $@.out $<
-	$(COREDIR)/src/tools/pngprepare/rlepack $@.out $@.packed
-	cat $(COREDIR)/src/tests/packedtileset.prg $@.packed > $@
+$(PROGRAM): $(MEGAWAT_FILES) $(HEADERS) c64-m65.cfg | $(BINDIR)
+	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(filter %.o, $^)
 
-title-slide.packed:	title-slide.out
-	$(COREDIR)/src/tools/pngprepare/rlepack title-slide.out title-slide.packed
-
-$(BINDIR)/title-slide.prg:	title-slide.packed $(COREDIR)/src/tests/packedtileset.prg
-	cat $(COREDIR)/src/tests/packedtileset.prg title-slide.packed > $(BINDIR)/title-slide.prg
-
-$(BINDIR)/%.prg:	$(ASSFILES) c64-m65.cfg | $(BINDIR)
-	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(ASSFILES)
-
-$(BINDIR)/loader.prg:	$(SRCDIR)/fast_memory.s $(SRCDIR)/splash.s $(SRCDIR)/loader.c $(SRCDIR)/memory.c $(SRCDIR)/memory.h Makefile $(ASTDIR)/megawat-splash.m65
-	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(filter %.c %.s, $^)
+$(BINDIR)/loader.prg:	$(SPLASH_FILES) $(HEADERS) $(ASTDIR)/megawat-splash.m65 | $(BINDIR)
+	$(CL65) $(C65OPTS) $(L65OPTS) -vm -m $@.map -o $@ $(filter %.o, $^)
 
 $(BINDIR)/%.fprg:	Makefile $(OBJDIR)/%.FPK $(BINDIR)/%.prg $(C65SYSROM)
 	#	Generate single binary with fonts and ROM in place
@@ -178,46 +167,35 @@ $(BINDIR)/%.fprg:	Makefile $(OBJDIR)/%.FPK $(BINDIR)/%.prg $(C65SYSROM)
 	dd if=$(C65SYSROM) bs=1024 count=128 of=$@ oflag=append conv=notrunc
 	dd if=$(OBJDIR)/$*.FPK bs=1024 count=128 of=$@ oflag=append conv=notrunc
 
-$(BINDIR)/MEGAWAT.D81:	$(ASTDIR)/PART1 $(BINDIR)/loader.prg $(BINDIR)/megawat.prg $(ASTDIR)/*.mwt* $(BINDIR)/title-slide.prg
-	rm -fr $(BINDIR)/MEGAWAT.D81 $(TMPDIR)
-	mkdir $(TMPDIR)
-	cp $(ASTDIR)/*.mwt* $(TMPDIR)/
-	cp $(BINDIR)/title-slide.prg $(TMPDIR)/lca2019-cover.prg
-	cp $(ASTDIR)/PART1 $(TMPDIR)/part1
-	cp $(BINDIR)/loader.prg $(TMPDIR)/megawat
-	cp $(BINDIR)/megawat.prg $(TMPDIR)/part2
-	cp $(BINDIR)/audiopath.prg $(TMPDIR)/audiopath
-	(cd $(TMPDIR) && cbmconvert -D8 ../$(BINDIR)/MEGAWAT.D81 * )
-
-#$(BINDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(BINDIR)
-#	if [ -f $@ ]; then rm -f $@; fi
-#	$(CBMCONVERT) -v2 -D8o $@ $(FILES)
+$(BINDIR)/%.D81:	$(CBMCONVERT) $(FILES) | $(BINDIR)
+	if [ -f $@ ]; then rm -f $@; fi
+	$(CBMCONVERT) -v2 -D8o $@ $(FILES)
 
 define DIR_TEMPLATE =
 $(1):
 	mkdir $(1)
 endef
 
-
 $(foreach dir,$(MKDIRS),$(eval $(call DIR_TEMPLATE,$(dir))))
 
 # TOOLS
 
 cbmconvert/cbmconvert:
-	git submodule init
-	git submodule update
+	git submodule update --init cbmconvert
 	( cd cbmconvert && make -f Makefile.unix )
 
 cc65/bin/cc65:
-	git submodule init
-	git submodule update
-	( cd cc65 && make -j 8 )
-
-$(MONLOAD):
-	( cd $(COREDIR) && make src/tools/monitor_load )
+	git submodule update --init cc65
+	( cd cc65 && make -j8 )
 
 $(TTFTOF65):
-	( cd $(FONTRSTDIR) ; make )
+	( cd $(FONTRSTDIR) && $(MAKE) )
+
+$(TOOLSDIR)/%:
+	( cd $(TOOLSDIR) && $(MAKE) $(shell realpath --relative-to $(TOOLSDIR) $@) )
+
+$(COREDIR)/%:
+	( cd $(COREDIR) && $(MAKE) $(shell realpath --relative-to $(COREDIR) $@) )
 
 .DEFAULT:
 	$(error Could not find file $@)
