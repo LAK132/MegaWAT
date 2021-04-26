@@ -1,6 +1,6 @@
 /*
   A simple slide presentation program for the MEGA65.
-  Written by Lucas "LAK132" Kleiss and Paul Gardner-Stephen
+  Written by LAK132 and Paul Gardner-Stephen
 */
 
 #include "main.h"
